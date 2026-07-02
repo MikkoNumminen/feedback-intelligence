@@ -70,6 +70,53 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   down the running RAG stack first. Never assume the GPU or Ollama is free.
 - Models already pulled in that volume:
   `hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M` and `qwen3:8b`.
+- .NET SDK: **8 (LTS), not 10** — the demo's audience is Finnish enterprise
+  (S-ryhmä / Kesko class), and enterprise shops run the established LTS, not the
+  newest major. The machine already has the 8.0 runtime; .NET 8 is supported
+  through Nov 2026, the demo's life as a work sample is weeks-to-months, and an
+  8→10 bump is trivial if ever needed. Matching the target audience's stack IS
+  the signal — the same reasoning that picked C#.
+- Project Ollama: **FULL ISOLATION** — own compose, own model volume, the two
+  models re-pulled into it (~10 GB, one-time). A shared volume was rejected:
+  any pull or manifest update from the demo side would touch the live RAG's
+  model store, and that stack is being shared with recruiters. Same
+  arm-isolation principle as the measurement work: the systems must not be able
+  to contaminate each other. No restart policy (must never auto-start); the
+  announce-before-GPU-use rule stands regardless, since the GPU itself is
+  shared.
+
+## Phase 0 approved decisions (2026-07-03)
+
+- Structuring schema v0:
+  - `department`: FIXED ENUM (hybrid hardware-store/grocery, matches the
+    corpus): `maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa |
+    kassa_palvelu | piha_puutarha | rakennustarvike | tyokalut |
+    sisustus_maalit | sahko_lvi | varasto_nouto | verkkokauppa_toimitus | muu`.
+    Free-text department was rejected: the same department comes back as
+    "maito"/"maitotuotteet"/"kylmä", schema adherence can't be scored, and
+    downstream trend grouping won't group.
+  - `theme`: free-form short Finnish noun phrase.
+  - `severity`: `low | medium | high | critical`.
+  - `type`: `complaint | praise | suggestion | question | other`.
+  - `language`: kept as detected, not translated.
+  - NO `alert_hint` or any alert field — the structuring model must not make
+    alert decisions; alerts belong to the deterministic layer and the separate
+    analysis pass, per the spell.
+- LLM abstraction: Microsoft.Extensions.AI `IChatClient` with OllamaSharp as
+  the provider (`Microsoft.Extensions.AI.Ollama` is deprecated). Keyed DI with
+  `Llm:Models:Structuring` / `Llm:Models:Synthesis`; provider, base URL and
+  model names are config, validated at startup.
+- Structuring eval: prompt-only JSON discipline is the PRIMARY metric;
+  constrained decoding (Ollama structured outputs) is a comparison row only —
+  it would force ~100% valid JSON from both models and wash out the signal
+  under test. 3 repetitions per model per text. Reported metrics: valid-JSON
+  rate, schema adherence, latency, and per-field enum-violation counts (which
+  field, which illegal value — patterns matter, not just failure rates).
+- Eval input texts are hand-written by Mikko and deliberately include hard
+  cases (no-keyword safety complaint, multi-department, mixed praise+complaint).
+  Do not run the eval before his texts land in
+  `data/eval/structuring-inputs.jsonl`.
+- The 48h Phase 0 checkpoint clock starts when the SDK is installed.
 
 ## PHASE 0 — Risk first: prove the unknowns (days 1–2)
 
