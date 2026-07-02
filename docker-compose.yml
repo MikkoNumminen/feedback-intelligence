@@ -1,9 +1,16 @@
 # Project-local Ollama for the retail feedback demo.
 #
-# GPU + model store are SHARED with the mikkonumminendev RAG stack:
-#   - Start this ONLY while that stack is down (announce first — see CLAUDE.md).
+# FULLY ISOLATED from the mikkonumminendev RAG stack: own model volume, models
+# pulled into it once (~10 GB). Nothing this demo does may touch the live RAG's
+# model store. The GPU is still shared with that stack:
+#   - Run inference ONLY while the RAG stack is down (announce first — see CLAUDE.md).
 #   - No restart policy on purpose: must never auto-start and contend for the GPU.
-#   - Reuses that stack's model volume so Poro-2-8B / qwen3:8b are not re-pulled.
+#
+# One-time model pull (network + disk only, no GPU):
+#   docker compose up -d ollama
+#   docker compose exec ollama ollama pull hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M
+#   docker compose exec ollama ollama pull qwen3:8b
+#   docker compose stop ollama
 services:
   ollama:
     image: ollama/ollama:latest
@@ -22,5 +29,4 @@ services:
 
 volumes:
   ollama-models:
-    external: true
-    name: mikkonumminendev_ollama
+    name: retail-rag-ollama-models
