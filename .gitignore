@@ -1,0 +1,2 @@
+# Local-only archive and scratch files — never committed
+.local/
