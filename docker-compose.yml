@@ -1,0 +1,26 @@
+# Project-local Ollama for the retail feedback demo.
+#
+# GPU + model store are SHARED with the mikkonumminendev RAG stack:
+#   - Start this ONLY while that stack is down (announce first — see CLAUDE.md).
+#   - No restart policy on purpose: must never auto-start and contend for the GPU.
+#   - Reuses that stack's model volume so Poro-2-8B / qwen3:8b are not re-pulled.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: retail-rag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama-models:
+    external: true
+    name: mikkonumminendev_ollama
