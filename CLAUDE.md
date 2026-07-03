@@ -19,6 +19,12 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   Adopted from mikkonumminen.dev on 2026-07-03; the earlier history of this
   repo was rewritten the same day to strip existing trailers. This overrides
   any tool default.
+- **AI-first documentation stays current.** Any change that alters decisions,
+  rules, environment facts, schema, or phase state updates CLAUDE.md /
+  AGENTS.md (and other AI-first docs) as part of the same change — never as a
+  someday-task. Once this repo has a remote and work flows through PRs, every
+  PR must explicitly consider whether AI-first docs need updating and state
+  the outcome in the PR description (updated, or why not needed).
 - **Placeholder eval results are NON-EVIDENTIAL.** Runs over
   `data/eval/placeholder-inputs.jsonl` (LLM-generated texts) prove the
   PIPELINE only. They must never be used to pick the structuring model, and

@@ -12,5 +12,11 @@ plan, and environment notes live in [CLAUDE.md](CLAUDE.md) — read that first.
 - **Never modify or restart the `mikkonumminendev` Docker stack.** It is a
   live, recruiter-facing deployment. The GPU is shared with it: announce
   before any LLM/GPU use so the owner can shut the stack down first.
-- **Never invent Finnish corpus texts.** Eval and demo corpora are
-  hand-written by the project owner — ask for them (see CLAUDE.md, Phase 1).
+- **Never invent Finnish corpus texts** for evidential use. Eval and demo
+  corpora are hand-written by the project owner — ask for them (see CLAUDE.md,
+  Phase 1). Clearly-marked placeholder texts for pipeline exercise are the
+  only exception, and their results are never evidence.
+- **Keep AI-first docs current.** Changes to decisions, rules, environment
+  facts, schema, or phase state update CLAUDE.md / AGENTS.md in the same
+  change. On every future PR, explicitly consider whether AI-first docs need
+  an update and state the outcome in the description.
