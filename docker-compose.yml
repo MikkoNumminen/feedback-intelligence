@@ -15,8 +15,18 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: retail-rag-ollama
+    environment:
+      # Served context window — a SERVER-side knob (per-request num_ctx is not
+      # set anywhere). 4096 fits Phase 0 structuring prompts; revisit for the
+      # Phase 4 synthesis window. Larger costs VRAM per loaded model.
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-4096}
     ports:
       - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     volumes:
       - ollama-models:/root/.ollama
     deploy:
