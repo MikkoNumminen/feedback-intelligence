@@ -154,6 +154,8 @@ public sealed class StructuringEvalRunner(
         Console.WriteLine($"Raw results: {Path.GetFullPath(rawPath)}");
         Console.WriteLine();
         Console.WriteLine(MarkdownReport.RenderSummaryTable(eval, records));
+        if (MarkdownReport.IsPlaceholderRun(eval))
+            Console.WriteLine("NON-EVIDENTIAL: placeholder inputs — pipeline proof only, never a model decision (CLAUDE.md hard rule).");
         return 0;
     }
 

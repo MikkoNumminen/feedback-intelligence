@@ -13,6 +13,14 @@ public static class MarkdownReport
         var sb = new StringBuilder();
         sb.AppendLine($"# Structuring eval — {DateTime.Now:yyyy-MM-dd HH:mm}");
         sb.AppendLine();
+        if (IsPlaceholderRun(eval))
+        {
+            sb.AppendLine("> ⚠ **NON-EVIDENTIAL — PIPELINE TEST ONLY.** Inputs are synthetic,");
+            sb.AppendLine("> LLM-generated placeholder texts. Per the CLAUDE.md hard rule these");
+            sb.AppendLine("> results prove the pipeline and MUST NOT be used to pick the");
+            sb.AppendLine("> structuring model. The model decision waits for the hand-written corpus.");
+            sb.AppendLine();
+        }
         sb.AppendLine(
             $"- Items: {items.Count}; repetitions: {eval.Repetitions}; temperature: {eval.Temperature}; " +
             $"max output tokens: {(eval.MaxOutputTokens > 0 ? eval.MaxOutputTokens.ToString() : "uncapped")}; " +
@@ -138,6 +146,11 @@ public static class MarkdownReport
         var index = (int)Math.Ceiling(p * sorted.Count) - 1;
         return sorted[Math.Clamp(index, 0, sorted.Count - 1)];
     }
+
+    /// <summary>Placeholder runs are detected from the input path so the
+    /// non-evidential label cannot be forgotten (CLAUDE.md hard rule).</summary>
+    public static bool IsPlaceholderRun(EvalOptions eval) =>
+        eval.InputPath.Contains("placeholder", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>"hf.co/…/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M" → "Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M".</summary>
     private static string Short(string model) => model[(model.LastIndexOf('/') + 1)..];

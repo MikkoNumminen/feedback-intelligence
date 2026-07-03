@@ -20,3 +20,17 @@ misplaced anger. Cover all four sources.
 The one line already present is the example from the project spec — keep it or
 replace it. Same shape as the Phase 1 corpus format, so this file doubles as an
 early fixture.
+
+## `placeholder-inputs.jsonl` — SYNTHETIC, NON-EVIDENTIAL
+
+LLM-generated placeholder texts (ids `ph-*`) whose ONLY job is to exercise the
+pipeline end to end before the real corpus exists. HARD RULE (see CLAUDE.md):
+results from this file prove the pipeline, never the model choice — clean LLM
+Finnish does not predict JSON discipline on messy dialect and desk shorthand.
+The eval report auto-labels any run whose input path contains "placeholder" as
+non-evidential. The structuring-model decision comes exclusively from a run on
+the hand-written `structuring-inputs.jsonl`.
+
+Run against placeholders:
+
+    dotnet run --project tools/RetailFeedback.StructuringEval -- eval --Eval:InputPath=data/eval/placeholder-inputs.jsonl

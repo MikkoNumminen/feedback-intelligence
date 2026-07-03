@@ -19,6 +19,15 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   Adopted from mikkonumminen.dev on 2026-07-03; the earlier history of this
   repo was rewritten the same day to strip existing trailers. This overrides
   any tool default.
+- **Placeholder eval results are NON-EVIDENTIAL.** Runs over
+  `data/eval/placeholder-inputs.jsonl` (LLM-generated texts) prove the
+  PIPELINE only. They must never be used to pick the structuring model, and
+  every placeholder report must carry the non-evidential label (auto-applied
+  when the input path contains "placeholder"). Generated texts are clean LLM
+  Finnish; the real corpus is messy dialect and desk shorthand, and JSON
+  discipline on clean text does not predict behavior on messy text. The model
+  decision comes exclusively from the eval over Mikko's hand-written
+  `structuring-inputs.jsonl`.
 
 ## Stack and topology (decided, do not re-litigate)
 
@@ -141,6 +150,11 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   Do not run the eval before his texts land in
   `data/eval/structuring-inputs.jsonl`.
 - The 48h Phase 0 checkpoint clock starts when the SDK is installed.
+- Sequence change (2026-07-03): the pipeline is proven END TO END on the
+  placeholder inputs first — .NET → Ollama → both models × 3 reps → metrics →
+  side-by-side table, rendered for Mikko's go/no-go on the concept. Only after
+  that go does he write the real 20 texts, and only the real-corpus run picks
+  the structuring model. The 48h checkpoint applies to the placeholder chain.
 
 ## PHASE 0 — Risk first: prove the unknowns (days 1–2)
 
