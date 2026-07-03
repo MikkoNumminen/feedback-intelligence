@@ -1,0 +1,51 @@
+# Structuring eval — 2026-07-03 05.32
+
+> ⚠ **NON-EVIDENTIAL — PIPELINE TEST ONLY.** Inputs are synthetic,
+> LLM-generated placeholder texts. Per the CLAUDE.md hard rule these
+> results prove the pipeline and MUST NOT be used to pick the
+> structuring model. The model decision waits for the hand-written corpus.
+
+- Items: 9; repetitions: 3; temperature: 0; max output tokens: 2048; reasoning off (API-level think=false): True
+- Prompt: `structuring-v0.txt` (identical for all candidates)
+- Primary metric is PROMPT-ONLY JSON discipline — no constrained decoding.
+
+## Summary
+
+| metric | Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M | qwen3:8b |
+|---|---|---|
+| strict JSON rate | 0% (0/27) | 100% (27/27) |
+| parseable rate (incl. salvaged) | 100% (27/27) | 100% (27/27) |
+| schema-adherent rate (of all calls) | 89% (24/27) | 100% (27/27) |
+| consistency (items where all reps agree) | 89% (8/9) | 100% (9/9) |
+| latency mean | 2879 ms | 874 ms |
+| latency p50 | 652 ms | 597 ms |
+| latency max | 17981 ms | 8017 ms |
+
+## Per-field violations
+
+### Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M
+
+| field | kind | value | count |
+|---|---|---|---|
+| department | non_string | ["maito_kylma", "tyokalut"] | 3 |
+
+### qwen3:8b
+
+(none)
+
+## Side by side (sensibility judgment)
+
+Majority result over repetitions as department/severity/type, then theme of the first adherent repetition.
+⚠ = repetitions disagreed; ✗ = no schema-adherent output at all. (n/m✓) = adherent repetitions.
+
+| id | text | Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M | qwen3:8b |
+|---|---|---|---|
+| ph-001 | asiakas valitti että maitohyllyssä oli eilen vanhentuneita j… | maito_kylma/medium/complaint “tuotteiden_laatukysymys” (3/3✓) | maito_kylma/medium/complaint “tuotteiden vanhentuminen” (3/3✓) |
+| ph-002 | Kassajonot ovat perjantaisin aivan liian pitkät, vain kaksi … | kassa_palvelu/medium/complaint “jonotusajat” (3/3✓) | kassa_palvelu/high/complaint “kassajonot” (3/3✓) |
+| ph-003 | Puutarhaosaston palvelu oli erinomaista, sain hyvät neuvot k… | piha_puutarha/low/praise “palvelu_ja_neuvonta” (3/3✓) | piha_puutarha/low/praise “palvelu kesäkukkien valinnassa” (3/3✓) |
+| ph-004 | Hei, olen kahdesti käynyt kysymässä kestopuuta 28x95, ja hyl… | rakennustarvike/medium/complaint “tuotteen saatavuus” (3/3✓) | kuiva_elintarvike/medium/complaint “tuotteiden saatavuus” (3/3✓) |
+| ph-005 | Ostin teiltä lautoja terassiin viime kuussa ja nyt yksi aske… | tyokalut/high/complaint “tuotteen_laatuvirhe” (3/3✓) | tyokalut/medium/complaint “tuotteiden laatu” (3/3✓) |
+| ph-006 | leipäosastolta loppu ruisleipä taas, asiakas kysyi miksei ti… | leipa/medium/complaint “tuotteiden saatavuus” (3/3✓) | leipa/medium/complaint “ruisleipätilaus” (3/3✓) |
+| ph-007 | Verkkokaupan toimitus myöhästyi kaksi päivää eikä kukaan ilm… | verkkokauppa_toimitus/high/complaint “toimituksen_aika” (3/3✓) | verkkokauppa_toimitus/medium/complaint “toimitusaikojen viivytys” (3/3✓) |
+| ph-008 | Trevlig butik men kassakön var alldeles för lång på lördagen… | kassa_palvelu/medium/complaint “odotusaika_kassalla” (3/3✓) | kassa_palvelu/medium/complaint “kassakön” (3/3✓) |
+| ph-009 | Maito oli hapanta ja lisäksi työkaluosastolla ei ollut ketää… | ✗ | tyokalut/medium/complaint “tuotteiden laatu ja asiakaspalvelu” (3/3✓) |

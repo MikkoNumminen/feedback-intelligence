@@ -1,0 +1,1028 @@
+[
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-001",
+    "Rep": 1,
+    "LatencyMs": 6775,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden_laatukysymys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-001",
+    "Rep": 2,
+    "LatencyMs": 681,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden_laatukysymys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-001",
+    "Rep": 3,
+    "LatencyMs": 689,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden_laatukysymys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-002",
+    "Rep": 1,
+    "LatencyMs": 652,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022jonotusajat\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "jonotusajat",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-002",
+    "Rep": 2,
+    "LatencyMs": 633,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022jonotusajat\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "jonotusajat",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-002",
+    "Rep": 3,
+    "LatencyMs": 642,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022jonotusajat\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "jonotusajat",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-003",
+    "Rep": 1,
+    "LatencyMs": 17756,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, since the theme is not explicitly mentioned in the text and to follow the instructions precisely, I will adjust the theme field based on common Finnish phrases related to the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nOr, more accurately reflecting the text\u0027s content:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022neuvonta_ja_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to adhere strictly to the format and provide a more direct translation for \u0022palvelu oli erinomaista\u0022 which directly translates to praise:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd the most accurate representation considering all factors:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly answer with the most fitting theme based on common Finnish phrases and the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly answer with a more fitting theme based on the provided options and the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and directly answering with the most fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to strictly follow the format and provide a direct answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, the most accurate and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly answer with the most fitting theme based on common Finnish phrases and the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and directly answering:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, the most fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly and accurately answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, the most accurate and fitting answer considering all factors is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly answer with the most fitting theme based on common Finnish phrases and the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and directly answering:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, the most fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly and accurately answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and directly answering:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly and accurately answer with the most fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to strictly follow the format and provide a direct answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, the most accurate and fitting answer considering all factors is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly answer with the most fitting theme based on common Finnish phrases and the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and directly answering:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatua_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly and accurately answer with the most fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu_ja_neuvonta",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-003",
+    "Rep": 2,
+    "LatencyMs": 17967,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, since the theme is not explicitly mentioned in the text and to follow the instructions precisely, I will adjust the theme field based on common Finnish phrases related to the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nOr, more accurately reflecting the text\u0027s content:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022neuvonta_ja_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to adhere strictly to the format and provide a more direct translation for \u0022palvelu oli erinomaista\u0022 which directly translates to praise:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd considering the direct translation and common usage, here is a more fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly address the initial request with a more accurate theme based on common Finnish phrases and the provided options:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022neuvonta_ja_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to simplify and directly answer the question with a theme that fits the provided options:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, to directly answer with a theme that is more specific and fits the provided options:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and aiming for a direct answer with the most fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly address the initial request with a more accurate and fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nGiven the above, here is a direct and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to provide a concise and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most fitting and direct answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, the most accurate and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to simplify and directly state the answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut considering all factors and aiming for a direct, accurate, and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere is the most direct, accurate, and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly address the initial request with a concise and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, the most direct and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere it is, the most accurate and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to provide a direct and concise answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere it is, the most direct and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly state the most fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, here is the most accurate and direct answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nThe final, most fitting, and accurate answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to simplify and directly provide the answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere is a direct and concise answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, the most direct and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly state the most fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu_ja_neuvonta",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-003",
+    "Rep": 3,
+    "LatencyMs": 17981,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, since the theme is not explicitly mentioned in the text and to follow the instructions precisely, I will adjust the theme field based on common Finnish phrases related to the feedback:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nOr, more accurately reflecting the text\u0027s content:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022neuvonta_ja_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to adhere strictly to the format and provide a more direct translation for \u0022palvelu oli erinomaista\u0022 which directly translates to praise:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd considering the direct translation and common usage, here is a more fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly address the initial request with a more accurate theme based on common Finnish phrases and the provided options:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022neuvonta_ja_palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to simplify and directly answer the question with a theme that fits the provided options:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, to directly answer with a theme that is more specific and fits the provided options:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering all factors and aiming for a direct answer with the most fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut to directly address the initial request with a more accurate and fitting theme:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nGiven the above, here is a direct and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to provide a concise and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most fitting and direct answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, the most accurate and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to simplify and directly state the answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut considering all factors and aiming for a direct, accurate, and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere is the most direct, accurate, and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly address the initial request with a concise and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, the most direct and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere it is, the most accurate and fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to provide a direct and concise answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere it is, the most direct and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly state the most fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, here is the most accurate and direct answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nThe final, most fitting, and accurate answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to simplify and directly provide the answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHere is a direct and concise answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelun_laatua\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nBut the most accurate and fitting answer is:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nAnd finally, the most direct and accurate answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelun_laatu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to directly state the most fitting answer:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu_ja_neuvonta",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-004",
+    "Rep": 1,
+    "LatencyMs": 661,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteen saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "rakennustarvike",
+        "theme": "tuotteen saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-004",
+    "Rep": 2,
+    "LatencyMs": 661,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteen saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "rakennustarvike",
+        "theme": "tuotteen saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-004",
+    "Rep": 3,
+    "LatencyMs": 643,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteen saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "rakennustarvike",
+        "theme": "tuotteen saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-005",
+    "Rep": 1,
+    "LatencyMs": 648,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteen_laatuvirhe\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteen_laatuvirhe",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-005",
+    "Rep": 2,
+    "LatencyMs": 631,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteen_laatuvirhe\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteen_laatuvirhe",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-005",
+    "Rep": 3,
+    "LatencyMs": 626,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteen_laatuvirhe\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteen_laatuvirhe",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-006",
+    "Rep": 1,
+    "LatencyMs": 628,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-006",
+    "Rep": 2,
+    "LatencyMs": 614,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-006",
+    "Rep": 3,
+    "LatencyMs": 605,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-007",
+    "Rep": 1,
+    "LatencyMs": 666,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimituksen_aika\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimituksen_aika",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-007",
+    "Rep": 2,
+    "LatencyMs": 646,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimituksen_aika\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimituksen_aika",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-007",
+    "Rep": 3,
+    "LatencyMs": 644,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimituksen_aika\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimituksen_aika",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-008",
+    "Rep": 1,
+    "LatencyMs": 667,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022odotusaika_kassalla\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "odotusaika_kassalla",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-008",
+    "Rep": 2,
+    "LatencyMs": 638,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022odotusaika_kassalla\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "odotusaika_kassalla",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-008",
+    "Rep": 3,
+    "LatencyMs": 636,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022odotusaika_kassalla\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "odotusaika_kassalla",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-009",
+    "Rep": 1,
+    "LatencyMs": 1449,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022, \u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the feedback is mainly about two different departments but not equally, and considering the structure requirement, I will choose one that fits best:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": false,
+      "Violations": [
+        {
+          "Field": "department",
+          "Kind": "non_string",
+          "Value": "[\u0022maito_kylma\u0022, \u0022tyokalut\u0022]"
+        }
+      ],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-009",
+    "Rep": 2,
+    "LatencyMs": 1446,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022, \u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the feedback is mainly about two different departments but not equally, and considering the structure requirement, I will choose one that fits best:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": false,
+      "Violations": [
+        {
+          "Field": "department",
+          "Kind": "non_string",
+          "Value": "[\u0022maito_kylma\u0022, \u0022tyokalut\u0022]"
+        }
+      ],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-009",
+    "Rep": 3,
+    "LatencyMs": 1450,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022, \u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the feedback is mainly about two different departments but not equally, and considering the structure requirement, I will choose one that fits best:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": false,
+      "Violations": [
+        {
+          "Field": "department",
+          "Kind": "non_string",
+          "Value": "[\u0022maito_kylma\u0022, \u0022tyokalut\u0022]"
+        }
+      ],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-001",
+    "Rep": 1,
+    "LatencyMs": 8017,
+    "Raw": "{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden vanhentuminen\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden vanhentuminen",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-001",
+    "Rep": 2,
+    "LatencyMs": 604,
+    "Raw": "{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden vanhentuminen\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden vanhentuminen",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-001",
+    "Rep": 3,
+    "LatencyMs": 597,
+    "Raw": "{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden vanhentuminen\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden vanhentuminen",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-002",
+    "Rep": 1,
+    "LatencyMs": 585,
+    "Raw": "{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022kassajonot\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "kassajonot",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-002",
+    "Rep": 2,
+    "LatencyMs": 576,
+    "Raw": "{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022kassajonot\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "kassajonot",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-002",
+    "Rep": 3,
+    "LatencyMs": 559,
+    "Raw": "{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022kassajonot\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "kassajonot",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-003",
+    "Rep": 1,
+    "LatencyMs": 719,
+    "Raw": "{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu kes\u00E4kukkien valinnassa\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu kes\u00E4kukkien valinnassa",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-003",
+    "Rep": 2,
+    "LatencyMs": 646,
+    "Raw": "{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu kes\u00E4kukkien valinnassa\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu kes\u00E4kukkien valinnassa",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-003",
+    "Rep": 3,
+    "LatencyMs": 628,
+    "Raw": "{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu kes\u00E4kukkien valinnassa\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu kes\u00E4kukkien valinnassa",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-004",
+    "Rep": 1,
+    "LatencyMs": 628,
+    "Raw": "{\n  \u0022department\u0022: \u0022kuiva_elintarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kuiva_elintarvike",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-004",
+    "Rep": 2,
+    "LatencyMs": 600,
+    "Raw": "{\n  \u0022department\u0022: \u0022kuiva_elintarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kuiva_elintarvike",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-004",
+    "Rep": 3,
+    "LatencyMs": 586,
+    "Raw": "{\n  \u0022department\u0022: \u0022kuiva_elintarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kuiva_elintarvike",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-005",
+    "Rep": 1,
+    "LatencyMs": 589,
+    "Raw": "{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteiden laatu\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteiden laatu",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-005",
+    "Rep": 2,
+    "LatencyMs": 552,
+    "Raw": "{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteiden laatu\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteiden laatu",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-005",
+    "Rep": 3,
+    "LatencyMs": 560,
+    "Raw": "{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteiden laatu\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteiden laatu",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-006",
+    "Rep": 1,
+    "LatencyMs": 568,
+    "Raw": "{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022ruisleip\u00E4tilaus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "ruisleip\u00E4tilaus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-006",
+    "Rep": 2,
+    "LatencyMs": 541,
+    "Raw": "{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022ruisleip\u00E4tilaus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "ruisleip\u00E4tilaus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-006",
+    "Rep": 3,
+    "LatencyMs": 556,
+    "Raw": "{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022ruisleip\u00E4tilaus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "ruisleip\u00E4tilaus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-007",
+    "Rep": 1,
+    "LatencyMs": 641,
+    "Raw": "{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimitusaikojen viivytys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimitusaikojen viivytys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-007",
+    "Rep": 2,
+    "LatencyMs": 646,
+    "Raw": "{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimitusaikojen viivytys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimitusaikojen viivytys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-007",
+    "Rep": 3,
+    "LatencyMs": 622,
+    "Raw": "{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimitusaikojen viivytys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimitusaikojen viivytys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-008",
+    "Rep": 1,
+    "LatencyMs": 553,
+    "Raw": "{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022kassak\u00F6n\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022sv\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "kassak\u00F6n",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "sv"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-008",
+    "Rep": 2,
+    "LatencyMs": 594,
+    "Raw": "{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022kassak\u00F6ns pituus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022sv\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "kassak\u00F6ns pituus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "sv"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-008",
+    "Rep": 3,
+    "LatencyMs": 580,
+    "Raw": "{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022kassak\u00F6ns pituus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022sv\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "kassak\u00F6ns pituus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "sv"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-009",
+    "Rep": 1,
+    "LatencyMs": 647,
+    "Raw": "{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteiden laatu ja asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteiden laatu ja asiakaspalvelu",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-009",
+    "Rep": 2,
+    "LatencyMs": 606,
+    "Raw": "{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteiden laatu ja asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteiden laatu ja asiakaspalvelu",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-009",
+    "Rep": 3,
+    "LatencyMs": 606,
+    "Raw": "{\n  \u0022department\u0022: \u0022tyokalut\u0022,\n  \u0022theme\u0022: \u0022tuotteiden laatu ja asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "tyokalut",
+        "theme": "tuotteiden laatu ja asiakaspalvelu",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  }
+]

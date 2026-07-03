@@ -190,6 +190,11 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - Both `Llm:Models:Structuring` and `Llm:Models:Synthesis` are Poro-2-8B. The
   keyed-DI role split stays exactly as built — two roles, one model today,
   independently swappable tomorrow.
+- Poro's native-chat path is measured-correct, not assumed: a 2048-token
+  verification run (structuring-eval-20260703-053222) reproduced the
+  512-budget run's numbers exactly — same adherence, same p50; only the
+  cold-load latency tail differs. No truncation at 512; the API-level
+  think=false wrapper is harmless for Poro.
 - The 20 hand-written texts changed role: (a) core-corpus seed for the Phase 1
   generator, (b) smoke-test set for the salvage layer and structuring prompt.
   Mikko writes them when Phase 1 needs them.
