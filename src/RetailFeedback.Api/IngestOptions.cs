@@ -75,6 +75,17 @@ public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>
             failures.Add($"Ingest:QueryDefaultLimit/QueryMaxLimit must satisfy 1 <= default <= max, got {options.QueryDefaultLimit}/{options.QueryMaxLimit}.");
         if (options.HealthTimeoutSeconds < 1)
             failures.Add($"Ingest:HealthTimeoutSeconds must be positive, got {options.HealthTimeoutSeconds}.");
+        foreach (var origin in options.AllowedCorsOrigins)
+        {
+            // Exact string matching against the browser's Origin header, which
+            // never carries a path or trailing slash — a pasted-from-portal
+            // "https://x/" would silently never match.
+            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                || uri.Scheme is not ("http" or "https")
+                || uri.AbsolutePath != "/"
+                || origin.EndsWith('/'))
+                failures.Add($"Ingest:AllowedCorsOrigins entry '{origin}' must be an absolute http(s) origin with no path and no trailing slash.");
+        }
         return failures.Count > 0 ? ValidateOptionsResult.Fail(failures) : ValidateOptionsResult.Success;
     }
 }

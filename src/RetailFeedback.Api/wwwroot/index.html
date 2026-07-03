@@ -73,6 +73,15 @@ function node(tag, className, children) {
   return n;
 }
 
+async function tryFetchJson(url) {
+  try {
+    const res = await fetch(url);
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 function windowRange() {
   const choice = el("window").value;
   const to = new Date();
@@ -104,15 +113,15 @@ async function loadReport() {
     setStatus("");
   } catch {
     // Fallback chain: backend snapshot endpoint, then the static copy
-    // published next to this page (the truly-backend-down path on the
-    // static host).
-    try {
-      let snap = await fetch(`${API}/report/snapshot`);
-      if (!snap.ok) snap = await fetch("./report-latest.json");
-      if (!snap.ok) throw new Error("snapshot");
-      render(await snap.json(), false);
+    // published next to this page. Each step must survive a NETWORK error
+    // (fetch throws, it does not return !ok) — a down backend must still
+    // reach the static copy.
+    const snap = await tryFetchJson(`${API}/report/snapshot`)
+      ?? await tryFetchJson("./report-latest.json");
+    if (snap) {
+      render(snap, false);
       setStatus("Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.");
-    } catch {
+    } else {
       setStatus("Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.");
     }
   } finally {

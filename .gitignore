@@ -10,9 +10,9 @@ obj/
 data/corpus/generated-placeholder-*
 data/corpus/ground-truth-placeholder-*
 
-# Runtime state (any location — the API creates its DB relative to its CWD)
+# Runtime state (any location — the API creates its DB and snapshots relative to its CWD)
 **/data/*.db
-data/snapshots/
+**/data/snapshots/
 
 # Frontend publish bundle (assembled by tools/publish-frontend.ps1)
 dist/
