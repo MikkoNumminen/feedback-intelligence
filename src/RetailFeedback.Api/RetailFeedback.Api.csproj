@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\prompts\structuring-v0.txt" Link="prompts\structuring-v0.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\prompts\*.txt" Link="prompts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\config\alert-keywords.json" Link="config\alert-keywords.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

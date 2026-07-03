@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palautetilanne</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1c2430; --mut:#66707d; --line:#d9dde3;
+          --acc:#0b5fa5; --err:#b3261e; --warn:#b3541e; --ok:#1b7f4d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width:52rem; margin:0 auto; padding:1rem; }
+  header { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin:.4rem 0 1rem; }
+  h1 { font-size:1.25rem; margin:0; flex:1; }
+  select, button { font:inherit; padding:.5rem .8rem; border-radius:.5rem; border:1px solid var(--line); background:#fff; }
+  button.primary { background:var(--acc); color:#fff; border:0; font-weight:600; cursor:pointer; }
+  .badge { border-radius:.4rem; padding:.15rem .55rem; font-size:.78rem; color:#fff; }
+  .badge.live { background:var(--ok); } .badge.snap { background:var(--warn); }
+  h2 { font-size:1.05rem; margin:1.3rem 0 .5rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:.7rem; padding:.9rem; margin:.6rem 0; }
+  .card.alert { border-left:4px solid var(--err); }
+  .muted { color:var(--mut); font-size:.85rem; }
+  .idchip { display:inline-block; margin:.15rem .2rem 0 0; padding:.1rem .45rem; font-size:.75rem;
+            background:#eef2f6; border:1px solid var(--line); border-radius:.4rem; cursor:pointer; }
+  .idchip:hover { background:#dfe7ee; }
+  dialog { border:1px solid var(--line); border-radius:.7rem; max-width:32rem; width:92vw; padding:1rem; }
+  dialog::backdrop { background:rgba(20,25,30,.45); }
+  #status { min-height:1.2rem; font-size:.9rem; color:var(--mut); }
+  .foot { margin-top:2rem; font-size:.8rem; color:var(--mut); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Palautetilanne</h1>
+    <span id="mode" class="badge live" hidden></span>
+    <select id="window">
+      <option value="1">Tänään</option>
+      <option value="7" selected>7 päivää</option>
+      <option value="30">30 päivää</option>
+    </select>
+    <button class="primary" id="refresh">Päivitä</button>
+  </header>
+  <p id="status"></p>
+  <section id="report"></section>
+  <p class="foot">Jokainen väite on jäljitettävissä: tunnisteet avaavat alkuperäisen palautteen.
+     Kirjaa uusi palaute: <a href="/desk.html">tiskikirjaus</a>.</p>
+</main>
+
+<dialog id="item-dialog">
+  <div id="item-body"></div>
+  <div style="text-align:right; margin-top:.8rem"><button id="close">Sulje</button></div>
+</dialog>
+
+<script>
+"use strict";
+const el = id => document.getElementById(id);
+const text = value => document.createTextNode(value ?? "");
+
+function node(tag, className, children) {
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  for (const child of children ?? []) n.appendChild(typeof child === "string" ? text(child) : child);
+  return n;
+}
+
+async function loadReport() {
+  const days = el("window").value;
+  setStatus("Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)");
+  el("refresh").disabled = true;
+  try {
+    const to = new Date();
+    const from = new Date(to.getTime() - days * 24 * 3600 * 1000);
+    const res = await fetch(`/report?from=${from.toISOString()}&to=${to.toISOString()}`);
+    if (!res.ok) throw new Error("report " + res.status);
+    render(await res.json(), true);
+    setStatus("");
+  } catch {
+    try {
+      const snap = await fetch("/report/snapshot");
+      if (!snap.ok) throw new Error("snapshot");
+      render(await snap.json(), false);
+      setStatus("Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.");
+    } catch {
+      setStatus("Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.");
+    }
+  } finally {
+    el("refresh").disabled = false;
+  }
+}
+
+function render(report, live) {
+  const mode = el("mode");
+  mode.hidden = false;
+  mode.className = "badge " + (live ? "live" : "snap");
+  mode.textContent = live ? "Live" : "Tilannekuva";
+
+  const root = el("report");
+  root.innerHTML = "";
+  root.appendChild(node("p", "muted", [
+    `Aikaväli ${short(report.windowFrom)} – ${short(report.windowTo)} · ${report.totalItems} palautetta` +
+    (report.structureFailedCount ? ` · ${report.structureFailedCount} ilman rakennetta` : "") +
+    (report.droppedClaimCount ? ` · ${report.droppedClaimCount} perustelematonta väitettä hylätty` : ""),
+  ]));
+
+  root.appendChild(node("h2", null, [`Hälytykset (${report.alerts.length})`]));
+  if (report.alerts.length === 0)
+    root.appendChild(node("p", "muted", ["Ei hälytyksiä aikavälillä."]));
+  for (const alert of report.alerts) {
+    const origin = alert.llmReason
+      ? "kielimalli: " + alert.llmReason
+      : "sanahaku: " + alert.deterministicHits.map(h => h.pattern).join(", ");
+    root.appendChild(node("div", "card alert", [
+      node("strong", null, [alert.textExcerpt]),
+      node("div", "muted", [`${alert.source} · ${short(alert.timestamp)} · ${origin}`]),
+      idChip(alert.feedbackId),
+    ]));
+  }
+
+  root.appendChild(node("h2", null, [`Teemat ja trendit (${report.themes.length})`]));
+  for (const theme of report.themes) {
+    const chips = node("div", null, []);
+    for (const id of theme.feedbackIds) chips.appendChild(idChip(id));
+    root.appendChild(node("div", "card", [
+      node("strong", null, [theme.title]),
+      node("div", "muted", [`${theme.department} · ${theme.count} palautetta · suunta: ${theme.direction}` +
+        (theme.narrativeFromLlm ? "" : " · automaattinen kooste")]),
+      node("p", null, [theme.narrative]),
+      chips,
+    ]));
+  }
+}
+
+function idChip(id) {
+  const chip = node("span", "idchip", [id]);
+  chip.addEventListener("click", () => openItem(id));
+  return chip;
+}
+
+async function openItem(id) {
+  try {
+    const res = await fetch(`/feedback/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error();
+    const item = await res.json();
+    const body = el("item-body");
+    body.innerHTML = "";
+    body.appendChild(node("p", null, [item.text]));
+    body.appendChild(node("p", "muted", [`${item.source} · ${short(item.timestamp)}`]));
+    if (item.structure)
+      body.appendChild(node("p", "muted", [
+        `osasto: ${item.structure.department} · aihe: ${item.structure.theme} · ` +
+        `vakavuus: ${item.structure.severity} · tyyppi: ${item.structure.type}`,
+      ]));
+    if (item.corrections?.length)
+      body.appendChild(node("p", "muted", ["korjattu tiskillä: " +
+        item.corrections.map(c => `${c.field}: ${c.modelValue} → ${c.humanValue}`).join("; ")]));
+    el("item-dialog").showModal();
+  } catch {
+    setStatus("Palautetta ei voitu avata (palvelin ei vastaa).");
+  }
+}
+
+function short(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString("fi-FI", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function setStatus(message) { el("status").textContent = message; }
+
+el("refresh").addEventListener("click", loadReport);
+el("window").addEventListener("change", loadReport);
+el("close").addEventListener("click", () => el("item-dialog").close());
+loadReport();
+</script>
+</body>
+</html>

@@ -267,6 +267,26 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   `model_failed` so the correction telemetry never counts it as a
   zero-correction success.
 
+## Phase 4 status (2026-07-03)
+
+- Analysis + management view BUILT: `GET /report?from&to` (window validated,
+  max 92 days) and `GET /report/snapshot`; `wwwroot/index.html` (Finnish)
+  renders alerts on top, theme cards with clickable feedback-ID chips opening
+  the source item, live/snapshot badge, desk-entry link.
+- GROUNDING IS STRUCTURAL, not hoped-for: grouping, counts, trend direction
+  (kasvava/laskeva/vakaa/paheneva by window-half volume + severity shift) and
+  the feedback IDs are computed deterministically; the LLM only writes the
+  Finnish title/narrative per group and MUST cite provided IDs — invalid or
+  empty citations drop the narrative to a deterministic Finnish fallback,
+  logged and counted (`droppedClaimCount`). Same for alert nominations: only
+  IDs from the provided batch are accepted.
+- The report generates even with the LLM entirely down (layer 1 carries it);
+  snapshots persist on every generation (`data/snapshots/report-latest.json`
+  + self-contained `.html`) and the frontend falls back to the snapshot when
+  the live endpoint fails — a shared link never shows a dead page.
+- Prompts: `prompts/synthesis-v0.txt`, `prompts/alert-nomination-v0.txt`
+  (Finnish instructions, JSON-object outputs, {{data}} placeholder).
+
 - The deterministic alert keyword list EXISTS as config:
   `config/alert-keywords.json` (injury/safety, payment, legal-threat; Finnish
   stems, case-insensitive substring contract that Phase 2 implements

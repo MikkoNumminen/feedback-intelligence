@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using RetailFeedback.Api;
 using RetailFeedback.Api.Alerts;
+using RetailFeedback.Api.Analysis;
 using RetailFeedback.Api.Ingest;
 using RetailFeedback.Api.Storage;
 using RetailFeedback.Llm;
@@ -25,6 +27,11 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton<FeedbackStore>();
 builder.Services.AddSingleton<LlmGate>();
 builder.Services.AddSingleton<IngestService>();
+builder.Services.AddOptions<ReportOptions>()
+    .Bind(builder.Configuration.GetSection(ReportOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ReportOptions>, ReportOptionsValidator>();
+builder.Services.AddSingleton<ReportService>();
 
 // Per-IP fixed window; protects the machine while the tunnel is open.
 builder.Services.AddRateLimiter(limiter =>
@@ -46,6 +53,7 @@ var app = builder.Build();
 // Fail fast on config errors — the validated-at-startup rule.
 _ = app.Services.GetRequiredService<IOptions<LlmOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<IngestOptions>>().Value;
+_ = app.Services.GetRequiredService<IOptions<ReportOptions>>().Value;
 _ = app.Services.GetRequiredService<AlertKeywordSet>();
 app.Services.GetRequiredService<FeedbackStore>().Initialize();
 
@@ -144,6 +152,37 @@ app.MapGet("/feedback", async (
         limit ?? options.Value.QueryDefaultLimit, 1, options.Value.QueryMaxLimit);
     return Results.Ok(await store.QueryAsync(fromNormalized, toNormalized, effectiveLimit, ct));
 });
+
+// The management view: two-layer analysis over a selectable window. Always
+// renders (deterministic layer 1); LLM narratives/nominations degrade to
+// deterministic fallbacks. Every generation persists a snapshot.
+app.MapGet("/report", async (
+    ReportService reports,
+    IOptions<ReportOptions> reportOptions,
+    CancellationToken ct,
+    [FromQuery] string? from = null,
+    [FromQuery] string? to = null) =>
+{
+    var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+    if (!TimestampNormalizer.TryNormalize(toRaw, out var toNormalized))
+        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
+    var toInstant = DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture);
+
+    var fromRaw = from ?? toInstant.AddDays(-reportOptions.Value.DefaultWindowDays).ToString("O", CultureInfo.InvariantCulture);
+    if (!TimestampNormalizer.TryNormalize(fromRaw, out var fromNormalized))
+        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
+    var fromInstant = DateTimeOffset.Parse(fromNormalized, CultureInfo.InvariantCulture);
+
+    if (fromInstant >= toInstant || (toInstant - fromInstant).TotalDays > reportOptions.Value.MaxWindowDays)
+        return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
+
+    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct));
+});
+
+app.MapGet("/report/snapshot", async (ReportService reports, CancellationToken ct) =>
+    await reports.ReadLatestSnapshotJsonAsync(ct) is { } json
+        ? Results.Text(json, "application/json")
+        : Results.NotFound());
 
 // Health = a 1-token REAL completion (RAG-measured pattern): "server up" does
 // not mean "model loaded and generating".
