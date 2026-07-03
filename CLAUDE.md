@@ -83,7 +83,23 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   arm-isolation principle as the measurement work: the systems must not be able
   to contaminate each other. No restart policy (must never auto-start); the
   announce-before-GPU-use rule stands regardless, since the GPU itself is
-  shared.
+  shared. (Poro was cloned into the isolated volume via a one-time READ-ONLY
+  mount of the RAG volume after `ollama pull` hit repeated `tls: bad record
+  MAC` network errors — a read-once copy, no ongoing coupling.)
+- Reuse from the mikkonumminen.dev RAG (`D:\koodaamista\mikkonumminen.dev`,
+  measured there — port, don't reinvent):
+  - Reasoning suppression is the model-agnostic `/no_think` soft switch
+    appended to the prompt (reasoning models obey it, others ignore the token);
+    validated in that repo's experiment harness. Used by the structuring eval.
+  - Containment defaults to mirror in Phase 2: INPUT_MAX_CHARS=800,
+    MAX_BODY_BYTES=16384, LLM_MAX_CONCURRENCY=2 with 0.5 s acquire-then-SHED
+    (never queue behind a busy GPU), RATE_LIMIT 30 req / 60 s, and an output
+    token cap (num_predict / MaxOutputTokens).
+  - `OLLAMA_CONTEXT_LENGTH` is a server-side env var on the ollama container
+    (default 4096), not a per-request knob — the backend should read the same
+    value from config when it needs to reason about the window.
+  - Health checks must prove a 1-token REAL completion, not merely that the
+    server answers — "server up" does not mean "model loaded and generating".
 
 ## Phase 0 approved decisions (2026-07-03)
 
