@@ -1,8 +1,14 @@
-# Phase 0 structuring-eval input set
+# Structuring-eval input sets
 
-~20 messy Finnish feedback texts, **hand-written by Mikko** (domain expert).
-These are the fixture for the Phase 0 structuring-model eval (Poro-2-8B vs
-qwen3:8b): valid-JSON rate, schema adherence, classification sensibility.
+> ROLE CHANGE (2026-07-03, Phase 0 closure): the structuring model was decided
+> by Mikko (Poro-2-8B, synthesis-priority rationale — see CLAUDE.md "Phase 0
+> CLOSED") and the real-corpus comparison run was cancelled. The ~20
+> hand-written texts below are NO LONGER a model-selection instrument; they
+> become (a) the Phase 1 core-corpus seed and (b) a smoke-test set for the
+> salvage layer and structuring prompt.
+
+~20 messy Finnish feedback texts, **hand-written by Mikko** (domain expert),
+written when Phase 1 needs them.
 
 Texts must NOT be generated or scraped — hand-written synthetic data is a
 documented design decision (see CLAUDE.md). Keep typos, dialect, rambling,
@@ -28,8 +34,8 @@ pipeline end to end before the real corpus exists. HARD RULE (see CLAUDE.md):
 results from this file prove the pipeline, never the model choice — clean LLM
 Finnish does not predict JSON discipline on messy dialect and desk shorthand.
 The eval report auto-labels any run whose input path contains "placeholder" as
-non-evidential. The structuring-model decision comes exclusively from a run on
-the hand-written `structuring-inputs.jsonl`.
+non-evidential. (The structuring-model decision was made by Mikko on
+synthesis-priority grounds, 2026-07-03 — placeholder metrics played no part.)
 
 Run against placeholders:
 

@@ -25,9 +25,10 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   every placeholder report must carry the non-evidential label (auto-applied
   when the input path contains "placeholder"). Generated texts are clean LLM
   Finnish; the real corpus is messy dialect and desk shorthand, and JSON
-  discipline on clean text does not predict behavior on messy text. The model
-  decision comes exclusively from the eval over Mikko's hand-written
-  `structuring-inputs.jsonl`.
+  discipline on clean text does not predict behavior on messy text. The
+  placeholder ban stands permanently; note that the structuring-model decision
+  was ultimately made by Mikko on synthesis-priority grounds (see "Phase 0
+  CLOSED" below), not from placeholder metrics and not from a corpus eval.
 
 ## Stack and topology (decided, do not re-litigate)
 
@@ -157,9 +158,44 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - The 48h Phase 0 checkpoint clock starts when the SDK is installed.
 - Sequence change (2026-07-03): the pipeline is proven END TO END on the
   placeholder inputs first — .NET → Ollama → both models × 3 reps → metrics →
-  side-by-side table, rendered for Mikko's go/no-go on the concept. Only after
-  that go does he write the real 20 texts, and only the real-corpus run picks
-  the structuring model. The 48h checkpoint applies to the placeholder chain.
+  side-by-side table, rendered for Mikko's go/no-go on the concept. (The
+  planned real-corpus comparison run was subsequently CANCELLED by Mikko's
+  model decision — see "Phase 0 CLOSED" below.)
+
+## Phase 0 CLOSED (2026-07-03) — model decision and consequences
+
+- DECISION (Mikko, final): **Poro-2-8B is the structuring model.** No further
+  model eval; the planned real-corpus comparison run is cancelled — the 20
+  texts are not an eval instrument. Rationale: synthesis quality for the
+  user-facing Finnish is the priority, Poro won the published 30-round blind
+  test 26/30, and a single model for both structuring and synthesis keeps the
+  pipeline simple.
+- KNOWN TRADEOFF (recorded deliberately): Poro's JSON discipline on messy
+  Finnish is UNMEASURED. Mitigation is architectural, not up-front
+  measurement:
+  1. The salvage layer is a MANDATORY production component (Llm project,
+     behind the abstraction): strip fences → parse → validate every field
+     against the schema enums → normalize where safe (department array → first
+     element, discard logged) → re-prompt once on anything else → if the retry
+     still violates, store `structure_failed` with raw text preserved so no
+     feedback is ever lost. Unit-tested against the exact failure shapes the
+     placeholder run caught: fenced JSON, department-as-array, invented enum
+     values.
+  2. Correction telemetry is the ongoing quality measure: the desk-entry
+     audit field (Phase 3) logs model-assigned vs human-corrected values per
+     field, and a small report command (CLI or endpoint, Phase 4) summarizes
+     correction rates per field over time. This replaces the skipped up-front
+     eval as the mechanism that detects drift or underperformance on real
+     input; the model stays swappable by config if the data ever says so.
+- Both `Llm:Models:Structuring` and `Llm:Models:Synthesis` are Poro-2-8B. The
+  keyed-DI role split stays exactly as built — two roles, one model today,
+  independently swappable tomorrow.
+- The 20 hand-written texts changed role: (a) core-corpus seed for the Phase 1
+  generator, (b) smoke-test set for the salvage layer and structuring prompt.
+  Mikko writes them when Phase 1 needs them.
+- Phase 0 exit state: .NET↔Ollama proven through the abstraction (ping +
+  2×27-call placeholder evals); models decided and set in config; eval harness
+  and reports committed; the 48h checkpoint retired on day 1.
 
 ## PHASE 0 — Risk first: prove the unknowns (days 1–2)
 
