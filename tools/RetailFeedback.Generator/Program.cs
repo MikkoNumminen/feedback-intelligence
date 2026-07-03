@@ -66,20 +66,37 @@ try
                 Console.Error.WriteLine($"File not found: {(File.Exists(truthPath) ? reportPath : truthPath)}");
                 return 1;
             }
-            var results = ReportVerifier.Verify(
-                await File.ReadAllTextAsync(truthPath, cts.Token),
-                await File.ReadAllTextAsync(reportPath, cts.Token));
+            List<ReportVerifier.StoryResult> results;
+            try
+            {
+                results = ReportVerifier.Verify(
+                    await File.ReadAllTextAsync(truthPath, cts.Token),
+                    await File.ReadAllTextAsync(reportPath, cts.Token));
+            }
+            catch (InvalidDataException ex)
+            {
+                // Exit 2 = the gate never ran (operator/data error) — CI must
+                // never confuse this with an acceptance failure (exit 1).
+                Console.Error.WriteLine(ex.Message);
+                return 2;
+            }
             var allPass = true;
+            var trendWarnings = 0;
             foreach (var r in results)
             {
                 allPass &= r.Pass;
+                if (!r.TrendOk)
+                    trendWarnings++;
                 Console.WriteLine(
                     $"{(r.Pass ? "PASS" : "FAIL")} {r.StoryId}: grounding {r.GroundedIds}/{r.RequiredIds} required" +
-                    $"; trend {r.ExpectedTrend} -> {r.ReportedDirection} {(r.TrendPass ? "ok" : "MISMATCH")}" +
+                    $"{(r.WindowCovered ? "" : "; WINDOW MISMATCH — the report window does not cover the story window (wrong report?)")}" +
+                    $"; trend {r.ExpectedTrend} -> {r.ReportedDirection} {(r.TrendOk ? "ok" : "WARNING: diluted/contradicted — check same-department noise share")}" +
                     $"{(r.AlertExpected ? $"; alert {(r.AlertPass ? "present" : "MISSING")}" : "")}" +
                     $"; keywords in narrative: {(r.KeywordSeen ? "yes" : "no (informational)")}");
             }
-            Console.WriteLine(allPass ? "\nACCEPTANCE: PASS — every planted story is grounded." : "\nACCEPTANCE: FAIL");
+            Console.WriteLine(allPass
+                ? $"\nACCEPTANCE: PASS — every planted story is grounded{(trendWarnings > 0 ? $" ({trendWarnings} trend warning(s) — see above)" : "")}."
+                : "\nACCEPTANCE: FAIL");
             return allPass ? 0 : 1;
         }
 

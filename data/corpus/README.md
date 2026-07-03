@@ -28,6 +28,12 @@ keywords — verify against `config/alert-keywords.json`, which also lists the
 deliberately non-keyword structural-failure verbs (pettää, sortua, irrota…)
 that are safe to use.
 
+Composition tip (from the 2026-07-04 verifier review): keep untagged NOISE
+texts out of the three story departments where possible — noise the model
+classifies into a story's department dilutes that department's trend direction
+in the report, weakening the planted story's visibility. The `verify` verb
+reports this as a trend warning.
+
 ## `dev-placeholder-*` files — SYNTHETIC, NON-EVIDENTIAL
 
 LLM-session-generated stand-ins that exercise the generator machinery before

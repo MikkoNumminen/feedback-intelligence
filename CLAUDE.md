@@ -210,10 +210,17 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 
 ## Phase 1 status (2026-07-03)
 
-- Machinery COMPLETE (`tools/RetailFeedback.Generator`, verbs `variants` and
-  `generate --seed N`), waiting on the core corpus (`data/corpus/core.jsonl`,
-  format scaffolded and documented in `data/corpus/README.md`; Mikko fills
-  within days).
+- Machinery COMPLETE (`tools/RetailFeedback.Generator`, verbs `variants`,
+  `generate --seed N`, and `verify --ground-truth <f> --report <f>` — the
+  mechanized Phase 4 acceptance gate), waiting on the core corpus
+  (`data/corpus/core.jsonl`, format scaffolded and documented in
+  `data/corpus/README.md`; Mikko fills within days).
+- `verify` gate design (2026-07-04): grounding, expected-alert and
+  window-coverage are HARD gates (story-owned, deterministic; exit 0/1;
+  operator/data errors exit 2, never confusable with a gate failure). Trend is
+  a WARNING tier: the report's direction is a department AGGREGATE and
+  same-department noise legitimately dilutes it — a diluted trend is loudly
+  reported (it weakens the demo story) but does not fail acceptance.
 - Ground truth is MACHINE-CHECKABLE by decision: per planted story the exact
   `feedbackIds`, `expectedDepartment` (schema enum), `expectedThemeKeywords`
   (keyword set, not prose), `windowFrom`/`windowTo`, `trend`,
