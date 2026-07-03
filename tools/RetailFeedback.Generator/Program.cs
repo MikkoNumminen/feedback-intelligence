@@ -52,6 +52,37 @@ try
             return await host.Services.GetRequiredService<VariantsRunner>()
                 .RunAsync(force: args.Contains("--force", StringComparer.OrdinalIgnoreCase), cts.Token);
 
+        case "verify":
+        {
+            var truthPath = ArgValue(args, "--ground-truth");
+            var reportPath = ArgValue(args, "--report");
+            if (truthPath is null || reportPath is null)
+            {
+                Console.Error.WriteLine("verify requires --ground-truth <file> and --report <file>.");
+                return 1;
+            }
+            if (!File.Exists(truthPath) || !File.Exists(reportPath))
+            {
+                Console.Error.WriteLine($"File not found: {(File.Exists(truthPath) ? reportPath : truthPath)}");
+                return 1;
+            }
+            var results = ReportVerifier.Verify(
+                await File.ReadAllTextAsync(truthPath, cts.Token),
+                await File.ReadAllTextAsync(reportPath, cts.Token));
+            var allPass = true;
+            foreach (var r in results)
+            {
+                allPass &= r.Pass;
+                Console.WriteLine(
+                    $"{(r.Pass ? "PASS" : "FAIL")} {r.StoryId}: grounding {r.GroundedIds}/{r.RequiredIds} required" +
+                    $"; trend {r.ExpectedTrend} -> {r.ReportedDirection} {(r.TrendPass ? "ok" : "MISMATCH")}" +
+                    $"{(r.AlertExpected ? $"; alert {(r.AlertPass ? "present" : "MISSING")}" : "")}" +
+                    $"; keywords in narrative: {(r.KeywordSeen ? "yes" : "no (informational)")}");
+            }
+            Console.WriteLine(allPass ? "\nACCEPTANCE: PASS — every planted story is grounded." : "\nACCEPTANCE: FAIL");
+            return allPass ? 0 : 1;
+        }
+
         case "generate":
             var seedIndex = Array.FindIndex(args, a => a.Equals("--seed", StringComparison.OrdinalIgnoreCase));
             if (seedIndex < 0 || seedIndex + 1 >= args.Length || !int.TryParse(args[seedIndex + 1], out var seed))
@@ -75,6 +106,8 @@ try
                   generate   deterministic seeded composition from the COMMITTED variants
                              pool -> generated-<seed>.jsonl + ground-truth-<seed>.json.
                              Never calls the LLM.
+                  verify     Phase 4 acceptance: --ground-truth <file> --report <file>.
+                             ID-grounding, trend and alert checks; exit 0 = PASS.
                 """);
             return args.Length == 0 ? 0 : 1;
     }
@@ -83,4 +116,10 @@ catch (OperationCanceledException)
 {
     Console.Error.WriteLine("Cancelled.");
     return 130;
+}
+
+static string? ArgValue(string[] args, string name)
+{
+    var index = Array.FindIndex(args, a => a.Equals(name, StringComparison.OrdinalIgnoreCase));
+    return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
 }
