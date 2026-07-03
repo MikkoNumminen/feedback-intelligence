@@ -158,15 +158,7 @@ public sealed class StructuringEvalRunner(
         return 0;
     }
 
-    /// <summary>Prefer the working-directory path (repo checkout); fall back to the
-    /// binary's own directory, since the prompt ships with the tool.</summary>
-    private static string ResolvePromptPath(string configured)
-    {
-        if (Path.IsPathRooted(configured) || File.Exists(configured))
-            return configured;
-        var beside = Path.Combine(AppContext.BaseDirectory, configured);
-        return File.Exists(beside) ? beside : configured;
-    }
+    private static string ResolvePromptPath(string configured) => AppPathResolver.Resolve(configured);
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 }

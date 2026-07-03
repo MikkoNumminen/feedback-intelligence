@@ -134,11 +134,5 @@ public sealed class VariantsRunner(
         }
     }
 
-    private static string ResolvePath(string configured)
-    {
-        if (Path.IsPathRooted(configured) || File.Exists(configured))
-            return configured;
-        var beside = Path.Combine(AppContext.BaseDirectory, configured);
-        return File.Exists(beside) ? beside : configured;
-    }
+    private static string ResolvePath(string configured) => AppPathResolver.Resolve(configured);
 }

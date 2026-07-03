@@ -231,6 +231,26 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - Remaining Phase 1 steps once core.jsonl lands: announced `variants` run →
   commit `variants.jsonl` → `generate --seed 42` → commit corpus + ground
   truth → salvage-layer smoke test on the real texts, reported the same day.
+## Phase 2 status (2026-07-03)
+
+- Ingest API BUILT (`src/RetailFeedback.Api`, ASP.NET Core minimal API):
+  `POST /feedback` (one endpoint; channels are source values), `POST
+  /interpret` (desk preview, nothing stored), `GET /feedback/{id}`, `GET
+  /feedback?from&to&limit`, `GET /health` (1-token real completion).
+- Storage decision: **SQLite** (`Microsoft.Data.Sqlite`, single `feedback`
+  table, structure as a JSON column, `corrections_json` audit field) — the
+  spell allowed SQLite or PostgreSQL; SQLite keeps the demo self-contained.
+- Order invariant implemented and tested: deterministic alert layer runs FIRST
+  and its hits are stored regardless of the LLM outcome; LLM failures store
+  `structure_failed` with raw text preserved (LLM down ≠ feedback lost; a
+  busy GPU sheds with 503 instead).
+- Desk path contract: `acceptedStructure` + `corrections` on POST /feedback
+  stores the human-accepted structure WITHOUT a second LLM pass; corrected
+  values are schema-validated too.
+- Containment mirrored from the RAG as config validated at startup:
+  input 800 chars, body 16 KB, per-IP rate limit 30/60 s, LLM concurrency 2
+  with 500 ms acquire-then-shed.
+
 - The deterministic alert keyword list EXISTS as config:
   `config/alert-keywords.json` (injury/safety, payment, legal-threat; Finnish
   stems, case-insensitive substring contract that Phase 2 implements

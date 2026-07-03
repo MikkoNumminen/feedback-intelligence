@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
@@ -48,6 +49,13 @@ _ = app.Services.GetRequiredService<IOptions<IngestOptions>>().Value;
 _ = app.Services.GetRequiredService<AlertKeywordSet>();
 app.Services.GetRequiredService<FeedbackStore>().Initialize();
 
+// The public deployment sits behind a local tunnel daemon: without forwarded
+// headers every request would arrive as loopback and the per-IP rate limit
+// would collapse into one global bucket. Loopback proxies are trusted by default.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+});
 app.UseRateLimiter();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -70,6 +78,10 @@ app.MapPost("/feedback", async (
     catch (LlmBusyException)
     {
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (DuplicateFeedbackIdException ex)
+    {
+        return Results.Conflict(new { error = "duplicate id", id = ex.Id });
     }
 });
 
@@ -106,24 +118,33 @@ app.MapGet("/feedback/{id}", async (string id, FeedbackStore store, Cancellation
 
 app.MapGet("/feedback", async (
     FeedbackStore store,
+    IOptions<IngestOptions> options,
     CancellationToken ct,
     [FromQuery] string? from = null,
     [FromQuery] string? to = null,
-    [FromQuery] int limit = 200) =>
+    [FromQuery] int? limit = null) =>
 {
-    limit = Math.Clamp(limit, 1, 1000);
-    return Results.Ok(await store.QueryAsync(from, to, limit, ct));
+    // Window bounds normalize to the same UTC round-trip format the store
+    // uses, so lexical range filtering is instant-correct across offsets.
+    string? fromNormalized = null, toNormalized = null;
+    if (from is not null && !TimestampNormalizer.TryNormalize(from, out fromNormalized!))
+        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
+    if (to is not null && !TimestampNormalizer.TryNormalize(to, out toNormalized!))
+        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
+    var effectiveLimit = Math.Clamp(
+        limit ?? options.Value.QueryDefaultLimit, 1, options.Value.QueryMaxLimit);
+    return Results.Ok(await store.QueryAsync(fromNormalized, toNormalized, effectiveLimit, ct));
 });
 
 // Health = a 1-token REAL completion (RAG-measured pattern): "server up" does
 // not mean "model loaded and generating".
-app.MapGet("/health", async (IServiceProvider services, CancellationToken ct) =>
+app.MapGet("/health", async (IServiceProvider services, IOptions<IngestOptions> options, CancellationToken ct) =>
 {
     var client = services.GetRequiredKeyedService<IChatClient>(LlmServiceCollectionExtensions.StructuringKey);
     try
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        timeout.CancelAfter(TimeSpan.FromSeconds(options.Value.HealthTimeoutSeconds));
         _ = await client.GetResponseAsync("ping", new ChatOptions { MaxOutputTokens = 1 }, timeout.Token);
         return Results.Ok(new { status = "ok" });
     }

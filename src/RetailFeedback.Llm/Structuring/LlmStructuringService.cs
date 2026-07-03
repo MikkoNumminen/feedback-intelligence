@@ -70,13 +70,7 @@ public sealed class LlmStructuringService(
         if (_template is not null)
             return _template;
 
-        var path = options.Value.PromptPath;
-        if (!Path.IsPathRooted(path) && !File.Exists(path))
-        {
-            var beside = Path.Combine(AppContext.BaseDirectory, path);
-            if (File.Exists(beside))
-                path = beside;
-        }
+        var path = AppPathResolver.Resolve(options.Value.PromptPath);
         if (!File.Exists(path))
             throw new InvalidOperationException(
                 $"Structuring prompt not found: '{options.Value.PromptPath}' (cwd: {Environment.CurrentDirectory}).");

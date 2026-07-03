@@ -103,6 +103,32 @@ public class IngestServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DuplicateId_ThrowsBeforeAnyLlmWork()
+    {
+        var structuring = new FakeStructuring(Success());
+        var service = CreateService(structuring);
+        var request = new FeedbackRequest("dup-001", "email", "eka palaute", "2026-07-01T10:00:00+03:00", null, null);
+        await service.IngestAsync(request, CancellationToken.None);
+        var callsAfterFirst = structuring.Calls;
+
+        await Assert.ThrowsAsync<DuplicateFeedbackIdException>(() =>
+            service.IngestAsync(request with { Text = "retry-palaute" }, CancellationToken.None));
+
+        Assert.Equal(callsAfterFirst, structuring.Calls); // no GPU slot burnt on the retry
+    }
+
+    [Fact]
+    public async Task Timestamps_AreStoredNormalizedUtc()
+    {
+        var structuring = new FakeStructuring(Success());
+        var request = new FeedbackRequest("ts-001", "desk", "maito", "2026-07-01T10:00:00+03:00", ValidStructure, null);
+
+        var stored = await CreateService(structuring).IngestAsync(request, CancellationToken.None);
+
+        Assert.Equal("2026-07-01T07:00:00.0000000+00:00", stored.Timestamp);
+    }
+
+    [Fact]
     public async Task LlmConnectionFailure_StoresStructureFailed_NeverLosesFeedback()
     {
         var structuring = new ThrowingStructuring();

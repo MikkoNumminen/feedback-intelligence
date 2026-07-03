@@ -53,6 +53,33 @@ public class RequestValidatorTests
     }
 
     [Fact]
+    public void NonAsciiOrControlCharId_IsRejected()
+    {
+        // The id lands in the Location header — a Finnish 'ä' or a newline
+        // there would 500 AFTER the row was stored.
+        Assert.Contains(RequestValidator.Validate(Valid() with { Id = "kuitti-ä1" }, Options), e => e.Contains("id"));
+        Assert.Contains(RequestValidator.Validate(Valid() with { Id = "a\nb" }, Options), e => e.Contains("id"));
+        Assert.Empty(RequestValidator.Validate(Valid() with { Id = "gen-42-0001" }, Options));
+    }
+
+    [Fact]
+    public void CorrectionFieldNames_MustBeSchemaFields()
+    {
+        var structure = new FeedbackStructure("maito_kylma", "tuoreus", "high", "complaint", "fi");
+        var request = Valid() with
+        {
+            AcceptedStructure = structure,
+            Corrections = [new FieldCorrection("vakavuus", "low", "high")],
+        };
+
+        var errors = RequestValidator.Validate(request, Options);
+
+        Assert.Contains(errors, e => e.Contains("vakavuus"));
+        Assert.Empty(RequestValidator.Validate(
+            request with { Corrections = [new FieldCorrection("severity", "low", "high")] }, Options));
+    }
+
+    [Fact]
     public void CorrectedStructure_MustStillBeSchemaLegal()
     {
         var request = Valid() with

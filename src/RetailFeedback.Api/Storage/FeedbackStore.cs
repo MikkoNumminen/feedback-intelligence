@@ -21,8 +21,16 @@ public sealed record StoredFeedback(
     IReadOnlyList<AlertHit> Alerts,
     IReadOnlyList<FieldCorrection>? Corrections);
 
+public sealed class DuplicateFeedbackIdException(string id)
+    : Exception($"Feedback id '{id}' already exists.")
+{
+    public string Id { get; } = id;
+}
+
 public sealed class FeedbackStore(IOptions<IngestOptions> options)
 {
+    private const int SqliteConstraintErrorCode = 19;
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private string ConnectionString => $"Data Source={options.Value.DbPath}";
@@ -77,7 +85,16 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         command.Parameters.AddWithValue("$alerts", JsonSerializer.Serialize(item.Alerts, Json));
         command.Parameters.AddWithValue("$corrections",
             item.Corrections is null ? DBNull.Value : JsonSerializer.Serialize(item.Corrections, Json));
-        await command.ExecuteNonQueryAsync(ct);
+        try
+        {
+            await command.ExecuteNonQueryAsync(ct);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == SqliteConstraintErrorCode)
+        {
+            // Race-safe complement to the ingest pre-check: a concurrent retry
+            // with the same client id maps to 409, never a 500.
+            throw new DuplicateFeedbackIdException(item.Id);
+        }
     }
 
     public async Task<StoredFeedback?> GetAsync(string id, CancellationToken ct)

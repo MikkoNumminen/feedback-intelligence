@@ -13,13 +13,7 @@ public sealed class AlertKeywordSet
 
     public static AlertKeywordSet LoadFrom(string path)
     {
-        var resolved = path;
-        if (!Path.IsPathRooted(resolved) && !File.Exists(resolved))
-        {
-            var beside = Path.Combine(AppContext.BaseDirectory, resolved);
-            if (File.Exists(beside))
-                resolved = beside;
-        }
+        var resolved = RetailFeedback.Llm.AppPathResolver.Resolve(path);
         if (!File.Exists(resolved))
             throw new InvalidOperationException(
                 $"Alert keyword config not found: '{path}' (cwd: {Environment.CurrentDirectory}).");

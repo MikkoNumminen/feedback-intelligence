@@ -22,6 +22,14 @@ public sealed class IngestService(
 {
     public async Task<StoredFeedback> IngestAsync(FeedbackRequest request, CancellationToken ct)
     {
+        // Idempotency pre-check before any LLM work: a client retry with the
+        // same id must not burn a GPU slot only to hit the PK constraint.
+        if (!string.IsNullOrWhiteSpace(request.Id) && await store.GetAsync(request.Id!, ct) is not null)
+            throw new DuplicateFeedbackIdException(request.Id!);
+
+        if (!TimestampNormalizer.TryNormalize(request.Timestamp, out var normalizedTimestamp))
+            throw new ArgumentException($"unparseable timestamp '{request.Timestamp}' reached ingest — validate first");
+
         var alerts = AlertMatcher.Match(request.Text, keywords.Categories);
         if (alerts.Count > 0)
             logger.LogInformation("Deterministic alerts on ingest: {Alerts}",
@@ -73,7 +81,7 @@ public sealed class IngestService(
             Id: string.IsNullOrWhiteSpace(request.Id) ? Guid.NewGuid().ToString("N") : request.Id!,
             Source: request.Source,
             Text: request.Text,
-            Timestamp: request.Timestamp,
+            Timestamp: normalizedTimestamp,
             CreatedAt: DateTimeOffset.UtcNow.ToString("O"),
             Structure: structure,
             StructureFailed: failed,

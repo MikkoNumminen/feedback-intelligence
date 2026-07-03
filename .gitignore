@@ -10,5 +10,5 @@ obj/
 data/corpus/generated-placeholder-*
 data/corpus/ground-truth-placeholder-*
 
-# Runtime state
-data/*.db
+# Runtime state (any location — the API creates its DB relative to its CWD)
+**/data/*.db

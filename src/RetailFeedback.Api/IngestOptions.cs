@@ -31,6 +31,14 @@ public sealed class IngestOptions
     public string AlertKeywordsPath { get; init; } = "config/alert-keywords.json";
 
     public List<string> AllowedSources { get; init; } = ["google_review", "email", "web_form", "desk"];
+
+    public int IdMaxLength { get; init; } = 100;
+    public int QueryDefaultLimit { get; init; } = 200;
+    public int QueryMaxLimit { get; init; } = 1000;
+
+    /// <summary>Health probes a 1-token real completion; a cold model load can
+    /// take tens of seconds, so this is tunable without a recompile.</summary>
+    public int HealthTimeoutSeconds { get; init; } = 10;
 }
 
 public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>
@@ -57,6 +65,12 @@ public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>
             failures.Add("Ingest:AlertKeywordsPath must be set.");
         if (options.AllowedSources.Count == 0 || options.AllowedSources.Any(string.IsNullOrWhiteSpace))
             failures.Add("Ingest:AllowedSources must be a non-empty list of source names.");
+        if (options.IdMaxLength < 1)
+            failures.Add($"Ingest:IdMaxLength must be positive, got {options.IdMaxLength}.");
+        if (options.QueryDefaultLimit < 1 || options.QueryMaxLimit < options.QueryDefaultLimit)
+            failures.Add($"Ingest:QueryDefaultLimit/QueryMaxLimit must satisfy 1 <= default <= max, got {options.QueryDefaultLimit}/{options.QueryMaxLimit}.");
+        if (options.HealthTimeoutSeconds < 1)
+            failures.Add($"Ingest:HealthTimeoutSeconds must be positive, got {options.HealthTimeoutSeconds}.");
         return failures.Count > 0 ? ValidateOptionsResult.Fail(failures) : ValidateOptionsResult.Success;
     }
 }
