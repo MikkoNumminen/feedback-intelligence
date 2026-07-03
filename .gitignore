@@ -5,3 +5,7 @@
 bin/
 obj/
 *.user
+
+# Regenerable dev artifacts (placeholder-derived, non-evidential by rule)
+data/corpus/generated-placeholder-*
+data/corpus/ground-truth-placeholder-*

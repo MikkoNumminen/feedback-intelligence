@@ -1,0 +1,39 @@
+{"id":"dpc-001-v0","source":"desk","text":"maito oli vanhaa taas","story":"dairy-freshness-worsening","sourceId":"dpc-001"}
+{"id":"dpc-001-v1","source":"desk","text":"asiakkaan mukaan maidot taas vanhoja","story":"dairy-freshness-worsening","sourceId":"dpc-001"}
+{"id":"dpc-001-v2","source":"desk","text":"taas valitettiin vanhasta maidosta","story":"dairy-freshness-worsening","sourceId":"dpc-001"}
+{"id":"dpc-002-v0","source":"google_review","text":"Jogurttien päiväykset olivat menneet, kolmas kerta tässä kuussa.","story":"dairy-freshness-worsening","sourceId":"dpc-002"}
+{"id":"dpc-002-v1","source":"google_review","text":"Taas vanhentuneita jogurtteja hyllyssä. Alkaa toistua.","story":"dairy-freshness-worsening","sourceId":"dpc-002"}
+{"id":"dpc-002-v2","source":"google_review","text":"Ostin jogurtin jonka päiväys oli mennyt jo viikko sitten!!","story":"dairy-freshness-worsening","sourceId":"dpc-002"}
+{"id":"dpc-003-v0","source":"email","text":"Ostamani kermapurkki oli pilaantunut jo avattaessa vaikka päiväystä oli jäljellä.","story":"dairy-freshness-worsening","sourceId":"dpc-003"}
+{"id":"dpc-003-v1","source":"email","text":"Kerma haisi pilaantuneelta heti avattaessa vaikka päiväys oli voimassa.","story":"dairy-freshness-worsening","sourceId":"dpc-003"}
+{"id":"dpc-003-v2","source":"email","text":"Hei, eilen ostettu kerma oli mennyttä vaikka päiväyksen mukaan piti olla hyvää vielä viikon.","story":"dairy-freshness-worsening","sourceId":"dpc-003"}
+{"id":"dpc-004-v0","source":"web_form","text":"Maitokaappi tuntui eilen lämpimältä, tuotteet eivät olleet kylmiä.","story":"dairy-freshness-worsening","sourceId":"dpc-004"}
+{"id":"dpc-004-v1","source":"web_form","text":"Maitokaapin tuotteet olivat huoneenlämpöisiä, jäähdytys tuskin toimi.","story":"dairy-freshness-worsening","sourceId":"dpc-004"}
+{"id":"dpc-004-v2","source":"web_form","text":"Kylmäkaappi ei tuntunut kylmältä, maidot lämpimiä.","story":"dairy-freshness-worsening","sourceId":"dpc-004"}
+{"id":"dpc-005-v0","source":"web_form","text":"Terassin lauta petti allani kun astuin sille, onneksi ei käynyt pahemmin. Laudat ostettu teiltä keväällä.","story":"safety-no-keyword","sourceId":"dpc-005"}
+{"id":"dpc-005-v1","source":"web_form","text":"Keväällä teiltä ostetuista laudoista tehty terassin askelma petti kun astuin. Säikähdin pahasti.","story":"safety-no-keyword","sourceId":"dpc-005"}
+{"id":"dpc-005-v2","source":"web_form","text":"Terassilauta murtui jalan alla. Materiaalit olivat teidän myymiänne.","story":"safety-no-keyword","sourceId":"dpc-005"}
+{"id":"dpc-006-v0","source":"web_form","text":"Teiltä ostetuista tarvikkeista rakennettu kaide irtosi seinästä kun nojasin siihen.","story":"safety-no-keyword","sourceId":"dpc-006"}
+{"id":"dpc-006-v1","source":"web_form","text":"Kaide jonka rakensin teidän tarvikkeista lähti irti seinästä nojatessa.","story":"safety-no-keyword","sourceId":"dpc-006"}
+{"id":"dpc-006-v2","source":"web_form","text":"Nojasin uuteen kaiteeseen ja se antoi periksi. Osat ostettu teidän myymälästä.","story":"safety-no-keyword","sourceId":"dpc-006"}
+{"id":"dpc-007-v0","source":"desk","text":"ruisleipä taas loppu, asiakas kyseli","story":"availability-slow-burn","sourceId":"dpc-007"}
+{"id":"dpc-007-v1","source":"desk","text":"asiakas ei löytänyt ruisleipää, hylly tyhjä","story":"availability-slow-burn","sourceId":"dpc-007"}
+{"id":"dpc-007-v2","source":"desk","text":"ruisleivät loppuneet taas iltapäivällä","story":"availability-slow-burn","sourceId":"dpc-007"}
+{"id":"dpc-008-v0","source":"google_review","text":"Leipähylly ammotti tyhjyyttään taas illalla. Miksi ei tilata enempää?","story":"availability-slow-burn","sourceId":"dpc-008"}
+{"id":"dpc-008-v1","source":"google_review","text":"Illalla leipähylly oli käytännössä tyhjä. Toistuu viikosta toiseen.","story":"availability-slow-burn","sourceId":"dpc-008"}
+{"id":"dpc-008-v2","source":"google_review","text":"Leipäosastolla ei ollut illalla enää mitään ostettavaa.","story":"availability-slow-burn","sourceId":"dpc-008"}
+{"id":"dpc-009-v0","source":"desk","text":"paistopisteen sämpylät loppu joka ilta kuulemma","story":"availability-slow-burn","sourceId":"dpc-009"}
+{"id":"dpc-009-v1","source":"desk","text":"asiakas harmitteli ettei paistopisteellä ole iltaisin mitään","story":"availability-slow-burn","sourceId":"dpc-009"}
+{"id":"dpc-009-v2","source":"desk","text":"sämpylät loppu paistopisteeltä taas ennen kuutta","story":"availability-slow-burn","sourceId":"dpc-009"}
+{"id":"dpc-010-v0","source":"google_review","text":"Kassalla sujui nopeasti, mukava myyjä. Kiitos!","sourceId":"dpc-010"}
+{"id":"dpc-010-v1","source":"google_review","text":"Nopea kassa ja ystävällinen palvelu, plussaa.","sourceId":"dpc-010"}
+{"id":"dpc-011-v0","source":"web_form","text":"Hevin mansikat olivat herkullisia, kotimaisia ja tuoreita.","sourceId":"dpc-011"}
+{"id":"dpc-011-v1","source":"web_form","text":"Mansikat olivat todella hyviä, tuoreita ja kotimaisia.","sourceId":"dpc-011"}
+{"id":"dpc-012-v0","source":"email","text":"Verkkokaupan tilaus tuli ajallaan ja hyvin pakattuna.","sourceId":"dpc-012"}
+{"id":"dpc-012-v1","source":"email","text":"Tilaus saapui sovitusti ja paketti oli siisti. Kiitos.","sourceId":"dpc-012"}
+{"id":"dpc-013-v0","source":"desk","text":"asiakas kehui työkaluosaston palvelua","sourceId":"dpc-013"}
+{"id":"dpc-013-v1","source":"desk","text":"työkaluosaston neuvonta sai kiitosta asiakkaalta","sourceId":"dpc-013"}
+{"id":"dpc-014-v0","source":"web_form","text":"Maalivalikoima voisi olla laajempi, sävytyspalvelu oli kyllä hyvä.","sourceId":"dpc-014"}
+{"id":"dpc-014-v1","source":"web_form","text":"Sävytys toimi hienosti mutta maaleja saisi olla enemmän valikoimassa.","sourceId":"dpc-014"}
+{"id":"dpc-015-v0","source":"email","text":"Onko teillä sähkötarvikkeille takuuta ja miten se toimii?","sourceId":"dpc-015"}
+{"id":"dpc-015-v1","source":"email","text":"Kysyisin sähkötarvikkeiden takuukäytännöstä, mistä löydän ehdot?","sourceId":"dpc-015"}
