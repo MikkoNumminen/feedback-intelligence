@@ -287,6 +287,23 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - Prompts: `prompts/synthesis-v0.txt`, `prompts/alert-nomination-v0.txt`
   (Finnish instructions, JSON-object outputs, {{data}} placeholder).
 
+## Run-through status (2026-07-03, autonomous)
+
+- The whole loop was exercised end to end on PLACEHOLDER data (non-evidential,
+  registered in docs/mock-data-register.md): seeded corpus → POST /feedback →
+  deterministic alerts → report themes/trends → machine-checkable ground-truth
+  verification (dairy 9/9 ids grounded, trend worsening→paheneva) → live desk
+  save visible on next refresh (cache invalidation) → snapshot JSON + HTML
+  served. 15 noise items stored `structure_failed` — the honest LLM-down path,
+  because the RAG stack was up and the hard rule forbids unannounced GPU use.
+- NOT yet exercised live: Poro structuring at ingest, synthesis narratives,
+  alert nominations, desk /interpret — all wait for the next announced GPU
+  window (TODO #7). Unit tests cover their logic with scripted clients.
+- Phase 5 remaining: Azure SWA deploy (+ snapshot publication to the static
+  host), Tailscale Funnel, rehearsal — all owner tasks (TODO #3/#4/#6).
+- PR history with review findings and fixes: docs/prs/0001–0005. All work was
+  merged locally; NO remote exists and nothing was pushed anywhere.
+
 - The deterministic alert keyword list EXISTS as config:
   `config/alert-keywords.json` (injury/safety, payment, legal-threat; Finnish
   stems, case-insensitive substring contract that Phase 2 implements
