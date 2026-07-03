@@ -31,6 +31,7 @@ builder.Services.AddOptions<ReportOptions>()
     .Bind(builder.Configuration.GetSection(ReportOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ReportOptions>, ReportOptionsValidator>();
+builder.Services.AddSingleton<ReportCache>();
 builder.Services.AddSingleton<ReportService>();
 
 // Per-IP fixed window; protects the machine while the tunnel is open.
@@ -182,6 +183,14 @@ app.MapGet("/report", async (
 app.MapGet("/report/snapshot", async (ReportService reports, CancellationToken ct) =>
     await reports.ReadLatestSnapshotJsonAsync(ct) is { } json
         ? Results.Text(json, "application/json")
+        : Results.NotFound());
+
+// The rendered, self-contained snapshot page. For a truly backend-down shared
+// link this file (plus report-latest.json) is published to the static host at
+// deploy time — see Phase 5 / docs/TODO.md.
+app.MapGet("/report/snapshot.html", (ReportService reports) =>
+    reports.LatestSnapshotHtmlPath() is { } path
+        ? Results.File(path, "text/html; charset=utf-8")
         : Results.NotFound());
 
 // Health = a 1-token REAL completion (RAG-measured pattern): "server up" does

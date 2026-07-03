@@ -36,10 +36,14 @@
     <h1>Palautetilanne</h1>
     <span id="mode" class="badge live" hidden></span>
     <select id="window">
-      <option value="1">Tänään</option>
+      <option value="today">Tänään</option>
       <option value="7" selected>7 päivää</option>
       <option value="30">30 päivää</option>
+      <option value="custom">Oma aikaväli…</option>
     </select>
+    <span id="custom-range" hidden>
+      <input type="date" id="from-date"> – <input type="date" id="to-date">
+    </span>
     <button class="primary" id="refresh">Päivitä</button>
   </header>
   <p id="status"></p>
@@ -65,20 +69,42 @@ function node(tag, className, children) {
   return n;
 }
 
+function windowRange() {
+  const choice = el("window").value;
+  const to = new Date();
+  if (choice === "today") {
+    // The calendar day, not a trailing 24 h — "Tänään" must mean today.
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    return { from, to };
+  }
+  if (choice === "custom") {
+    const from = el("from-date").valueAsDate;
+    const customTo = el("to-date").valueAsDate;
+    if (!from || !customTo) return null;
+    customTo.setHours(23, 59, 59, 999);
+    return { from, to: customTo };
+  }
+  return { from: new Date(to.getTime() - Number(choice) * 24 * 3600 * 1000), to };
+}
+
 async function loadReport() {
-  const days = el("window").value;
+  const range = windowRange();
+  if (!range) { setStatus("Valitse oman aikavälin molemmat päivät."); return; }
   setStatus("Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)");
   el("refresh").disabled = true;
   try {
-    const to = new Date();
-    const from = new Date(to.getTime() - days * 24 * 3600 * 1000);
-    const res = await fetch(`/report?from=${from.toISOString()}&to=${to.toISOString()}`);
+    const res = await fetch(`/report?from=${range.from.toISOString()}&to=${range.to.toISOString()}`);
     if (!res.ok) throw new Error("report " + res.status);
     render(await res.json(), true);
     setStatus("");
   } catch {
+    // Fallback chain: backend snapshot endpoint, then the static copy
+    // published next to this page (the truly-backend-down path on the
+    // static host).
     try {
-      const snap = await fetch("/report/snapshot");
+      let snap = await fetch("/report/snapshot");
+      if (!snap.ok) snap = await fetch("./report-latest.json");
       if (!snap.ok) throw new Error("snapshot");
       render(await snap.json(), false);
       setStatus("Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.");
@@ -101,7 +127,8 @@ function render(report, live) {
   root.appendChild(node("p", "muted", [
     `Aikaväli ${short(report.windowFrom)} – ${short(report.windowTo)} · ${report.totalItems} palautetta` +
     (report.structureFailedCount ? ` · ${report.structureFailedCount} ilman rakennetta` : "") +
-    (report.droppedClaimCount ? ` · ${report.droppedClaimCount} perustelematonta väitettä hylätty` : ""),
+    (report.droppedClaimCount ? ` · ${report.droppedClaimCount} perustelematonta väitettä hylätty` : "") +
+    (report.llmFallbackCount ? ` · ${report.llmFallbackCount} koostetta ilman kielimallia` : ""),
   ]));
 
   root.appendChild(node("h2", null, [`Hälytykset (${report.alerts.length})`]));
@@ -169,7 +196,11 @@ function short(iso) {
 function setStatus(message) { el("status").textContent = message; }
 
 el("refresh").addEventListener("click", loadReport);
-el("window").addEventListener("change", loadReport);
+el("window").addEventListener("change", () => {
+  const custom = el("window").value === "custom";
+  el("custom-range").hidden = !custom;
+  if (!custom) loadReport();
+});
 el("close").addEventListener("click", () => el("item-dialog").close());
 loadReport();
 </script>

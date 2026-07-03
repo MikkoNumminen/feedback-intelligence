@@ -39,6 +39,7 @@ public class IngestServiceTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
 
     [Fact]
@@ -150,6 +151,7 @@ public class IngestServiceTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
 
     private sealed class ThrowingStructuring : IStructuringService

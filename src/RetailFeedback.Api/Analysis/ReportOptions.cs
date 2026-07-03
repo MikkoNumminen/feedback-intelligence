@@ -23,6 +23,15 @@ public sealed class ReportOptions
 
     public bool AlertNominationEnabled { get; init; } = true;
 
+    /// <summary>Hard cap on LLM calls per report generation — one refresh must
+    /// never monopolize the shared GPU gate and starve the desk path. Groups
+    /// beyond the budget get deterministic fallbacks (counted, logged).</summary>
+    public int MaxLlmCallsPerReport { get; init; } = 8;
+
+    /// <summary>Same-window reports are served from cache this long; ingest
+    /// invalidates the cache so a new desk entry shows on the next refresh.</summary>
+    public int ReportCacheSeconds { get; init; } = 60;
+
     public int DefaultWindowDays { get; init; } = 7;
     public int MaxWindowDays { get; init; } = 92;
     public int MaxItemsPerWindow { get; init; } = 2000;
@@ -49,6 +58,10 @@ public sealed class ReportOptionsValidator : IValidateOptions<ReportOptions>
             failures.Add($"Report window days must satisfy 1 <= default <= max, got {options.DefaultWindowDays}/{options.MaxWindowDays}.");
         if (options.MaxItemsPerWindow < 1)
             failures.Add($"Report:MaxItemsPerWindow must be positive, got {options.MaxItemsPerWindow}.");
+        if (options.MaxLlmCallsPerReport < 0)
+            failures.Add($"Report:MaxLlmCallsPerReport must be >= 0 (0 = deterministic only), got {options.MaxLlmCallsPerReport}.");
+        if (options.ReportCacheSeconds < 0)
+            failures.Add($"Report:ReportCacheSeconds must be >= 0 (0 = off), got {options.ReportCacheSeconds}.");
         return failures.Count > 0 ? ValidateOptionsResult.Fail(failures) : ValidateOptionsResult.Success;
     }
 }

@@ -24,6 +24,10 @@ public sealed record ReportTheme(
     IReadOnlyList<string> FeedbackIds,
     bool NarrativeFromLlm);
 
+/// <summary>DroppedClaimCount counts ONLY citation-validation failures (the
+/// model made a claim it could not ground). LlmFallbackCount counts groups
+/// where the model was unavailable/over budget/unparseable — an infrastructure
+/// condition, never presented as model misbehavior.</summary>
 public sealed record ManagementReport(
     string WindowFrom,
     string WindowTo,
@@ -32,4 +36,5 @@ public sealed record ManagementReport(
     int StructureFailedCount,
     IReadOnlyList<ReportAlert> Alerts,
     IReadOnlyList<ReportTheme> Themes,
-    int DroppedClaimCount);
+    int DroppedClaimCount,
+    int LlmFallbackCount);

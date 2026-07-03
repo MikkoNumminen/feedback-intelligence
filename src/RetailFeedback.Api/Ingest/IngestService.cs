@@ -18,6 +18,7 @@ public sealed class IngestService(
     IStructuringService structuringService,
     LlmGate llmGate,
     AlertKeywordSet keywords,
+    Analysis.ReportCache reportCache,
     ILogger<IngestService> logger)
 {
     public async Task<StoredFeedback> IngestAsync(FeedbackRequest request, CancellationToken ct)
@@ -91,6 +92,9 @@ public sealed class IngestService(
             Corrections: request.Corrections);
 
         await store.InsertAsync(stored, ct);
+        // The live-view centerpiece: a fresh desk entry must appear on the very
+        // next report refresh, so the report cache cannot outlive an ingest.
+        reportCache.Invalidate();
         return stored;
     }
 }

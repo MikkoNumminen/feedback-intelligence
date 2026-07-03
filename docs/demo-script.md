@@ -1,0 +1,40 @@
+# 5-minute demo script (draft — rehearse on the real corpus, seed 42)
+
+> STATUS: written against the placeholder run-through; final texts and timings
+> land after the real corpus exists (TODO #1) and the rehearsal (TODO #6).
+
+Pre-demo checklist (10 min before):
+1. RAG stack down; `docker compose up -d ollama --wait` (models warm after
+   first call; hit `/health` once to load Poro).
+2. Fresh demo DB: delete `data/feedback.db`, start API, push the seed-42
+   corpus: `tools/push-corpus.ps1 -Corpus data/corpus/generated-42.jsonl`.
+3. Open `/` (management view) and `/desk.html` on the phone.
+
+Minute 0–1 — the situation view:
+- Open `/`, 7-day window. "Tämä näkymä kokoaa neljä palautekanavaa yhteen."
+- Point at the alert on top: the no-keyword safety complaint. "Sanahaku ei
+  löytänyt tästä mitään — kielimalli ymmärsi, että teiltä ostetuista laudoista
+  rakennettu terassi petti."
+
+Minute 1–2 — grounding:
+- Open the dairy theme card: "hyllysaatavuus/tuoreus, suunta paheneva".
+- Click an ID chip → the original customer text opens. "Jokainen väite on
+  jäljitettävissä alkuperäiseen palautteeseen — jos mallin väitteelle ei löydy
+  lähdettä, väite pudotetaan eikä sitä näytetä."
+
+Minute 2–4 — the desk moment (the centerpiece):
+- On the phone, `/desk.html`. Type a fresh dairy complaint in dialect
+  ("asiakas sano et maitokaapis taas vanhoi purkkei").
+- Show the interpretation appearing BEFORE saving; correct one field (e.g.
+  severity) to show human-in-the-loop; save.
+- Back on `/`: Päivitä → the new desk entry joins the dairy theme, count +1.
+  "Tiskillä kuultu palaute ei enää kuole vuoron loppuun."
+
+Minute 4–5 — resilience + the design story:
+- Kill the backend; reload the shared link → snapshot renders with the
+  "Tallennettu tilannekuva" badge. "Jaettu linkki ei koskaan näytä kuollutta
+  sivua."
+- Close: "AI on vain kahdessa paikassa — sotkuisen kielen rakenteistamisessa
+  ja teemojen lukemisessa — kaikki muu on sääntöjä, jotka eivät nuku eivätkä
+  hallusinoi. Mallin vaihto Azure OpenAI:hin on konfiguraatiomuutos plus
+  eval-ajo."

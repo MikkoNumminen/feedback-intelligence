@@ -36,16 +36,21 @@ public class ReportServiceTests : IDisposable
             Directory.Delete(_snapshotDir, true);
     }
 
-    private ReportService CreateService(IChatClient client, bool nominations = false) => new(
+    private readonly ReportCache _cache = new();
+
+    private ReportService CreateService(IChatClient client, bool nominations = false, int llmBudget = 8, int cacheSeconds = 0) => new(
         _store,
         client,
         new LlmGate(_ingestOptions),
+        _cache,
         Options.Create(new ReportOptions
         {
             SnapshotDir = _snapshotDir,
             SynthesisPromptPath = _promptPath,
             AlertNominationPromptPath = _promptPath,
             AlertNominationEnabled = nominations,
+            MaxLlmCallsPerReport = llmBudget,
+            ReportCacheSeconds = cacheSeconds,
         }),
         NullLogger<ReportService>.Instance);
 
@@ -137,6 +142,61 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task NewThemeWithEmptyFirstHalf_IsKasvava_NeverPaheneva()
+    {
+        // All items in the late half, all low severity: a theme that just
+        // appeared has no baseline to "worsen" against.
+        await SeedDairyAsync(earlyCount: 0, lateCount: 4, lateSeverity: "low");
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Equal("kasvava", Assert.Single(report.Themes).Direction);
+    }
+
+    [Fact]
+    public async Task LlmUnavailable_CountsAsFallback_NeverAsDroppedClaim()
+    {
+        await SeedDairyAsync(2, 3);
+
+        var report = await CreateService(new ThrowingChatClient()).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Equal(0, report.DroppedClaimCount);   // the model made no claims
+        Assert.True(report.LlmFallbackCount > 0);    // infrastructure honestly labeled
+    }
+
+    [Fact]
+    public async Task ZeroLlmBudget_MakesNoLlmCalls_ReportStillComplete()
+    {
+        await SeedDairyAsync(2, 3);
+        var llm = new CountingChatClient();
+
+        var report = await CreateService(llm, nominations: true, llmBudget: 0)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Equal(0, llm.Calls);
+        Assert.Single(report.Themes);
+        Assert.Equal(0, report.DroppedClaimCount);
+    }
+
+    [Fact]
+    public async Task CachedReport_IsReused_UntilInvalidated()
+    {
+        await SeedDairyAsync(2, 3);
+        var llm = new CountingChatClient();
+        var service = CreateService(llm, cacheSeconds: 300);
+
+        var first = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+        var second = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+        Assert.Same(first, second);          // no regeneration, no extra LLM load
+        var callsBeforeInvalidate = llm.Calls;
+
+        _cache.Invalidate();                 // what ingest does after every insert
+        var third = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+        Assert.NotSame(first, third);
+        Assert.True(llm.Calls > callsBeforeInvalidate);
+    }
+
+    [Fact]
     public async Task Snapshot_IsPersisted_AndReadable()
     {
         await SeedDairyAsync(1, 2);
@@ -160,6 +220,28 @@ public class ReportServiceTests : IDisposable
         {
             var text = responses[Math.Min(_next++, responses.Length - 1)];
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, text)));
+        }
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class CountingChatClient : IChatClient
+    {
+        public int Calls { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "ei-jsonia")));
         }
 
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
