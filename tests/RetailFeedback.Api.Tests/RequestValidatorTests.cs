@@ -80,6 +80,20 @@ public class RequestValidatorTests
     }
 
     [Fact]
+    public void CorrectionsOnModelFailedEntry_AreRejected()
+    {
+        var structure = new FeedbackStructure("maito_kylma", "tuoreus", "high", "complaint", "fi");
+        var request = Valid() with
+        {
+            AcceptedStructure = structure,
+            Corrections = [new FieldCorrection("severity", "low", "high")],
+            ModelInterpretationFailed = true,
+        };
+
+        Assert.Contains(RequestValidator.Validate(request, Options), e => e.Contains("modelInterpretationFailed"));
+    }
+
+    [Fact]
     public void CorrectedStructure_MustStillBeSchemaLegal()
     {
         var request = Valid() with

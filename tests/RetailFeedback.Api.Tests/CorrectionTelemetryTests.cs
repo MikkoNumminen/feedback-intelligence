@@ -51,10 +51,45 @@ public class CorrectionTelemetryTests : IDisposable
         Assert.Equal(3, telemetry.DeskEntries);
         Assert.Equal(2, telemetry.ModelInterpreted);
         Assert.Equal(1, telemetry.ModelFailed);
+        Assert.False(telemetry.Truncated);
+        Assert.Equal(0, telemetry.UnbucketedEntries);
         var severity = telemetry.PerField.Single(f => f.Field == "severity");
         Assert.Equal(1, severity.Corrections);
         Assert.Equal(0.5, severity.Rate);
         Assert.Equal(0, telemetry.PerField.Single(f => f.Field == "department").Corrections);
+    }
+
+    [Fact]
+    public async Task CorrectionsOnModelFailedEntries_NeverInflateRates()
+    {
+        // Defense in depth: the validator forbids this combination at the API
+        // edge, but data written any other way must not corrupt the rates —
+        // numerator and denominator use the SAME population.
+        await _store.InsertAsync(Desk("d1", "2026-06-22T10:00:00.0000000+00:00"), CancellationToken.None);
+        await _store.InsertAsync(Desk("bad", "2026-06-23T10:00:00.0000000+00:00",
+            [new FieldCorrection("severity", "medium", "high")], modelFailed: true), CancellationToken.None);
+
+        var telemetry = await _service.SummarizeAsync(
+            "2026-06-18T00:00:00.0000000+00:00", "2026-07-01T00:00:00.0000000+00:00", CancellationToken.None);
+
+        Assert.Equal(1, telemetry.ModelInterpreted);
+        Assert.Equal(0, telemetry.PerField.Single(f => f.Field == "severity").Corrections);
+        Assert.All(telemetry.PerField, f => Assert.True(f.Rate <= 1.0));
+    }
+
+    [Fact]
+    public async Task FetchCapHit_IsSurfacedAsTruncated()
+    {
+        var tightOptions = Options.Create(new IngestOptions { DbPath = _dbPath, QueryDefaultLimit = 2, QueryMaxLimit = 2 });
+        var service = new CorrectionTelemetryService(_store, tightOptions);
+        for (var i = 0; i < 3; i++)
+            await _store.InsertAsync(Desk($"d{i}", $"2026-06-2{i + 2}T10:00:00.0000000+00:00"), CancellationToken.None);
+
+        var telemetry = await service.SummarizeAsync(
+            "2026-06-18T00:00:00.0000000+00:00", "2026-07-01T00:00:00.0000000+00:00", CancellationToken.None);
+
+        Assert.True(telemetry.Truncated);
+        Assert.Equal(2, telemetry.DeskEntries);
     }
 
     [Fact]
@@ -71,7 +106,9 @@ public class CorrectionTelemetryTests : IDisposable
         Assert.Equal(2, telemetry.Weekly.Count);
         Assert.Equal("2026-06-22", telemetry.Weekly[0].WeekStart);
         Assert.Equal(2, telemetry.Weekly[0].DeskEntries);
-        Assert.Equal(1, telemetry.Weekly[0].Corrections);
+        Assert.Equal(2, telemetry.Weekly[0].Interpreted);
+        Assert.Equal(1, telemetry.Weekly[0].CorrectedEntries);
+        Assert.Equal(1, telemetry.Weekly[0].PerField["theme"]);
         Assert.Equal("2026-06-29", telemetry.Weekly[1].WeekStart);
     }
 

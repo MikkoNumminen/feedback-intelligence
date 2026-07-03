@@ -25,6 +25,11 @@ public static partial class RequestValidator
         {
             if (request.AcceptedStructure is null)
                 errors.Add("corrections require an acceptedStructure.");
+            // A manual entry after a failed interpretation has no model values
+            // to correct — allowing both would let corrections leak into a
+            // population the telemetry denominator excludes.
+            if (request.ModelInterpretationFailed == true)
+                errors.Add("corrections cannot be combined with modelInterpretationFailed.");
             // Field keys feed the per-field correction-rate telemetry (the
             // mechanism replacing the skipped model eval) — free-form keys
             // would fragment those rates.

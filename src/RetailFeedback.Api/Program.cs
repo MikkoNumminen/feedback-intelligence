@@ -201,10 +201,16 @@ app.MapGet("/telemetry/corrections", async (
     var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
     if (!TimestampNormalizer.TryNormalize(toRaw, out var toNormalized))
         return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
-    var fromRaw = from ?? DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture)
+    var telemetryTo = DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture);
+    var fromRaw = from ?? telemetryTo
         .AddDays(-reportOptions.Value.DefaultWindowDays).ToString("O", CultureInfo.InvariantCulture);
     if (!TimestampNormalizer.TryNormalize(fromRaw, out var fromNormalized))
         return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
+    var telemetryFrom = DateTimeOffset.Parse(fromNormalized, CultureInfo.InvariantCulture);
+    // Window parity with /report: an inverted window here would read as
+    // "model perfect, zero corrections" — garbage in must 400, not go green.
+    if (telemetryFrom >= telemetryTo || (telemetryTo - telemetryFrom).TotalDays > reportOptions.Value.MaxWindowDays)
+        return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
     return Results.Ok(await telemetry.SummarizeAsync(fromNormalized, toNormalized, ct));
 });
 
