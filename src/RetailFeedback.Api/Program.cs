@@ -113,6 +113,15 @@ app.MapPost("/interpret", async (
     }
 });
 
+// Schema enums for UI dropdowns — single source of truth is StructuringSchema,
+// never a copy in the frontend.
+app.MapGet("/schema", () => Results.Ok(new
+{
+    departments = RetailFeedback.Domain.Structuring.StructuringSchema.Departments,
+    severities = RetailFeedback.Domain.Structuring.StructuringSchema.Severities,
+    types = RetailFeedback.Domain.Structuring.StructuringSchema.Types,
+}));
+
 app.MapGet("/feedback/{id}", async (string id, FeedbackStore store, CancellationToken ct) =>
     await store.GetAsync(id, ct) is { } item ? Results.Ok(item) : Results.NotFound());
 
