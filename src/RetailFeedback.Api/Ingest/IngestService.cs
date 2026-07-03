@@ -85,6 +85,7 @@ public sealed class IngestService(
             CreatedAt: DateTimeOffset.UtcNow.ToString("O"),
             Structure: structure,
             StructureFailed: failed,
+            ModelFailed: request.ModelInterpretationFailed == true,
             SalvageNotes: notes,
             Alerts: alerts,
             Corrections: request.Corrections);

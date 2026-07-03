@@ -12,7 +12,12 @@ public sealed record FeedbackRequest(
     string Text,
     string Timestamp,
     FeedbackStructure? AcceptedStructure,
-    List<FieldCorrection>? Corrections);
+    List<FieldCorrection>? Corrections,
+    // Desk manual path: the model's interpretation failed and a human authored
+    // the structure from scratch. Without this marker those entries would look
+    // like zero-correction model successes and the correction telemetry (the
+    // drift detector replacing the cancelled eval) would undercount failures.
+    bool? ModelInterpretationFailed = null);
 
 public sealed record InterpretRequest(string Text);
 

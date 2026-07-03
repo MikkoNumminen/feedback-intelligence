@@ -17,6 +17,7 @@ public sealed record StoredFeedback(
     string CreatedAt,
     FeedbackStructure? Structure,
     bool StructureFailed,
+    bool ModelFailed,
     IReadOnlyList<string> SalvageNotes,
     IReadOnlyList<AlertHit> Alerts,
     IReadOnlyList<FieldCorrection>? Corrections);
@@ -53,6 +54,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
                 created_at TEXT NOT NULL,
                 structure_json TEXT NULL,
                 structure_failed INTEGER NOT NULL DEFAULT 0,
+                model_failed INTEGER NOT NULL DEFAULT 0,
                 salvage_notes_json TEXT NOT NULL DEFAULT '[]',
                 alerts_json TEXT NOT NULL DEFAULT '[]',
                 corrections_json TEXT NULL
@@ -70,8 +72,8 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         command.CommandText = """
             INSERT INTO feedback
                 (id, source, text, timestamp, created_at, structure_json, structure_failed,
-                 salvage_notes_json, alerts_json, corrections_json)
-            VALUES ($id, $source, $text, $timestamp, $createdAt, $structure, $failed, $notes, $alerts, $corrections)
+                 model_failed, salvage_notes_json, alerts_json, corrections_json)
+            VALUES ($id, $source, $text, $timestamp, $createdAt, $structure, $failed, $modelFailed, $notes, $alerts, $corrections)
             """;
         command.Parameters.AddWithValue("$id", item.Id);
         command.Parameters.AddWithValue("$source", item.Source);
@@ -81,6 +83,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         command.Parameters.AddWithValue("$structure",
             item.Structure is null ? DBNull.Value : JsonSerializer.Serialize(item.Structure, Json));
         command.Parameters.AddWithValue("$failed", item.StructureFailed ? 1 : 0);
+        command.Parameters.AddWithValue("$modelFailed", item.ModelFailed ? 1 : 0);
         command.Parameters.AddWithValue("$notes", JsonSerializer.Serialize(item.SalvageNotes, Json));
         command.Parameters.AddWithValue("$alerts", JsonSerializer.Serialize(item.Alerts, Json));
         command.Parameters.AddWithValue("$corrections",
@@ -143,6 +146,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
             (string)reader["created_at"],
             Read("structure_json") is { } s ? JsonSerializer.Deserialize<FeedbackStructure>(s, Json) : null,
             (long)reader["structure_failed"] != 0,
+            (long)reader["model_failed"] != 0,
             JsonSerializer.Deserialize<List<string>>((string)reader["salvage_notes_json"], Json) ?? [],
             JsonSerializer.Deserialize<List<AlertHit>>((string)reader["alerts_json"], Json) ?? [],
             Read("corrections_json") is { } c ? JsonSerializer.Deserialize<List<FieldCorrection>>(c, Json) : null);

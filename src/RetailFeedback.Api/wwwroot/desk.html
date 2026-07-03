@@ -16,6 +16,7 @@
           padding:1rem; margin-bottom:1rem; }
   textarea { width:100%; min-height:6.5rem; font:inherit; padding:.65rem;
              border:1px solid var(--line); border-radius:.5rem; resize:vertical; }
+  textarea[readonly] { background:#eef1f4; color:var(--mut); }
   label { display:block; font-size:.8rem; color:var(--mut); margin:.7rem 0 .2rem; }
   select, input[type=text] { width:100%; font:inherit; padding:.55rem;
              border:1px solid var(--line); border-radius:.5rem; background:#fff; }
@@ -41,8 +42,8 @@
     <label for="text">Mitä asiakas sanoi?</label>
     <textarea id="text" maxlength="800" placeholder="esim. asiakas sano et maitokaapis oli vanhoi purkkei" autofocus></textarea>
     <div class="hint"><span id="chars">0</span>/800 merkkiä</div>
-    <div class="row"><button class="primary" id="interpret">Tulkitse</button></div>
-    <p class="status" id="status1"></p>
+    <div class="row"><button class="primary" id="interpret" disabled>Tulkitse</button></div>
+    <p class="status" id="status1">Yhdistetään palvelimeen…</p>
   </div>
 
   <div class="card" id="interpret-card">
@@ -78,8 +79,17 @@ const FI = {
 };
 
 const el = id => document.getElementById(id);
-let model = null;      // the model's original interpretation (for the audit)
-let language = "fi";   // kept as detected; not edited at the desk
+
+// Per-entry state. interpretedText is captured at interpret time and is the
+// ONLY text ever saved — the model's structure must never be attached to text
+// the model did not see. entryId makes save retries idempotent (server 409s
+// the duplicate instead of double-storing).
+let model = null;
+let interpretedText = null;
+let language = "fi";
+let entryId = null;
+let modelFailed = false;
+let schemaLoaded = false;
 
 function fillSelect(select, values, labels) {
   select.innerHTML = "";
@@ -92,17 +102,28 @@ function fillSelect(select, values, labels) {
 }
 
 async function loadSchema() {
-  const res = await fetch("/schema");
-  if (!res.ok) throw new Error("schema");
-  const schema = await res.json();
-  fillSelect(el("department"), schema.departments, FI.departments);
-  fillSelect(el("severity"), schema.severities, FI.severities);
-  fillSelect(el("type"), schema.types, FI.types);
+  try {
+    const res = await fetch("/schema");
+    if (!res.ok) throw new Error();
+    const schema = await res.json();
+    fillSelect(el("department"), schema.departments, FI.departments);
+    fillSelect(el("severity"), schema.severities, FI.severities);
+    fillSelect(el("type"), schema.types, FI.types);
+    schemaLoaded = true;
+    el("interpret").disabled = false;
+    setStatus("status1", "", "");
+  } catch {
+    schemaLoaded = false;
+    el("interpret").disabled = true;
+    setStatus("status1", "err", "Palvelin ei vastaa — yritetään uudelleen…");
+    setTimeout(loadSchema, 3000);
+  }
 }
 
 el("text").addEventListener("input", () => { el("chars").textContent = el("text").value.length; });
 
 el("interpret").addEventListener("click", async () => {
+  if (!schemaLoaded) return;
   const text = el("text").value.trim();
   if (!text) { setStatus("status1", "err", "Kirjoita palaute ensin."); return; }
   el("interpret").disabled = true;
@@ -116,16 +137,19 @@ el("interpret").addEventListener("click", async () => {
     if (res.status === 503) { setStatus("status1", "warn", "Ruuhkaa — yritä hetken päästä uudelleen."); return; }
     if (!res.ok) { setStatus("status1", "err", "Tulkinta epäonnistui."); return; }
     const data = await res.json();
+    startEntry(text);
     if (data.failed || !data.structure) {
-      // The model couldn't structure it: open the form with defaults so the
-      // human fills it in — the feedback is still captured.
+      // Model failed: human authors the structure; the failure is recorded
+      // (modelInterpretationFailed) so telemetry never mistakes this for a
+      // zero-correction success.
       model = null;
+      modelFailed = true;
       setStatus("status1", "warn", "Automaattinen tulkinta ei onnistunut — täytä kentät itse.");
       showForm({ department: "muu", theme: "", severity: "medium", type: "other", language: "fi" });
       return;
     }
     model = data.structure;
-    language = data.structure.language || "fi";
+    modelFailed = false;
     setStatus("status1", "ok", "Tulkinta valmis — tarkista alta.");
     showForm(data.structure);
   } catch {
@@ -135,7 +159,22 @@ el("interpret").addEventListener("click", async () => {
   }
 });
 
+function startEntry(text) {
+  interpretedText = text;
+  entryId = "desk-" + crypto.randomUUID();
+  el("text").readOnly = true;
+}
+
+function endEntry() {
+  interpretedText = null;
+  entryId = null;
+  model = null;
+  modelFailed = false;
+  el("text").readOnly = false;
+}
+
 function showForm(structure) {
+  language = structure.language || "fi";
   el("department").value = structure.department;
   el("theme").value = structure.theme;
   el("severity").value = structure.severity;
@@ -157,7 +196,8 @@ el("theme").addEventListener("input", markCorrections);
 
 el("cancel").addEventListener("click", () => {
   el("interpret-card").style.display = "none";
-  model = null;
+  endEntry();
+  setStatus("status1", "", "");
 });
 
 el("save").addEventListener("click", async () => {
@@ -168,9 +208,12 @@ el("save").addEventListener("click", async () => {
     type: el("type").value,
     language,
   };
+  if (!accepted.department || !accepted.severity || !accepted.type) {
+    setStatus("status2", "err", "Valinnat puuttuvat — päivitä sivu ja yritä uudelleen.");
+    return;
+  }
   if (!accepted.theme) { setStatus("status2", "err", "Aihe ei voi olla tyhjä."); return; }
 
-  // The audit: what the model said vs what the human saved, per field.
   const corrections = [];
   if (model)
     for (const field of ["department", "theme", "severity", "type"])
@@ -184,23 +227,26 @@ el("save").addEventListener("click", async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        id: entryId,
         source: "desk",
-        text: el("text").value.trim(),
+        text: interpretedText,
         timestamp: new Date().toISOString(),
         acceptedStructure: accepted,
         corrections: corrections.length > 0 ? corrections : null,
+        modelInterpretationFailed: modelFailed,
       }),
     });
     if (res.status === 503) { setStatus("status2", "warn", "Ruuhkaa — yritä hetken päästä."); return; }
-    if (!res.ok) { setStatus("status2", "err", "Tallennus epäonnistui."); return; }
-    setStatus("status1", "ok", "Kirjattu ✓ — kiitos!");
+    // 409 = an earlier attempt of THIS entry already landed: that is a success.
+    if (!res.ok && res.status !== 409) { setStatus("status2", "err", "Tallennus epäonnistui."); return; }
+    setStatus("status1", "ok", res.status === 409 ? "Kirjattu ✓ (oli jo tallennettu)" : "Kirjattu ✓ — kiitos!");
     el("interpret-card").style.display = "none";
+    endEntry();
     el("text").value = "";
     el("chars").textContent = "0";
-    model = null;
     el("text").focus();
   } catch {
-    setStatus("status2", "err", "Yhteysvirhe — palaute EI tallentunut.");
+    setStatus("status2", "warn", "Yhteysvirhe — tallennus jäi epävarmaksi. Yritä uudelleen: sama kirjaus ei tuplaannu.");
   } finally {
     el("save").disabled = false;
   }
@@ -212,7 +258,7 @@ function setStatus(id, kind, message) {
   node.textContent = message;
 }
 
-loadSchema().catch(() => setStatus("status1", "err", "Palvelin ei vastaa — päivitä sivu."));
+loadSchema();
 </script>
 </body>
 </html>

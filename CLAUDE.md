@@ -236,7 +236,8 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - Ingest API BUILT (`src/RetailFeedback.Api`, ASP.NET Core minimal API):
   `POST /feedback` (one endpoint; channels are source values), `POST
   /interpret` (desk preview, nothing stored), `GET /feedback/{id}`, `GET
-  /feedback?from&to&limit`, `GET /health` (1-token real completion).
+  /feedback?from&to&limit`, `GET /health` (1-token real completion),
+  `GET /schema` (enum sets for UIs — single source is StructuringSchema).
 - Storage decision: **SQLite** (`Microsoft.Data.Sqlite`, single `feedback`
   table, structure as a JSON column, `corrections_json` audit field) — the
   spell allowed SQLite or PostgreSQL; SQLite keeps the demo self-contained.
@@ -250,6 +251,21 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - Containment mirrored from the RAG as config validated at startup:
   input 800 chars, body 16 KB, per-IP rate limit 30/60 s, LLM concurrency 2
   with 500 ms acquire-then-shed.
+
+## Phase 3 status (2026-07-03)
+
+- Desk-entry UI BUILT (`src/RetailFeedback.Api/wwwroot/desk.html`, Finnish,
+  mobile-first, served by the API): one text field → `/interpret` → the
+  interpretation shown BEFORE saving → tap-accept or per-field correction →
+  `POST /feedback` with `acceptedStructure` + `corrections` audit,
+  source=desk, through the same ingest pipeline.
+- Integrity decisions from review: the interpreted text is locked and captured
+  at interpret time (structure can never attach to text the model did not
+  see); each entry carries a client-generated id so save retries are
+  idempotent (409 = already saved = success); a failed model interpretation
+  followed by manual entry is stored with `modelInterpretationFailed` /
+  `model_failed` so the correction telemetry never counts it as a
+  zero-correction success.
 
 - The deterministic alert keyword list EXISTS as config:
   `config/alert-keywords.json` (injury/safety, payment, legal-threat; Finnish
