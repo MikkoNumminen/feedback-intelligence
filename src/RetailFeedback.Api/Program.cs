@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 var ingestConfig = builder.Configuration.GetSection(IngestOptions.SectionName).Get<IngestOptions>() ?? new IngestOptions();
 builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = ingestConfig.MaxBodyBytes);
 
+builder.Services.AddCors();
 builder.Services.AddRetailFeedbackLlm(builder.Configuration);
 builder.Services.AddOptions<IngestOptions>()
     .Bind(builder.Configuration.GetSection(IngestOptions.SectionName))
@@ -65,6 +66,13 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
 });
+// The static-host frontend (Azure SWA) is a different origin than the Funnel
+// backend; the allowlist is config — empty means same-origin only.
+if (ingestConfig.AllowedCorsOrigins.Count > 0)
+    app.UseCors(policy => policy
+        .WithOrigins([.. ingestConfig.AllowedCorsOrigins])
+        .WithMethods("GET", "POST")
+        .WithHeaders("Content-Type"));
 app.UseRateLimiter();
 app.UseDefaultFiles();
 app.UseStaticFiles();

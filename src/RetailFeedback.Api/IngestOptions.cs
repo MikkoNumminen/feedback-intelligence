@@ -39,6 +39,10 @@ public sealed class IngestOptions
     /// <summary>Health probes a 1-token real completion; a cold model load can
     /// take tens of seconds, so this is tunable without a recompile.</summary>
     public int HealthTimeoutSeconds { get; init; } = 10;
+
+    /// <summary>Origins allowed to call the API cross-origin (the static-host
+    /// frontend, e.g. the Azure SWA URL). Empty = same-origin only, no CORS.</summary>
+    public List<string> AllowedCorsOrigins { get; init; } = [];
 }
 
 public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>

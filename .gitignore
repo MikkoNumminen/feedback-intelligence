@@ -12,3 +12,7 @@ data/corpus/ground-truth-placeholder-*
 
 # Runtime state (any location — the API creates its DB relative to its CWD)
 **/data/*.db
+data/snapshots/
+
+# Frontend publish bundle (assembled by tools/publish-frontend.ps1)
+dist/

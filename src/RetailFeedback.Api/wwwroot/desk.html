@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fi">
 <head>
 <meta charset="utf-8">
@@ -64,8 +64,12 @@
   </div>
 </main>
 
+<script src="./config.js"></script>
 <script>
 "use strict";
+// Same-origin locally; on the static host, config.js (written at publish
+// time) points API at the Tailscale Funnel backend.
+const API = window.API_BASE || "";
 const FI = {
   departments: {
     maito_kylma: "Maito & kylmä", hevi: "Hevi", kuiva_elintarvike: "Kuivat elintarvikkeet",
@@ -103,7 +107,7 @@ function fillSelect(select, values, labels) {
 
 async function loadSchema() {
   try {
-    const res = await fetch("/schema");
+    const res = await fetch(`${API}/schema`);
     if (!res.ok) throw new Error();
     const schema = await res.json();
     fillSelect(el("department"), schema.departments, FI.departments);
@@ -129,7 +133,7 @@ el("interpret").addEventListener("click", async () => {
   el("interpret").disabled = true;
   setStatus("status1", "", "Tulkitaan…");
   try {
-    const res = await fetch("/interpret", {
+    const res = await fetch(`${API}/interpret`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -223,7 +227,7 @@ el("save").addEventListener("click", async () => {
   el("save").disabled = true;
   setStatus("status2", "", "Tallennetaan…");
   try {
-    const res = await fetch("/feedback", {
+    const res = await fetch(`${API}/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

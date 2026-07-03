@@ -1,0 +1,12 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/desk.html", "/config.js", "/report-latest.json", "/report-latest.html"]
+  },
+  "mimeTypes": {
+    ".json": "application/json; charset=utf-8"
+  },
+  "globalHeaders": {
+    "cache-control": "no-cache"
+  }
+}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fi">
 <head>
 <meta charset="utf-8">
@@ -57,8 +57,12 @@
   <div style="text-align:right; margin-top:.8rem"><button id="close">Sulje</button></div>
 </dialog>
 
+<script src="./config.js"></script>
 <script>
 "use strict";
+// Same-origin locally; on the static host, config.js (written at publish
+// time) points API at the Tailscale Funnel backend.
+const API = window.API_BASE || "";
 const el = id => document.getElementById(id);
 const text = value => document.createTextNode(value ?? "");
 
@@ -94,7 +98,7 @@ async function loadReport() {
   setStatus("Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)");
   el("refresh").disabled = true;
   try {
-    const res = await fetch(`/report?from=${range.from.toISOString()}&to=${range.to.toISOString()}`);
+    const res = await fetch(`${API}/report?from=${range.from.toISOString()}&to=${range.to.toISOString()}`);
     if (!res.ok) throw new Error("report " + res.status);
     render(await res.json(), true);
     setStatus("");
@@ -103,7 +107,7 @@ async function loadReport() {
     // published next to this page (the truly-backend-down path on the
     // static host).
     try {
-      let snap = await fetch("/report/snapshot");
+      let snap = await fetch(`${API}/report/snapshot`);
       if (!snap.ok) snap = await fetch("./report-latest.json");
       if (!snap.ok) throw new Error("snapshot");
       render(await snap.json(), false);
@@ -167,7 +171,7 @@ function idChip(id) {
 
 async function openItem(id) {
   try {
-    const res = await fetch(`/feedback/${encodeURIComponent(id)}`);
+    const res = await fetch(`${API}/feedback/${encodeURIComponent(id)}`);
     if (!res.ok) throw new Error();
     const item = await res.json();
     const body = el("item-body");

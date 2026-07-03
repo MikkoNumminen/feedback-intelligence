@@ -301,6 +301,13 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   window (TODO #7). Unit tests cover their logic with scripted clients.
 - Phase 5 remaining: Azure SWA deploy (+ snapshot publication to the static
   host), Tailscale Funnel, rehearsal — all owner tasks (TODO #3/#4/#6).
+- Phase 5 PREP DONE (PR #6): the frontend reads `window.API_BASE` from a
+  publish-time `config.js` (same-origin locally); the API has a config CORS
+  allowlist (`Ingest:AllowedCorsOrigins`, empty = same-origin only);
+  `tools/publish-frontend.ps1 -ApiBase <funnel-url>` assembles `dist/` with
+  both pages, the SWA config (`deploy/staticwebapp.config.json`) and the
+  LATEST SNAPSHOT (json + html) — re-run + re-deploy refreshes the published
+  snapshot, which is what a shared link shows when the backend is down.
 - PR history with review findings and fixes: docs/prs/0001–0005. All work was
   merged locally; NO remote exists and nothing was pushed anywhere.
 
