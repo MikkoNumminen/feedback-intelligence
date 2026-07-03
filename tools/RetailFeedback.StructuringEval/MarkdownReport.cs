@@ -13,7 +13,10 @@ public static class MarkdownReport
         var sb = new StringBuilder();
         sb.AppendLine($"# Structuring eval — {DateTime.Now:yyyy-MM-dd HH:mm}");
         sb.AppendLine();
-        sb.AppendLine($"- Items: {items.Count}; repetitions: {eval.Repetitions}; temperature: {eval.Temperature}; think disabled: {eval.DisableThinking}");
+        sb.AppendLine(
+            $"- Items: {items.Count}; repetitions: {eval.Repetitions}; temperature: {eval.Temperature}; " +
+            $"max output tokens: {(eval.MaxOutputTokens > 0 ? eval.MaxOutputTokens.ToString() : "uncapped")}; " +
+            $"reasoning off via /no_think soft switch: {eval.DisableThinking}");
         sb.AppendLine($"- Prompt: `{Path.GetFileName(promptPath)}` (identical for all candidates)");
         sb.AppendLine("- Primary metric is PROMPT-ONLY JSON discipline — no constrained decoding.");
         sb.AppendLine();

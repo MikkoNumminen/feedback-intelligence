@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using RetailFeedback.Llm;
@@ -19,7 +20,11 @@ public sealed class StructuringEvalRunner(
     IOptions<LlmOptions> llmOptions,
     IOptions<EvalOptions> evalOptions)
 {
-    private static readonly JsonSerializerOptions RawJsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions RawJsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     /// <summary>The Phase 0 spike: one completion from every configured model, through the abstraction.</summary>
     public async Task<int> PingAsync(CancellationToken ct)
@@ -91,14 +96,20 @@ public sealed class StructuringEvalRunner(
             Console.WriteLine($"\n=== {model} ===  ('.' adherent, '!' parse/schema violation, 'X' unparseable)");
             using var client = clientFactory.CreateForModel(model);
             var chatOptions = new ChatOptions { Temperature = eval.Temperature };
-            if (eval.DisableThinking)
-                chatOptions.AdditionalProperties = new AdditionalPropertiesDictionary { ["think"] = false };
+            if (eval.MaxOutputTokens > 0)
+                chatOptions.MaxOutputTokens = eval.MaxOutputTokens;
 
             foreach (var item in items)
             {
                 for (var rep = 1; rep <= eval.Repetitions; rep++)
                 {
                     var prompt = promptTemplate.Replace("{{text}}", item.Text, StringComparison.Ordinal);
+                    // Model-agnostic reasoning suppression, validated in the
+                    // mikkonumminen.dev experiment harness: reasoning models honour
+                    // the soft switch, others ignore the token. Applied identically
+                    // to every candidate so prompts stay arm-fair.
+                    if (eval.DisableThinking)
+                        prompt += "\n/no_think";
                     var sw = Stopwatch.StartNew();
                     string raw;
                     try
