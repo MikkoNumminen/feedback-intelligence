@@ -1,2 +1,7 @@
 # Local-only archive and scratch files — never committed
 .local/
+
+# .NET build output
+bin/
+obj/
+*.user
