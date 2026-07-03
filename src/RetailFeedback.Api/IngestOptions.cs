@@ -21,6 +21,13 @@ public sealed class IngestOptions
     public int RateLimitRequests { get; init; } = 30;
     public double RateLimitWindowSeconds { get; init; } = 60;
 
+    /// <summary>Loopback callers (corpus pushes, local tooling, the dev loop)
+    /// are exempt from rate limiting — the RAG-measured lesson ("never accept
+    /// throttled data as variance"), re-measured here when a 32-item corpus
+    /// push could not fit a 30/60s window. Tunnel traffic keeps its real
+    /// client IP via forwarded headers and stays limited.</summary>
+    public bool RateLimitExemptLoopback { get; init; } = true;
+
     /// <summary>One local GPU serves generation: bound concurrent LLM requests and
     /// SHED (503) after a short wait rather than queue — a queue behind a slow
     /// generation stacks timeouts.</summary>

@@ -41,14 +41,21 @@ builder.Services.AddRateLimiter(limiter =>
 {
     limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+    {
+        var ip = context.Connection.RemoteIpAddress;
+        // ForwardedHeaders runs before this, so tunneled clients carry their
+        // REAL IP here and stay limited; only genuine local callers are exempt.
+        if (ingestConfig.RateLimitExemptLoopback && ip is not null && System.Net.IPAddress.IsLoopback(ip))
+            return RateLimitPartition.GetNoLimiter("loopback");
+        return RateLimitPartition.GetFixedWindowLimiter(
+            ip?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = ingestConfig.RateLimitRequests,
                 Window = TimeSpan.FromSeconds(ingestConfig.RateLimitWindowSeconds),
                 QueueLimit = 0,
-            }));
+            });
+    });
 });
 
 var app = builder.Build();

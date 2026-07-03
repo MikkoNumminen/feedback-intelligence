@@ -307,9 +307,24 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   save visible on next refresh (cache invalidation) → snapshot JSON + HTML
   served. 15 noise items stored `structure_failed` — the honest LLM-down path,
   because the RAG stack was up and the hard rule forbids unannounced GPU use.
-- NOT yet exercised live: Poro structuring at ingest, synthesis narratives,
-  alert nominations, desk /interpret — all wait for the next announced GPU
-  window (TODO #7). Unit tests cover their logic with scripted clients.
+- LIVE RUN COMPLETE (2026-07-04, announced GPU window, placeholder data —
+  non-evidential, registered): 32/32 items structured by real Poro at ingest
+  (0 failures, 0 salvage normalizations; ~0.6 s/item warm); desk /interpret
+  read dialect + "kolmas kerta" escalation into maito_kylma/high in 0.8 s
+  (fenced output silently salvaged); live report in 20.1 s with 6 cited
+  Finnish narratives, 0 dropped claims, budget cap engaged as designed
+  (3 fallbacks after 8 LLM calls, logged); `verify` → ACCEPTANCE: PASS on
+  all three planted stories, zero trend warnings; telemetry recorded the
+  desk theme-correction (rate 0.091). Poro's classification kept story
+  departments pure (no noise leakage into maito_kylma/leipa).
+- Caveats from the live run: (1) the LLM alert-NOMINATION path ran but had
+  nothing to nominate — the seed-42 safety realization contains "murtui", a
+  deterministic keyword (dev-data quirk); the keyword-free nomination case is
+  exercised only when the real corpus lands. (2) The per-IP rate limit
+  throttled the 32-item corpus push twice (30/60 s window, 409s consume
+  permits too) → loopback exemption added (`Ingest:RateLimitExemptLoopback`,
+  default on; tunnel traffic keeps real IPs via forwarded headers and stays
+  limited) — the RAG's "never accept throttled data as variance" lesson.
 - Phase 5 remaining: Azure SWA deploy (+ snapshot publication to the static
   host), Tailscale Funnel, rehearsal — all owner tasks (TODO #3/#4/#6).
 - Phase 5 PREP DONE (PR #6): the frontend reads `window.API_BASE` from a
