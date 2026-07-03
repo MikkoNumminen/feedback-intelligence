@@ -94,7 +94,12 @@ public sealed class StructuringEvalRunner(
         foreach (var model in eval.Candidates)
         {
             Console.WriteLine($"\n=== {model} ===  ('.' adherent, '!' parse/schema violation, 'X' unparseable)");
-            using var client = clientFactory.CreateForModel(model);
+            // API-level reasoning suppression, applied identically to every
+            // candidate (a no-op for non-reasoning models) so arms stay fair.
+            // The /no_think prompt soft switch is NOT honored on Ollama's native
+            // chat path — measured in the 2026-07-03 placeholder run, where
+            // thinking silently consumed the whole output-token budget.
+            using var client = clientFactory.CreateForModel(model, eval.DisableThinking);
             var chatOptions = new ChatOptions { Temperature = eval.Temperature };
             if (eval.MaxOutputTokens > 0)
                 chatOptions.MaxOutputTokens = eval.MaxOutputTokens;
@@ -104,12 +109,6 @@ public sealed class StructuringEvalRunner(
                 for (var rep = 1; rep <= eval.Repetitions; rep++)
                 {
                     var prompt = promptTemplate.Replace("{{text}}", item.Text, StringComparison.Ordinal);
-                    // Model-agnostic reasoning suppression, validated in the
-                    // mikkonumminen.dev experiment harness: reasoning models honour
-                    // the soft switch, others ignore the token. Applied identically
-                    // to every candidate so prompts stay arm-fair.
-                    if (eval.DisableThinking)
-                        prompt += "\n/no_think";
                     var sw = Stopwatch.StartNew();
                     string raw;
                     try

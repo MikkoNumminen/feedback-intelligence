@@ -105,9 +105,14 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   MAC` network errors — a read-once copy, no ongoing coupling.)
 - Reuse from the mikkonumminen.dev RAG (`D:\koodaamista\mikkonumminen.dev`,
   measured there — port, don't reinvent):
-  - Reasoning suppression is the model-agnostic `/no_think` soft switch
-    appended to the prompt (reasoning models obey it, others ignore the token);
-    validated in that repo's experiment harness. Used by the structuring eval.
+  - Reasoning suppression: the RAG's `/no_think` soft switch was validated on
+    Ollama's OpenAI-compat endpoint. MEASURED CORRECTION (2026-07-03
+    placeholder run): on Ollama's NATIVE chat path with current qwen3
+    templates the soft switch is NOT honored — thinking stayed on and silently
+    consumed the num_predict budget (truncated/empty answers, 21/27
+    unparseable). Use the API-level `think: false` instead (ChatRequest.Think
+    seeded via ChatOptions.RawRepresentationFactory inside the Llm project;
+    verified against OllamaSharp 5.4.25 source).
   - Containment defaults to mirror in Phase 2: INPUT_MAX_CHARS=800,
     MAX_BODY_BYTES=16384, LLM_MAX_CONCURRENCY=2 with 0.5 s acquire-then-SHED
     (never queue behind a busy GPU), RATE_LIMIT 30 req / 60 s, and an output

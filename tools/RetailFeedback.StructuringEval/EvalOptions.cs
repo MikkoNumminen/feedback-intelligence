@@ -18,7 +18,7 @@ public sealed class EvalOptions
     public string PromptPath { get; init; } = "";
 
     /// <summary>Suppress "thinking" traces (qwen3 emits them by default) via the
-    /// model-agnostic /no_think soft switch appended to every prompt.</summary>
+    /// API-level think=false on the client (see ILlmClientFactory).</summary>
     public bool DisableThinking { get; init; } = true;
 
     public float Temperature { get; init; }

@@ -10,6 +10,12 @@ namespace RetailFeedback.Llm;
 /// </summary>
 public interface ILlmClientFactory
 {
-    /// <summary>Creates a client bound to the given model. Caller owns disposal.</summary>
-    IChatClient CreateForModel(string model);
+    /// <summary>
+    /// Creates a client bound to the given model. Caller owns disposal.
+    /// <paramref name="disableReasoning"/> suppresses thinking traces at the
+    /// API level (reasoning models only; a no-op for others) — measured
+    /// necessity: prompt-level soft switches are not honored on Ollama's
+    /// native chat path and thinking silently consumes the output-token budget.
+    /// </summary>
+    IChatClient CreateForModel(string model, bool disableReasoning = false);
 }

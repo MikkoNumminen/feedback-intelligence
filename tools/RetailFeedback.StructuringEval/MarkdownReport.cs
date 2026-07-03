@@ -24,7 +24,7 @@ public static class MarkdownReport
         sb.AppendLine(
             $"- Items: {items.Count}; repetitions: {eval.Repetitions}; temperature: {eval.Temperature}; " +
             $"max output tokens: {(eval.MaxOutputTokens > 0 ? eval.MaxOutputTokens.ToString() : "uncapped")}; " +
-            $"reasoning off via /no_think soft switch: {eval.DisableThinking}");
+            $"reasoning off (API-level think=false): {eval.DisableThinking}");
         sb.AppendLine($"- Prompt: `{Path.GetFileName(promptPath)}` (identical for all candidates)");
         sb.AppendLine("- Primary metric is PROMPT-ONLY JSON discipline — no constrained decoding.");
         sb.AppendLine();
