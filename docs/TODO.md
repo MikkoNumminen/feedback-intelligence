@@ -12,3 +12,4 @@ session task list; this file is the durable copy.
 | 5 | Review `docs/mock-data-register.md`; approve each replacement/retirement | run-through complete | demo readiness |
 | 6 | 5-minute demo rehearsal on a fresh seed (`docs/demo-script.md`) | #1, #3, #4 | interview readiness |
 | 7 | Announce a GPU window for the full LIVE run-through: real Poro structuring at ingest, synthesis narratives + alert nominations in /report, desk /interpret moment. (Everything else was exercised end to end without the LLM — the RAG was up during the autonomous run.) | RAG shutdown window | live-LLM verification of the whole loop |
+| 8 | Maintenance watch: bump `SQLitePCLRaw.bundle_e_sqlite3` when upstream ships SQLite ≥ 3.50.2 (GHSA-2m69-gcr7-jv3q has no patched version as of 2026-07-03; exposure assessed low — see docs/audits/dotnet-2026-07-03.md) | upstream release | clean vulnerability scan |
