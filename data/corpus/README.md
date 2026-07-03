@@ -11,16 +11,22 @@ Realistic Finnish retail feedback: dialects, typos, rambling, terse desk
 shorthand. Never LLM-generated, never scraped (the synthetic-but-expert-
 calibrated GDPR decision, see CLAUDE.md). One JSON object per line:
 
-| field    | value                                                            |
-|----------|------------------------------------------------------------------|
-| `id`     | unique string, e.g. `core-001`                                   |
-| `source` | `google_review` \| `email` \| `web_form` \| `desk`               |
-| `text`   | the feedback, exactly as a human would write it                  |
-| `story`  | OPTIONAL — tags the item as raw material for a planted story. Must match a `Generator:Stories` id: `dairy-freshness-worsening`, `safety-no-keyword`, `availability-slow-burn`. Untagged items become base noise. |
+| field      | value                                                            |
+|------------|------------------------------------------------------------------|
+| `id`       | unique string, e.g. `core-001`                                   |
+| `source`   | `google_review` \| `email` \| `web_form` \| `desk`               |
+| `text`     | the feedback, exactly as a human would write it                  |
+| `story`    | OPTIONAL — tags the item as raw material for a planted story. Must match a `Generator:Stories` id: `dairy-freshness-worsening`, `safety-no-keyword`, `availability-slow-burn`. Untagged items become base noise. |
+| `sequence` | OPTIONAL, story items only — position in the authored escalation arc (1 = first/mildest). Per story: all items sequenced or none. Generate assigns timestamps strictly monotonic with sequence and composes ONE realization per step per set; variants inherit story + sequence. |
 
-The one line present is Mikko's own example from the project spec. Write ~5+
-items per story tag and a broad untagged rest; the safety story needs texts
-that contain NO alert keywords — detectable only by understanding.
+The one line present is Mikko's own example from the project spec. Target
+~25–35 texts total: dairy ~5 (sequenced arc, mild → severe), availability ~4–5
+(sequenced), safety 1–2, noise 15–20 diverse untagged (noise survives ×6
+multiplication; story items multiply only ×2 through an intensity-preserving
+prompt). Safety-story texts must contain NONE of the deterministic alert
+keywords — verify against `config/alert-keywords.json`, which also lists the
+deliberately non-keyword structural-failure verbs (pettää, sortua, irrota…)
+that are safe to use.
 
 ## `dev-placeholder-*` files — SYNTHETIC, NON-EVIDENTIAL
 

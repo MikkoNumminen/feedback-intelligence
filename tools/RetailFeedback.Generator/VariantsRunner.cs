@@ -31,9 +31,14 @@ public sealed class VariantsRunner(
             return 1;
         }
 
-        var template = await File.ReadAllTextAsync(ResolvePath(opts.VariantsPromptPath), ct);
+        var noiseTemplate = await File.ReadAllTextAsync(ResolvePath(opts.VariantsPromptPath), ct);
+        // Story items get a dedicated intensity-preserving prompt and multiply
+        // less (arc protection, Mikko 2026-07-03): a mild rewording of a severe
+        // "third time already" text corrupts the authored escalation.
+        var storyTemplate = await File.ReadAllTextAsync(ResolvePath(opts.VariantsStoryPromptPath), ct);
         var core = CorpusItem.LoadJsonl(opts.CorePath);
-        Console.WriteLine($"Multiplying {core.Count} core items × {opts.VariantsPerItem} variants each.");
+        Console.WriteLine(
+            $"Multiplying {core.Count} core items (noise ×{opts.VariantsPerItem}, story ×{opts.StoryVariantsPerItem}).");
 
         var chatOptions = new ChatOptions
         {
@@ -45,8 +50,17 @@ public sealed class VariantsRunner(
         var failed = 0;
         foreach (var item in core)
         {
-            var prompt = template
-                .Replace("{{count}}", opts.VariantsPerItem.ToString(), StringComparison.Ordinal)
+            var isStory = !string.IsNullOrEmpty(item.Story);
+            var perItem = isStory ? opts.StoryVariantsPerItem : opts.VariantsPerItem;
+            if (perItem == 0)
+            {
+                variants.AddRange(ToVariantItems(item, []));
+                Console.WriteLine($"  {item.Id}: originals only (×0)");
+                continue;
+            }
+
+            var prompt = (isStory ? storyTemplate : noiseTemplate)
+                .Replace("{{count}}", perItem.ToString(), StringComparison.Ordinal)
                 .Replace("{{text}}", item.Text, StringComparison.Ordinal);
 
             var texts = await RequestVariantsAsync(prompt, chatOptions, ct)
@@ -58,19 +72,28 @@ public sealed class VariantsRunner(
                 continue;
             }
 
-            var n = 0;
-            foreach (var text in texts.Distinct(StringComparer.Ordinal))
-                variants.Add(new CorpusItem($"{item.Id}-v{++n}", item.Source, text, Story: item.Story, SourceId: item.Id));
-            // The original itself joins the pool — hand-written texts are the
-            // best material and must be findable in generated sets too.
-            variants.Add(new CorpusItem($"{item.Id}-v0", item.Source, item.Text, Story: item.Story, SourceId: item.Id));
-            Console.WriteLine($"  {item.Id}: {n} variants");
+            var made = ToVariantItems(item, texts);
+            variants.AddRange(made);
+            Console.WriteLine($"  {item.Id}: {made.Count - 1} variants");
         }
 
         await CorpusItem.SaveJsonlAsync(opts.VariantsPath, variants, ct);
         Console.WriteLine($"\nWrote {variants.Count} pool items to {Path.GetFullPath(opts.VariantsPath)} ({failed} core items skipped).");
         Console.WriteLine("Commit this file — generate composes ONLY from the committed pool.");
         return failed == 0 ? 0 : 1;
+    }
+
+    /// <summary>Variants inherit story tag AND sequence — an arc step's variant
+    /// is the same step told by a different customer. The original always joins
+    /// the pool as v0.</summary>
+    public static List<CorpusItem> ToVariantItems(CorpusItem core, IReadOnlyList<string> variantTexts)
+    {
+        var items = new List<CorpusItem>();
+        var n = 0;
+        foreach (var text in variantTexts.Distinct(StringComparer.Ordinal))
+            items.Add(new CorpusItem($"{core.Id}-v{++n}", core.Source, text, Story: core.Story, SourceId: core.Id, Sequence: core.Sequence));
+        items.Add(new CorpusItem($"{core.Id}-v0", core.Source, core.Text, Story: core.Story, SourceId: core.Id, Sequence: core.Sequence));
+        return items;
     }
 
     private async Task<List<string>?> RequestVariantsAsync(string prompt, ChatOptions chatOptions, CancellationToken ct)

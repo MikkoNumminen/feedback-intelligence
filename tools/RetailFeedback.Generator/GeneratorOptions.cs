@@ -21,7 +21,16 @@ public sealed class GeneratorOptions
     public int NoiseWindowDays { get; init; } = 21;
 
     public int VariantsPerItem { get; init; } = 6;
+
+    /// <summary>Story-tagged items multiply less (arc-intensity protection,
+    /// Mikko 2026-07-03); 0 = originals only, no LLM call for story items.</summary>
+    public int StoryVariantsPerItem { get; init; } = 2;
+
     public string VariantsPromptPath { get; init; } = "prompts/variants-v0.txt";
+
+    /// <summary>Dedicated intensity-preserving prompt for story-tagged items.</summary>
+    public string VariantsStoryPromptPath { get; init; } = "prompts/variants-story-v0.txt";
+
     public float VariantsTemperature { get; init; } = 0.8f;
     public int VariantsMaxOutputTokens { get; init; } = 1024;
 
@@ -64,6 +73,10 @@ public sealed class GeneratorOptionsValidator : IValidateOptions<GeneratorOption
             failures.Add($"Generator:NoiseWindowDays must be >= 1, got {options.NoiseWindowDays}.");
         if (options.VariantsPerItem is < 1 or > 20)
             failures.Add($"Generator:VariantsPerItem must be within 1..20, got {options.VariantsPerItem}.");
+        if (options.StoryVariantsPerItem is < 0 or > 20)
+            failures.Add($"Generator:StoryVariantsPerItem must be within 0..20 (0 = originals only), got {options.StoryVariantsPerItem}.");
+        if (string.IsNullOrWhiteSpace(options.VariantsStoryPromptPath))
+            failures.Add("Generator:VariantsStoryPromptPath must be set.");
         if (options.Stories.Count == 0)
             failures.Add("Generator:Stories must define at least one planted story.");
 

@@ -150,6 +150,108 @@ public class CorpusComposerTests
 
         Assert.All(items, i => Assert.Null(i.Story));
         Assert.All(items, i => Assert.Null(i.SourceId));
+        Assert.All(items, i => Assert.Null(i.Sequence));
+    }
+
+    private static GeneratorOptions MakeSequencedDairyOptions() => new()
+    {
+        AnchorDate = "2026-07-01",
+        NoiseCount = 0,
+        Stories =
+        [
+            new StoryConfig
+            {
+                Id = "dairy-freshness-worsening",
+                Kind = "recurring_signal",
+                Department = "maito_kylma",
+                ThemeKeywords = ["tuoreus"],
+                Sources = ["desk", "email"],
+                WindowDays = 14,
+                Count = 9, // ignored for sequenced pools — one item per step
+                Trend = "worsening",
+                MinGroundedIds = 3,
+                ExpectAlert = false,
+            },
+        ],
+    };
+
+    private static List<CorpusItem> MakeSequencedDairyPool()
+    {
+        var pool = new List<CorpusItem>();
+        for (var step = 1; step <= 5; step++)
+            for (var v = 0; v < 3; v++)
+                pool.Add(new CorpusItem(
+                    $"sd-{step}-v{v}", "desk", $"arc-step-{step} muotoilu {v}",
+                    Story: "dairy-freshness-worsening", Sequence: step));
+        return pool;
+    }
+
+    [Fact]
+    public void SequencedStory_TimestampsStrictlyMonotonicWithSequence()
+    {
+        var (items, truth) = CorpusComposer.Compose(MakeSequencedDairyPool(), MakeSequencedDairyOptions(), 42, false);
+        var byId = items.ToDictionary(i => i.Id);
+        var dairy = truth.Stories.Single();
+
+        // One realization per authored step, Count config ignored.
+        Assert.Equal(5, dairy.FeedbackIds.Count);
+
+        var inTimeOrder = dairy.FeedbackIds
+            .Select(id => byId[id])
+            .OrderBy(i => DateTimeOffset.Parse(i.Timestamp!))
+            .ToList();
+
+        // A "third time already" complaint must never precede the first mild
+        // one: content order (arc-step-N) must equal time order, strictly.
+        var steps = inTimeOrder
+            .Select(i => int.Parse(i.Text.Split("arc-step-")[1].Split(' ')[0]))
+            .ToList();
+        Assert.Equal([1, 2, 3, 4, 5], steps);
+
+        var stamps = inTimeOrder.Select(i => DateTimeOffset.Parse(i.Timestamp!)).ToList();
+        for (var i = 1; i < stamps.Count; i++)
+            Assert.True(stamps[i] > stamps[i - 1], "timestamps must be strictly increasing with sequence");
+    }
+
+    [Fact]
+    public void SequencedStory_VariesRealizationAcrossSeeds()
+    {
+        var pool = MakeSequencedDairyPool();
+        var texts = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var seed in new[] { 1, 2, 3, 4, 5, 6, 7, 8 })
+        {
+            var (items, truth) = CorpusComposer.Compose(pool, MakeSequencedDairyOptions(), seed, false);
+            var byId = items.ToDictionary(i => i.Id);
+            texts.Add(byId[truth.Stories.Single().FeedbackIds[0]].Text);
+        }
+
+        // Different seeds should not all pick the same variant for a step.
+        Assert.True(texts.Count > 1, "seed must vary which variant realizes a sequence step");
+    }
+
+    [Fact]
+    public void MixedSequencedAndUnsequencedStoryPool_FailsLoudly()
+    {
+        var pool = MakeSequencedDairyPool();
+        pool.Add(new CorpusItem("sd-x", "desk", "sekalainen ilman järjestystä", Story: "dairy-freshness-worsening"));
+
+        var ex = Assert.Throws<InvalidDataException>(() =>
+            CorpusComposer.Compose(pool, MakeSequencedDairyOptions(), 42, false));
+        Assert.Contains("tag all or none", ex.Message);
+    }
+
+    [Fact]
+    public void VariantItems_InheritStoryTagAndSequence()
+    {
+        var core = new CorpusItem("core-007", "desk", "maito hapanta KOLMAS kerta", Story: "dairy-freshness-worsening", Sequence: 5);
+
+        var items = VariantsRunner.ToVariantItems(core, ["eri asiakkaan muotoilu", "toinen muotoilu"]);
+
+        Assert.Equal(3, items.Count); // 2 variants + the original as v0
+        Assert.Contains(items, i => i.Id == "core-007-v0" && i.Text == core.Text);
+        Assert.All(items, i => Assert.Equal("dairy-freshness-worsening", i.Story));
+        Assert.All(items, i => Assert.Equal(5, i.Sequence));
+        Assert.All(items, i => Assert.Equal("core-007", i.SourceId));
     }
 
     [Fact]

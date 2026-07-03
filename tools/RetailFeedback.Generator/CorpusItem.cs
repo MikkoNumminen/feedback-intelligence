@@ -15,7 +15,8 @@ public sealed record CorpusItem(
     [property: JsonPropertyName("text")] string Text,
     [property: JsonPropertyName("timestamp")] string? Timestamp = null,
     [property: JsonPropertyName("story")] string? Story = null,
-    [property: JsonPropertyName("sourceId")] string? SourceId = null)
+    [property: JsonPropertyName("sourceId")] string? SourceId = null,
+    [property: JsonPropertyName("sequence")] int? Sequence = null)
 {
     private static readonly JsonSerializerOptions Options = new()
     {

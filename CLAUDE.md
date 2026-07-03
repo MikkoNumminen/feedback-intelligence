@@ -230,7 +230,29 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   recoverable through the ground-truth file; the analyzer meets the data cold.
 - Remaining Phase 1 steps once core.jsonl lands: announced `variants` run →
   commit `variants.jsonl` → `generate --seed 42` → commit corpus + ground
-  truth → salvage-layer smoke test on the real texts (the 20 texts' role (b)).
+  truth → salvage-layer smoke test on the real texts, reported the same day.
+- The deterministic alert keyword list EXISTS as config:
+  `config/alert-keywords.json` (injury/safety, payment, legal-threat; Finnish
+  stems, case-insensitive substring contract that Phase 2 implements
+  verbatim). Deliberate exclusions are recorded in the file — structural-
+  failure verbs (pettää, sortua, irrota, antaa periksi, romahtaa) are
+  non-keywords ON PURPOSE: they are the no-keyword safety story's vocabulary.
+  Safety-story core texts are verified against this list, not a guess of it.
+- Sequence-preserving arcs (Mikko, 2026-07-03): a worsening trend must be
+  visible in CONTENT, not only in timestamp density. Story-tagged core items
+  carry an optional `sequence` (1 = mildest); variants inherit story +
+  sequence; `generate` assigns timestamps STRICTLY monotonic with sequence
+  inside the story window (worsening easing on top) and composes exactly one
+  realization per step per set (config Count is ignored for sequenced pools).
+  Pinned by test: content order equals time order.
+- Story-multiplication decision: story items multiply ×2 via a dedicated
+  intensity-preserving prompt (`prompts/variants-story-v0.txt` — counts,
+  ordinals, frustration level must survive rephrasing); noise multiplies ×6.
+  If the announced variants run shows intensity drift, fallback is
+  StoryVariantsPerItem=0 (originals only) — Mikko writes more originals
+  rather than accept a mushed arc.
+- Corpus expectation: ~25–35 hand-written texts (dairy ~5 sequenced,
+  availability ~4–5 sequenced, safety 1–2, noise 15–20 diverse untagged).
 
 ## PHASE 0 — Risk first: prove the unknowns (days 1–2)
 

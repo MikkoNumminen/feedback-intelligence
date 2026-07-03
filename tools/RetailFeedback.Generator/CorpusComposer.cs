@@ -31,32 +31,70 @@ public static class CorpusComposer
 
             var from = anchor.AddDays(-(story.WindowDays - 1));
             storyWindows.Add((story, from, anchor));
-            var shuffled = Shuffle(storyPool, rng);
 
-            for (var n = 0; n < story.Count; n++)
+            var sequenced = storyPool.Where(i => i.Sequence.HasValue).ToList();
+            var unsequenced = storyPool.Where(i => !i.Sequence.HasValue).ToList();
+            if (sequenced.Count > 0 && unsequenced.Count > 0)
+                throw new InvalidDataException(
+                    $"Story '{story.Id}': pool mixes sequenced and unsequenced items — tag all or none.");
+
+            if (sequenced.Count > 0)
             {
-                // Worsening = frequency escalation: ~1/3 of items land in the
-                // first half of the window, the rest in the second half.
-                int dayOffset;
-                if (story.Trend == "worsening" && story.Count > 1)
+                // Sequence-preserving arc (Mikko, 2026-07-03): the trend must be
+                // visible in CONTENT, so timestamps are strictly monotonic with
+                // the authored sequence — a "third time already" complaint must
+                // never precede the first mild one. One realization per step
+                // (original or a variant — seed-varied surface); Count is
+                // derived from the number of steps, not config.
+                var steps = sequenced
+                    .GroupBy(i => i.Sequence!.Value)
+                    .OrderBy(g => g.Key)
+                    .ToList();
+                var prev = DateTime.MinValue;
+                for (var i = 0; i < steps.Count; i++)
                 {
-                    var firstHalf = story.WindowDays / 2;
-                    var inFirstHalf = n < Math.Max(1, story.Count / 3);
-                    dayOffset = inFirstHalf
-                        ? rng.Next(0, Math.Max(1, firstHalf))
-                        : rng.Next(firstHalf, story.WindowDays);
+                    var candidates = steps[i].ToList();
+                    var item = candidates[rng.Next(candidates.Count)];
+                    var fraction = steps.Count == 1 ? 1.0 : (double)i / (steps.Count - 1);
+                    if (story.Trend == "worsening")
+                        fraction = Math.Sqrt(fraction); // shrinking gaps => density rises toward the window end
+                    var day = (int)Math.Round(fraction * (story.WindowDays - 1));
+                    var dt = from.AddDays(day).ToDateTime(new TimeOnly(rng.Next(8, 22), rng.Next(0, 60)));
+                    if (dt <= prev)
+                        dt = prev.AddMinutes(rng.Next(10, 120));
+                    prev = dt;
+                    drafts.Add((item.Text, story.Sources[rng.Next(story.Sources.Count)], Stamp(dt), story.Id));
                 }
-                else
+            }
+            else
+            {
+                var shuffled = Shuffle(unsequenced, rng);
+                for (var n = 0; n < story.Count; n++)
                 {
-                    dayOffset = rng.Next(0, story.WindowDays);
-                }
+                    // Worsening = frequency escalation: ~1/3 of items land in the
+                    // first half of the window, the rest in the second half.
+                    int dayOffset;
+                    if (story.Trend == "worsening" && story.Count > 1)
+                    {
+                        var firstHalf = story.WindowDays / 2;
+                        var inFirstHalf = n < Math.Max(1, story.Count / 3);
+                        dayOffset = inFirstHalf
+                            ? rng.Next(0, Math.Max(1, firstHalf))
+                            : rng.Next(firstHalf, story.WindowDays);
+                    }
+                    else
+                    {
+                        dayOffset = rng.Next(0, story.WindowDays);
+                    }
 
-                var item = shuffled[n % shuffled.Count];
-                drafts.Add((
-                    item.Text,
-                    story.Sources[rng.Next(story.Sources.Count)],
-                    Stamp(from.AddDays(dayOffset), rng),
-                    story.Id));
+                    var item = shuffled[n % shuffled.Count];
+                    var dt = from.AddDays(dayOffset).ToDateTime(new TimeOnly(rng.Next(8, 22), rng.Next(0, 60)));
+                    drafts.Add((
+                        item.Text,
+                        story.Sources[rng.Next(story.Sources.Count)],
+                        Stamp(dt),
+                        story.Id));
+                }
             }
         }
 
@@ -68,10 +106,12 @@ public static class CorpusComposer
         for (var n = 0; n < options.NoiseCount; n++)
         {
             var item = noiseShuffled[n % noiseShuffled.Count];
+            var dt = noiseFrom.AddDays(rng.Next(0, options.NoiseWindowDays))
+                .ToDateTime(new TimeOnly(rng.Next(8, 22), rng.Next(0, 60)));
             drafts.Add((
                 item.Text,
                 item.Source ?? allSources[rng.Next(allSources.Length)],
-                Stamp(noiseFrom.AddDays(rng.Next(0, options.NoiseWindowDays)), rng),
+                Stamp(dt),
                 null));
         }
 
@@ -106,8 +146,10 @@ public static class CorpusComposer
         return (items, new GroundTruthFile(seed, options.AnchorDate, nonEvidential, stories));
     }
 
-    private static string Stamp(DateOnly date, Random rng) =>
-        $"{date:yyyy-MM-dd}T{rng.Next(8, 22):D2}:{rng.Next(0, 60):D2}:00+03:00";
+    // InvariantCulture is load-bearing: on a fi-FI machine the ':' custom
+    // format specifier renders as '.', producing invalid ISO timestamps.
+    private static string Stamp(DateTime dt) =>
+        dt.ToString("yyyy-MM-dd'T'HH:mm", System.Globalization.CultureInfo.InvariantCulture) + ":00+03:00";
 
     private static List<T> Shuffle<T>(IReadOnlyList<T> source, Random rng)
     {

@@ -11,7 +11,7 @@ public static class MarkdownReport
         string promptPath)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"# Structuring eval — {DateTime.Now:yyyy-MM-dd HH:mm}");
+        sb.AppendLine($"# Structuring eval — {DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)}");
         sb.AppendLine();
         if (IsPlaceholderRun(eval))
         {

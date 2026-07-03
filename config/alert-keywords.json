@@ -1,0 +1,57 @@
+{
+  "matching": "case-insensitive invariant substring over the RAW feedback text; patterns are Finnish stems on purpose so inflected forms match (e.g. 'loukkaantu' matches loukkaantui/loukkaantunut). Phase 2's deterministic alert layer implements exactly this contract — no tokenization, no lemmatizer, no model.",
+  "categories": {
+    "injury_safety": [
+      "loukkaantu",
+      "loukkas",
+      "satutti",
+      "vahingoittu",
+      "tapaturma",
+      "vaaratilanne",
+      "hengenvaara",
+      "vaarall",
+      "liukastu",
+      "kaaduin",
+      "verta",
+      "haava",
+      "palovamma",
+      "murtu",
+      "sähköisku",
+      "tulipalo",
+      "ambulanssi",
+      "ensiapu",
+      "sairaala",
+      "myrkyt",
+      "tukehtu",
+      "allergi",
+      "lasinsiru",
+      "vierasesine"
+    ],
+    "payment": [
+      "veloit",
+      "maksupäät",
+      "laskutusvirhe",
+      "maksu ei onnistu"
+    ],
+    "legal_threat": [
+      "kuluttajansuoja",
+      "kuluttajariita",
+      "lakimies",
+      "asianajaja",
+      "juristi",
+      "oikeustoim",
+      "haastan",
+      "korvausvaatimus",
+      "vaadin korvaus",
+      "viranomais",
+      "terveystarkasta",
+      "ruokavirasto"
+    ]
+  },
+  "deliberateExclusions": [
+    "'sattu/sattui' — dominant Finnish sense is tapahtua ('ei sattunut pahemmin'); as a keyword it floods false positives. The injury sense belongs to the LLM layer.",
+    "structural-failure verbs (sortua, pettää, irrota, antaa periksi, romahtaa) — deliberately NOT keywords: they are exactly the no-keyword safety story's vocabulary, detectable only by understanding. Putting them here would make the demo's centerpiece trivially rule-detectable.",
+    "'reklamaatio' — routine retail vocabulary, not a legal threat.",
+    "'home/homehtunut' — a quality complaint whose severity assessment belongs to the LLM layer, not an instant alert."
+  ]
+}
