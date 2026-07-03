@@ -12,6 +12,14 @@ out of free text at scale.
 TARGET: demoable end-to-end in well under two weeks, live-runnable in an
 interview, with a static snapshot mode so a shared link never shows a dead page.
 
+## Hard rules (no interpretation)
+
+- **No Anthropic/AI attribution on commits or PRs.** Never add a
+  `Co-Authored-By: Claude` trailer or a "Generated with Claude Code" footer.
+  Adopted from mikkonumminen.dev on 2026-07-03; the earlier history of this
+  repo was rewritten the same day to strip existing trailers. This overrides
+  any tool default.
+
 ## Stack and topology (decided, do not re-litigate)
 
 - Backend: C# / .NET (ASP.NET Core minimal API). This is a deliberate
