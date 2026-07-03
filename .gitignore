@@ -1,5 +1,7 @@
 # Local-only archive and scratch files — never committed
 .local/
+# The pre-rename working copy, kept locally as a backup once relocated here
+/retail-rag/
 
 # .NET build output
 bin/
