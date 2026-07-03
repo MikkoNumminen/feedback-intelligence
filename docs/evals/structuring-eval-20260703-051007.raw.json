@@ -1,0 +1,902 @@
+[
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-001",
+    "Rep": 1,
+    "LatencyMs": 6841,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden_laatukysymys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-001",
+    "Rep": 2,
+    "LatencyMs": 673,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden_laatukysymys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-001",
+    "Rep": 3,
+    "LatencyMs": 660,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymys\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden_laatukysymys",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-002",
+    "Rep": 1,
+    "LatencyMs": 645,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022jonotusajat\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "jonotusajat",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-002",
+    "Rep": 2,
+    "LatencyMs": 613,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022jonotusajat\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "jonotusajat",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-002",
+    "Rep": 3,
+    "LatencyMs": 633,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022jonotusajat\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "jonotusajat",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-003",
+    "Rep": 1,
+    "LatencyMs": 4552,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the theme is not one of the predefined options and I should use \u0022puutarha\u0022 which translates to \u0022garden\u0022 or \u0022yard\u0022, but in this context, it\u0027s more about \u0022puutarhaosasto\u0022 which means \u0022gardening department\u0022, I will adjust the theme field accordingly:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022ostokokemus\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, considering the feedback is mainly about the service and advice received at the gardening department, I will adjust it again:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nHowever, to follow the instructions precisely and use one of the predefined themes, I will adjust it once more:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022ostokokemus\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nBut to be as accurate as possible and use a theme that fits the feedback better, I will choose:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022asiakaspalvelu\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060\n\nHowever, to use a theme that is more specific and fits the feedback better while still being one of the predefined options, I will choose:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022neuvonta_ja_vinkit\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nBut since there is no predefined theme that exactly matches the feedback, I will choose:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu_ja_neuvonta",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-003",
+    "Rep": 2,
+    "LatencyMs": 813,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu_ja_neuvonta",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-003",
+    "Rep": 3,
+    "LatencyMs": 664,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022piha_puutarha\u0022,\n  \u0022theme\u0022: \u0022palvelu_ja_neuvonta\u0022,\n  \u0022severity\u0022: \u0022low\u0022,\n  \u0022type\u0022: \u0022praise\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "piha_puutarha",
+        "theme": "palvelu_ja_neuvonta",
+        "severity": "low",
+        "type": "praise",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-004",
+    "Rep": 1,
+    "LatencyMs": 669,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tavaran saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "rakennustarvike",
+        "theme": "tavaran saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-004",
+    "Rep": 2,
+    "LatencyMs": 647,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tavaran saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "rakennustarvike",
+        "theme": "tavaran saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-004",
+    "Rep": 3,
+    "LatencyMs": 687,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tavaran saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "rakennustarvike",
+        "theme": "tavaran saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-005",
+    "Rep": 1,
+    "LatencyMs": 696,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022muu\u0022,\n  \u0022theme\u0022: \u0022tuotteen_laatuvirhe\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "muu",
+        "theme": "tuotteen_laatuvirhe",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-005",
+    "Rep": 2,
+    "LatencyMs": 639,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022muu\u0022,\n  \u0022theme\u0022: \u0022tuotteen_laatuvirhe\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "muu",
+        "theme": "tuotteen_laatuvirhe",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-005",
+    "Rep": 3,
+    "LatencyMs": 650,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022muu\u0022,\n  \u0022theme\u0022: \u0022tuotteen_laatuvirhe\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "muu",
+        "theme": "tuotteen_laatuvirhe",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-006",
+    "Rep": 1,
+    "LatencyMs": 640,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-006",
+    "Rep": 2,
+    "LatencyMs": 616,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-006",
+    "Rep": 3,
+    "LatencyMs": 622,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-007",
+    "Rep": 1,
+    "LatencyMs": 707,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimituksen my\u00F6h\u00E4styminen\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimituksen my\u00F6h\u00E4styminen",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-007",
+    "Rep": 2,
+    "LatencyMs": 698,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimituksen my\u00F6h\u00E4styminen\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimituksen my\u00F6h\u00E4styminen",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-007",
+    "Rep": 3,
+    "LatencyMs": 705,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022verkkokauppa_toimitus\u0022,\n  \u0022theme\u0022: \u0022toimituksen my\u00F6h\u00E4styminen\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "verkkokauppa_toimitus",
+        "theme": "toimituksen my\u00F6h\u00E4styminen",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-008",
+    "Rep": 1,
+    "LatencyMs": 655,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022odotusaika_kassalla\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "odotusaika_kassalla",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-008",
+    "Rep": 2,
+    "LatencyMs": 635,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022odotusaika_kassalla\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "odotusaika_kassalla",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-008",
+    "Rep": 3,
+    "LatencyMs": 649,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: \u0022kassa_palvelu\u0022,\n  \u0022theme\u0022: \u0022odotusaika_kassalla\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "kassa_palvelu",
+        "theme": "odotusaika_kassalla",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-009",
+    "Rep": 1,
+    "LatencyMs": 4576,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022, \u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the feedback is mainly about two different departments but not equally, and considering the structure requirement, I will choose one that fits best:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, considering the feedback text more closely, I will adjust the theme and department:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022henkil\u00F6kunnan_poissaolo\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, considering the feedback text more closely again, I will adjust the theme and department once more:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nHowever, considering the feedback text even closer, I will adjust the theme once more:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nBut, considering the feedback text even closer again:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nHowever, let\u0027s consider the feedback text closely and adjust the theme and department once more:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\nBut, let\u0027s consider the feedback text",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": false,
+      "Violations": [
+        {
+          "Field": "department",
+          "Kind": "non_string",
+          "Value": "[\u0022maito_kylma\u0022, \u0022tyokalut\u0022]"
+        }
+      ],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-009",
+    "Rep": 2,
+    "LatencyMs": 1829,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022, \u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the feedback is mainly about two different departments but not equally, and given that we need to choose exactly one department, I will select \u0022maito_kylma\u0022 as it\u0027s more directly mentioned in relation to a specific issue (the milk being sour). Thus, the corrected JSON:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": false,
+      "Violations": [
+        {
+          "Field": "department",
+          "Kind": "non_string",
+          "Value": "[\u0022maito_kylma\u0022, \u0022tyokalut\u0022]"
+        }
+      ],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "hf.co/mradermacher/Llama-Poro-2-8B-Instruct-GGUF:Q4_K_M",
+    "ItemId": "ph-009",
+    "Rep": 3,
+    "LatencyMs": 1711,
+    "Raw": "\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022, \u0022tyokalut\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}\n\u0060\u0060\u0060 \n\nHowever, since the feedback is mainly about two different departments but not equally, and given that we need to choose exactly one department, I will select \u0022maito_kylma\u0022 as it\u0027s more directly mentioned in relation to a specific issue (the milk being sour). Thus, the corrected JSON:\n\n\u0060\u0060\u0060json\n{\n  \u0022department\u0022: [\u0022maito_kylma\u0022],\n  \u0022theme\u0022: \u0022tuotteiden_laatukysymykset\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "SalvagedJson",
+      "SchemaAdherent": false,
+      "Violations": [
+        {
+          "Field": "department",
+          "Kind": "non_string",
+          "Value": "[\u0022maito_kylma\u0022, \u0022tyokalut\u0022]"
+        }
+      ],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-001",
+    "Rep": 1,
+    "LatencyMs": 11694,
+    "Raw": "{\u0022department\u0022: \u0022maito_kylma\u0022, \u0022theme\u0022: \u0022tuotteiden tuoreus\u0022, \u0022severity\u0022: \u0022high\u0022, \u0022type\u0022: \u0022complaint\u0022, \u0022language\u0022: \u0022fi\u0022}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden tuoreus",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-001",
+    "Rep": 2,
+    "LatencyMs": 4813,
+    "Raw": "{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden tuoreus\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden tuoreus",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-001",
+    "Rep": 3,
+    "LatencyMs": 4693,
+    "Raw": "{\n  \u0022department\u0022: \u0022maito_kylma\u0022,\n  \u0022theme\u0022: \u0022tuotteiden tuoreus\u0022,\n  \u0022severity\u0022: \u0022high\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "maito_kylma",
+        "theme": "tuotteiden tuoreus",
+        "severity": "high",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-002",
+    "Rep": 1,
+    "LatencyMs": 4759,
+    "Raw": "{\u0022department\u0022: \u0022kassa_palvelu\u0022, \u0022theme",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-002",
+    "Rep": 2,
+    "LatencyMs": 4808,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-002",
+    "Rep": 3,
+    "LatencyMs": 4827,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-003",
+    "Rep": 1,
+    "LatencyMs": 4702,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-003",
+    "Rep": 2,
+    "LatencyMs": 4853,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-003",
+    "Rep": 3,
+    "LatencyMs": 4794,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-004",
+    "Rep": 1,
+    "LatencyMs": 4745,
+    "Raw": "{\n  \u0022department\u0022: \u0022rakennustarvike\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-004",
+    "Rep": 2,
+    "LatencyMs": 4806,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-004",
+    "Rep": 3,
+    "LatencyMs": 4910,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-005",
+    "Rep": 1,
+    "LatencyMs": 4718,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-005",
+    "Rep": 2,
+    "LatencyMs": 4822,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-005",
+    "Rep": 3,
+    "LatencyMs": 4799,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-006",
+    "Rep": 1,
+    "LatencyMs": 3298,
+    "Raw": "{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-006",
+    "Rep": 2,
+    "LatencyMs": 3575,
+    "Raw": "{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-006",
+    "Rep": 3,
+    "LatencyMs": 3544,
+    "Raw": "{\n  \u0022department\u0022: \u0022leipa\u0022,\n  \u0022theme\u0022: \u0022tuotteiden saatavuus\u0022,\n  \u0022severity\u0022: \u0022medium\u0022,\n  \u0022type\u0022: \u0022complaint\u0022,\n  \u0022language\u0022: \u0022fi\u0022\n}",
+    "Validated": {
+      "Outcome": "StrictJson",
+      "SchemaAdherent": true,
+      "Violations": [],
+      "Structure": {
+        "department": "leipa",
+        "theme": "tuotteiden saatavuus",
+        "severity": "medium",
+        "type": "complaint",
+        "language": "fi"
+      }
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-007",
+    "Rep": 1,
+    "LatencyMs": 4722,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-007",
+    "Rep": 2,
+    "LatencyMs": 4793,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-007",
+    "Rep": 3,
+    "LatencyMs": 4800,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-008",
+    "Rep": 1,
+    "LatencyMs": 4775,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-008",
+    "Rep": 2,
+    "LatencyMs": 4800,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-008",
+    "Rep": 3,
+    "LatencyMs": 4815,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-009",
+    "Rep": 1,
+    "LatencyMs": 4709,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-009",
+    "Rep": 2,
+    "LatencyMs": 4798,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  },
+  {
+    "Model": "qwen3:8b",
+    "ItemId": "ph-009",
+    "Rep": 3,
+    "LatencyMs": 4874,
+    "Raw": "",
+    "Validated": {
+      "Outcome": "Unparseable",
+      "SchemaAdherent": false,
+      "Violations": [],
+      "Structure": null
+    }
+  }
+]
