@@ -111,7 +111,8 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         return await reader.ReadAsync(ct) ? Map(reader) : null;
     }
 
-    public async Task<List<StoredFeedback>> QueryAsync(string? fromIso, string? toIso, int limit, CancellationToken ct)
+    public async Task<List<StoredFeedback>> QueryAsync(
+        string? fromIso, string? toIso, int limit, CancellationToken ct, string? source = null)
     {
         await using var connection = new SqliteConnection(ConnectionString);
         await connection.OpenAsync(ct);
@@ -120,11 +121,13 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
             SELECT * FROM feedback
             WHERE ($from IS NULL OR timestamp >= $from)
               AND ($to IS NULL OR timestamp <= $to)
+              AND ($source IS NULL OR source = $source)
             ORDER BY timestamp DESC
             LIMIT $limit
             """;
         command.Parameters.AddWithValue("$from", (object?)fromIso ?? DBNull.Value);
         command.Parameters.AddWithValue("$to", (object?)toIso ?? DBNull.Value);
+        command.Parameters.AddWithValue("$source", (object?)source ?? DBNull.Value);
         command.Parameters.AddWithValue("$limit", limit);
         var items = new List<StoredFeedback>();
         await using var reader = await command.ExecuteReaderAsync(ct);

@@ -34,6 +34,7 @@ builder.Services.AddOptions<ReportOptions>()
 builder.Services.AddSingleton<IValidateOptions<ReportOptions>, ReportOptionsValidator>();
 builder.Services.AddSingleton<ReportCache>();
 builder.Services.AddSingleton<ReportService>();
+builder.Services.AddSingleton<RetailFeedback.Api.Telemetry.CorrectionTelemetryService>();
 
 // Per-IP fixed window; protects the machine while the tunnel is open.
 builder.Services.AddRateLimiter(limiter =>
@@ -186,6 +187,25 @@ app.MapGet("/report", async (
         return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
 
     return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct));
+});
+
+// The ongoing quality measure that replaced the cancelled model eval: per-field
+// desk correction rates over time (drift detector; see CLAUDE.md Phase 0 closure).
+app.MapGet("/telemetry/corrections", async (
+    RetailFeedback.Api.Telemetry.CorrectionTelemetryService telemetry,
+    IOptions<ReportOptions> reportOptions,
+    CancellationToken ct,
+    [FromQuery] string? from = null,
+    [FromQuery] string? to = null) =>
+{
+    var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+    if (!TimestampNormalizer.TryNormalize(toRaw, out var toNormalized))
+        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
+    var fromRaw = from ?? DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture)
+        .AddDays(-reportOptions.Value.DefaultWindowDays).ToString("O", CultureInfo.InvariantCulture);
+    if (!TimestampNormalizer.TryNormalize(fromRaw, out var fromNormalized))
+        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
+    return Results.Ok(await telemetry.SummarizeAsync(fromNormalized, toNormalized, ct));
 });
 
 app.MapGet("/report/snapshot", async (ReportService reports, CancellationToken ct) =>

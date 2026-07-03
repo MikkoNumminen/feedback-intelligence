@@ -255,6 +255,10 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
 - Desk path contract: `acceptedStructure` + `corrections` on POST /feedback
   stores the human-accepted structure WITHOUT a second LLM pass; corrected
   values are schema-validated too.
+- Correction telemetry LIVE (2026-07-04): `GET /telemetry/corrections?from&to`
+  — per-field correction rates (denominator = model-interpreted desk entries;
+  manual-after-model-failure counted separately as modelFailed), Monday-start
+  weekly series. This is the Phase 0 closure requirement item 2 delivered.
 - Containment mirrored from the RAG as config validated at startup:
   input 800 chars, body 16 KB, per-IP rate limit 30/60 s, LLM concurrency 2
   with 500 ms acquire-then-shed.
