@@ -208,6 +208,30 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   2×27-call placeholder evals); models decided and set in config; eval harness
   and reports committed; the 48h checkpoint retired on day 1.
 
+## Phase 1 status (2026-07-03)
+
+- Machinery COMPLETE (`tools/RetailFeedback.Generator`, verbs `variants` and
+  `generate --seed N`), waiting on the core corpus (`data/corpus/core.jsonl`,
+  format scaffolded and documented in `data/corpus/README.md`; Mikko fills
+  within days).
+- Ground truth is MACHINE-CHECKABLE by decision: per planted story the exact
+  `feedbackIds`, `expectedDepartment` (schema enum), `expectedThemeKeywords`
+  (keyword set, not prose), `windowFrom`/`windowTo`, `trend`,
+  `minGroundedIds`, `expectAlert`. Phase 4's acceptance eval verifies "the
+  report's claim grounds to >= minGroundedIds of these specific IDs within
+  this window" — prose mentions are never verification.
+- Confirmations honored STRUCTURALLY: `generate` composes only from the
+  committed variants file and its code path has no LLM dependency; `variants`
+  is the only LLM verb (announced GPU window; output committed before any
+  generate). Dev-placeholder pools auto-label every derived artifact
+  non-evidential via filename detection (same discipline as Phase 0) and
+  those artifacts are gitignored.
+- Story tags are never written into generated corpora — membership is only
+  recoverable through the ground-truth file; the analyzer meets the data cold.
+- Remaining Phase 1 steps once core.jsonl lands: announced `variants` run →
+  commit `variants.jsonl` → `generate --seed 42` → commit corpus + ground
+  truth → salvage-layer smoke test on the real texts (the 20 texts' role (b)).
+
 ## PHASE 0 — Risk first: prove the unknowns (days 1–2)
 
 The only genuinely unknown parts are (a) .NET ↔ Ollama integration and (b) which
