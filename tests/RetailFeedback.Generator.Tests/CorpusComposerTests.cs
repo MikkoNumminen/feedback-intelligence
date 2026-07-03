@@ -211,6 +211,53 @@ public class CorpusComposerTests
         var stamps = inTimeOrder.Select(i => DateTimeOffset.Parse(i.Timestamp!)).ToList();
         for (var i = 1; i < stamps.Count; i++)
             Assert.True(stamps[i] > stamps[i - 1], "timestamps must be strictly increasing with sequence");
+
+        // Monotonicity may never buy itself room beyond the window: every stamp
+        // stays within [windowFrom, windowTo].
+        var windowFrom = DateOnly.Parse(dairy.WindowFrom);
+        var windowTo = DateOnly.Parse(dairy.WindowTo);
+        Assert.All(stamps, s => Assert.InRange(DateOnly.FromDateTime(s.DateTime), windowFrom, windowTo));
+    }
+
+    [Fact]
+    public void SequencedStory_TooManyStepsForWindow_FailsLoudly()
+    {
+        var options = MakeSequencedDairyOptions();
+        options.Stories[0] = new StoryConfig
+        {
+            Id = "dairy-freshness-worsening",
+            Kind = "recurring_signal",
+            Department = "maito_kylma",
+            ThemeKeywords = ["tuoreus"],
+            Sources = ["desk"],
+            WindowDays = 1,
+            Count = 1,
+            Trend = "worsening",
+            MinGroundedIds = 1,
+            ExpectAlert = false,
+        };
+        var pool = new List<CorpusItem>();
+        for (var step = 1; step <= 40; step++)
+            pool.Add(new CorpusItem($"sd-{step}", "desk", $"arc-step-{step}", Story: "dairy-freshness-worsening", Sequence: step));
+
+        var ex = Assert.Throws<InvalidDataException>(() => CorpusComposer.Compose(pool, options, 42, false));
+        Assert.Contains("do not fit", ex.Message);
+    }
+
+    [Fact]
+    public void SequencedStory_MinGroundedIdsExceedingSteps_FailsLoudly()
+    {
+        var options = MakeSequencedDairyOptions();
+        var pool = new List<CorpusItem>
+        {
+            new("sd-1", "desk", "arc-step-1", Story: "dairy-freshness-worsening", Sequence: 1),
+            new("sd-2", "desk", "arc-step-2", Story: "dairy-freshness-worsening", Sequence: 2),
+        };
+
+        // Options demand MinGroundedIds=3 but only 2 steps exist — an
+        // unsatisfiable ground truth must fail at compose time, not in Phase 4.
+        var ex = Assert.Throws<InvalidDataException>(() => CorpusComposer.Compose(pool, options, 42, false));
+        Assert.Contains("unsatisfiable", ex.Message);
     }
 
     [Fact]

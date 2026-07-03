@@ -251,8 +251,9 @@ interview, with a static snapshot mode so a shared link never shows a dead page.
   If the announced variants run shows intensity drift, fallback is
   StoryVariantsPerItem=0 (originals only) — Mikko writes more originals
   rather than accept a mushed arc.
-- Corpus expectation: ~25–35 hand-written texts (dairy ~5 sequenced,
-  availability ~4–5 sequenced, safety 1–2, noise 15–20 diverse untagged).
+- Corpus expectation: ~25–35 hand-written texts; the authoritative per-story
+  breakdown lives in `data/corpus/README.md` (single source — do not restate
+  the counts elsewhere).
 
 ## PHASE 0 — Risk first: prove the unknowns (days 1–2)
 

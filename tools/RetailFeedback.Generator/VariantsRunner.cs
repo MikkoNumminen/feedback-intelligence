@@ -31,11 +31,10 @@ public sealed class VariantsRunner(
             return 1;
         }
 
-        var noiseTemplate = await File.ReadAllTextAsync(ResolvePath(opts.VariantsPromptPath), ct);
-        // Story items get a dedicated intensity-preserving prompt and multiply
-        // less (arc protection, Mikko 2026-07-03): a mild rewording of a severe
-        // "third time already" text corrupts the authored escalation.
-        var storyTemplate = await File.ReadAllTextAsync(ResolvePath(opts.VariantsStoryPromptPath), ct);
+        // Templates load lazily: StoryVariantsPerItem=0 means "no LLM call for
+        // story items" and must not demand the story prompt file exist.
+        string? noiseTemplate = null;
+        string? storyTemplate = null;
         var core = CorpusItem.LoadJsonl(opts.CorePath);
         Console.WriteLine(
             $"Multiplying {core.Count} core items (noise ×{opts.VariantsPerItem}, story ×{opts.StoryVariantsPerItem}).");
@@ -59,7 +58,13 @@ public sealed class VariantsRunner(
                 continue;
             }
 
-            var prompt = (isStory ? storyTemplate : noiseTemplate)
+            // Story items get a dedicated intensity-preserving prompt (arc
+            // protection, Mikko 2026-07-03): a mild rewording of a severe
+            // "third time already" text corrupts the authored escalation.
+            var template = isStory
+                ? storyTemplate ??= await File.ReadAllTextAsync(ResolvePath(opts.VariantsStoryPromptPath), ct)
+                : noiseTemplate ??= await File.ReadAllTextAsync(ResolvePath(opts.VariantsPromptPath), ct);
+            var prompt = template
                 .Replace("{{count}}", perItem.ToString(), StringComparison.Ordinal)
                 .Replace("{{text}}", item.Text, StringComparison.Ordinal);
 

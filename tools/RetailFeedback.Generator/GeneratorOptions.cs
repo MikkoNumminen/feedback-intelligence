@@ -20,6 +20,17 @@ public sealed class GeneratorOptions
     public int NoiseCount { get; init; } = 60;
     public int NoiseWindowDays { get; init; } = 21;
 
+    /// <summary>Time-of-day window for generated timestamps (store feedback hours).
+    /// One policy for stories AND noise — divergent hour distributions would leak
+    /// story membership.</summary>
+    public int DayStartHour { get; init; } = 8;
+    public int DayEndHour { get; init; } = 22;
+
+    /// <summary>Bump applied when a sequenced step collides with its predecessor's
+    /// timestamp; strict monotonicity is enforced, overflow past the window fails loudly.</summary>
+    public int SequenceCollisionGapMinMinutes { get; init; } = 10;
+    public int SequenceCollisionGapMaxMinutes { get; init; } = 120;
+
     public int VariantsPerItem { get; init; } = 6;
 
     /// <summary>Story-tagged items multiply less (arc-intensity protection,
@@ -75,8 +86,13 @@ public sealed class GeneratorOptionsValidator : IValidateOptions<GeneratorOption
             failures.Add($"Generator:VariantsPerItem must be within 1..20, got {options.VariantsPerItem}.");
         if (options.StoryVariantsPerItem is < 0 or > 20)
             failures.Add($"Generator:StoryVariantsPerItem must be within 0..20 (0 = originals only), got {options.StoryVariantsPerItem}.");
-        if (string.IsNullOrWhiteSpace(options.VariantsStoryPromptPath))
-            failures.Add("Generator:VariantsStoryPromptPath must be set.");
+        if (options.StoryVariantsPerItem > 0 && string.IsNullOrWhiteSpace(options.VariantsStoryPromptPath))
+            failures.Add("Generator:VariantsStoryPromptPath must be set when StoryVariantsPerItem > 0.");
+        if (options.DayStartHour is < 0 or > 23 || options.DayEndHour is < 1 or > 24 || options.DayStartHour >= options.DayEndHour)
+            failures.Add($"Generator:DayStartHour/DayEndHour must satisfy 0 <= start < end <= 24, got {options.DayStartHour}/{options.DayEndHour}.");
+        if (options.SequenceCollisionGapMinMinutes < 1
+            || options.SequenceCollisionGapMaxMinutes <= options.SequenceCollisionGapMinMinutes)
+            failures.Add($"Generator:SequenceCollisionGap minutes must satisfy 1 <= min < max, got {options.SequenceCollisionGapMinMinutes}/{options.SequenceCollisionGapMaxMinutes}.");
         if (options.Stories.Count == 0)
             failures.Add("Generator:Stories must define at least one planted story.");
 
