@@ -23,12 +23,24 @@ public static class LlmServiceCollectionExtensions
         services.AddSingleton<ILlmClientFactory, OllamaLlmClientFactory>();
 
         services.AddKeyedSingleton<IChatClient>(StructuringKey, static (sp, _) =>
-            sp.GetRequiredService<ILlmClientFactory>()
-                .CreateForModel(sp.GetRequiredService<IOptions<LlmOptions>>().Value.Models.Structuring));
+        {
+            var models = sp.GetRequiredService<IOptions<LlmOptions>>().Value.Models;
+            return sp.GetRequiredService<ILlmClientFactory>()
+                .CreateForModel(models.Structuring, models.StructuringDisableReasoning);
+        });
 
         services.AddKeyedSingleton<IChatClient>(SynthesisKey, static (sp, _) =>
-            sp.GetRequiredService<ILlmClientFactory>()
-                .CreateForModel(sp.GetRequiredService<IOptions<LlmOptions>>().Value.Models.Synthesis));
+        {
+            var models = sp.GetRequiredService<IOptions<LlmOptions>>().Value.Models;
+            return sp.GetRequiredService<ILlmClientFactory>()
+                .CreateForModel(models.Synthesis, models.SynthesisDisableReasoning);
+        });
+
+        services.AddOptions<Structuring.StructuringOptions>()
+            .Bind(configuration.GetSection(Structuring.StructuringOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<Structuring.StructuringOptions>, Structuring.StructuringOptionsValidator>();
+        services.AddSingleton<Structuring.IStructuringService, Structuring.LlmStructuringService>();
 
         return services;
     }

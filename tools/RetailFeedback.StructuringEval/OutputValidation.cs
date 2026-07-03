@@ -1,6 +1,6 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using RetailFeedback.Domain.Structuring;
+using RetailFeedback.Llm.Structuring;
 
 namespace RetailFeedback.StructuringEval;
 
@@ -24,7 +24,7 @@ public sealed record ValidatedOutput(
     IReadOnlyList<FieldViolation> Violations,
     FeedbackStructure? Structure);
 
-public static partial class OutputValidation
+public static class OutputValidation
 {
     public static ValidatedOutput Validate(string raw)
     {
@@ -88,58 +88,10 @@ public static partial class OutputValidation
 
     private static (ParseOutcome Outcome, JsonDocument? Doc) Parse(string raw)
     {
-        if (TryParseObject(raw.Trim(), out var strict))
-            return (ParseOutcome.StrictJson, strict);
-
-        var salvaged = Salvage(raw);
-        if (salvaged is not null && TryParseObject(salvaged, out var doc))
-            return (ParseOutcome.SalvagedJson, doc);
-
-        return (ParseOutcome.Unparseable, null);
+        if (!LlmJsonExtractor.TryExtractObject(raw, out var doc, out var strict))
+            return (ParseOutcome.Unparseable, null);
+        return (strict ? ParseOutcome.StrictJson : ParseOutcome.SalvagedJson, doc);
     }
-
-    private static bool TryParseObject(string candidate, out JsonDocument? doc)
-    {
-        doc = null;
-        if (candidate.Length == 0)
-            return false;
-        try
-        {
-            var parsed = JsonDocument.Parse(candidate);
-            if (parsed.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                parsed.Dispose();
-                return false;
-            }
-            doc = parsed;
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Strip thinking traces and markdown fences, then fall back to the outermost
-    /// brace span. Distance from strict discipline is itself a measurement.
-    /// </summary>
-    private static string? Salvage(string raw)
-    {
-        var s = ThinkBlock().Replace(raw, "").Trim();
-        var fence = FencedBlock().Match(s);
-        if (fence.Success)
-            s = fence.Groups[1].Value.Trim();
-        var first = s.IndexOf('{');
-        var last = s.LastIndexOf('}');
-        return first >= 0 && last > first ? s[first..(last + 1)] : null;
-    }
-
-    [GeneratedRegex(@"<think>.*?</think>", RegexOptions.Singleline)]
-    private static partial Regex ThinkBlock();
-
-    [GeneratedRegex(@"```(?:json)?\s*(.*?)```", RegexOptions.Singleline)]
-    private static partial Regex FencedBlock();
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 }

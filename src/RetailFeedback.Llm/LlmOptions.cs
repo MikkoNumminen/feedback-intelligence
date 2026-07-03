@@ -22,4 +22,13 @@ public sealed class LlmModelOptions
 {
     public string Structuring { get; init; } = "";
     public string Synthesis { get; init; } = "";
+
+    /// <summary>Suppress reasoning traces on the structuring client (API-level
+    /// think=false; a no-op for non-reasoning models). Default on — measured
+    /// safe for both candidate models in the 2026-07-03 placeholder runs.</summary>
+    public bool StructuringDisableReasoning { get; init; } = true;
+
+    /// <summary>Same for the synthesis client. Default off: synthesis quality
+    /// may benefit from reasoning if a reasoning model is ever configured.</summary>
+    public bool SynthesisDisableReasoning { get; init; }
 }
