@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FeedbackIntelligence.Core.Structuring;
 using FeedbackIntelligence.Generator;
 
 namespace FeedbackIntelligence.Generator.Tests;
@@ -113,7 +112,7 @@ public class CorpusComposerTests
             var config = options.Stories.Single(s => s.Id == story.Id);
             Assert.Equal(config.Count, story.FeedbackIds.Count);
             Assert.True(story.MinGroundedIds >= 1 && story.MinGroundedIds <= story.FeedbackIds.Count);
-            Assert.Contains(story.ExpectedCategory, StructuringSchema.Categories);
+            Assert.Equal(config.Category, story.ExpectedCategory);
             Assert.NotEmpty(story.ExpectedThemeKeywords);
 
             var from = DateOnly.Parse(story.WindowFrom);

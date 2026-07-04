@@ -47,7 +47,7 @@ public class AlertMatcherTests
 
     /// <summary>
     /// THE demo-critical contract: the no-keyword safety story texts must slip
-    /// past the REAL committed keyword list (config/alert-keywords.json) —
+    /// past the REAL committed keyword list (domains/retail/alert-keywords.json) —
     /// detectable only by understanding. Structural-failure verbs (petti,
     /// irtosi, sortui) are deliberately non-keywords.
     /// </summary>
@@ -57,7 +57,7 @@ public class AlertMatcherTests
     [InlineData("Keväällä ostetuista laudoista tehty terassi sortui osittain viikonloppuna.")]
     public void RealKeywordConfig_DoesNotFireOnNoKeywordSafetyTexts(string safetyText)
     {
-        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "config", "alert-keywords.json"));
+        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
 
         var hits = AlertMatcher.Match(safetyText, keywords.Categories);
 
@@ -67,7 +67,7 @@ public class AlertMatcherTests
     [Fact]
     public void RealKeywordConfig_FiresOnInjuryVocabulary()
     {
-        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "config", "alert-keywords.json"));
+        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
 
         var hits = AlertMatcher.Match("Kaaduin märällä lattialla ja jouduin ensiapuun", keywords.Categories);
 

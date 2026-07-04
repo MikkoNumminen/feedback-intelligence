@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Core.Structuring;
 
 namespace FeedbackIntelligence.Llm.Structuring;
@@ -18,7 +19,7 @@ public static class StructuringOutputParser
         IReadOnlyList<string> Notes,
         IReadOnlyList<string> Violations);
 
-    public static Attempt Parse(string raw)
+    public static Attempt Parse(string raw, DomainDescriptor domain)
     {
         if (!LlmJsonExtractor.TryExtractObject(raw, out var doc, out var strict))
             return new Attempt(null, false, false, [], ["output contains no parseable JSON object"]);
@@ -30,9 +31,9 @@ public static class StructuringOutputParser
             var violations = new List<string>();
             var normalized = false;
 
-            var category = ReadEnumField(root, "category", StructuringSchema.Categories, allowArrayFirst: true, notes, violations, ref normalized);
-            var severity = ReadEnumField(root, "severity", StructuringSchema.Severities, allowArrayFirst: false, notes, violations, ref normalized);
-            var type = ReadEnumField(root, "type", StructuringSchema.Types, allowArrayFirst: false, notes, violations, ref normalized);
+            var category = ReadEnumField(root, "category", domain.Categories, allowArrayFirst: true, notes, violations, ref normalized);
+            var severity = ReadEnumField(root, "severity", domain.Severities, allowArrayFirst: false, notes, violations, ref normalized);
+            var type = ReadEnumField(root, "type", domain.Types, allowArrayFirst: false, notes, violations, ref normalized);
             var theme = ReadTextField(root, "theme", lowercase: false, notes, violations, ref normalized);
             var language = ReadTextField(root, "language", lowercase: true, notes, violations, ref normalized);
 

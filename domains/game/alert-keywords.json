@@ -1,0 +1,9 @@
+{
+  "description": "Deterministic urgent-signal lexicon for the game-studio domain — stems (substring, case-insensitive) that always warrant an operator flag regardless of model understanding. Mirrors the retail alert layer: keyword hit is layer 1, LLM nomination over keyword-less items is layer 2.",
+  "categories": {
+    "data_loss": ["progress lost", "save wiped", "account reset", "lost all", "characters gone", "inventory gone"],
+    "security_account": ["hacked", "account stolen", "unauthorized charge", "compromised", "phishing"],
+    "payment_failure": ["charged twice", "double charged", "refund", "money taken", "never received"],
+    "blocking_bug": ["cannot launch", "won't start", "black screen", "infinite loading", "hard crash", "unplayable"]
+  }
+}

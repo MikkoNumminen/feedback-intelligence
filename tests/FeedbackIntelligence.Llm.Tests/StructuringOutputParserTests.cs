@@ -1,3 +1,4 @@
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Llm.Structuring;
 
 namespace FeedbackIntelligence.Llm.Tests;
@@ -9,13 +10,15 @@ namespace FeedbackIntelligence.Llm.Tests;
 /// </summary>
 public class StructuringOutputParserTests
 {
+    private static readonly DomainDescriptor Retail = TestDomains.Retail();
+
     private const string ValidJson =
         """{"category": "maito_kylma", "theme": "tuotteiden tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
 
     [Fact]
     public void StrictCleanJson_Succeeds_WithoutFlags()
     {
-        var attempt = StructuringOutputParser.Parse(ValidJson);
+        var attempt = StructuringOutputParser.Parse(ValidJson, Retail);
 
         Assert.NotNull(attempt.Structure);
         Assert.False(attempt.Salvaged);
@@ -31,7 +34,7 @@ public class StructuringOutputParserTests
         // Verbatim shape from the placeholder run: Poro fenced 27/27 outputs.
         var raw = "```json\n" + ValidJson + "\n```";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.NotNull(attempt.Structure);
         Assert.True(attempt.Salvaged);
@@ -45,7 +48,7 @@ public class StructuringOutputParserTests
         var raw =
             """{"category": ["maito_kylma", "tyokalut"], "theme": "laatu ja palvelu", "severity": "medium", "type": "complaint", "language": "fi"}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.NotNull(attempt.Structure);
         Assert.True(attempt.Normalized);
@@ -59,7 +62,7 @@ public class StructuringOutputParserTests
         var raw =
             """{"category": ["kylmäosasto", "tyokalut"], "theme": "laatu", "severity": "medium", "type": "complaint", "language": "fi"}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.Null(attempt.Structure);
         Assert.Contains(attempt.Violations, v => v.Contains("category"));
@@ -71,7 +74,7 @@ public class StructuringOutputParserTests
         var raw =
             """{"category": "kylmäosasto", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.Null(attempt.Structure);
         Assert.Contains(attempt.Violations, v => v.Contains("kylmäosasto"));
@@ -83,7 +86,7 @@ public class StructuringOutputParserTests
         var raw =
             """{"category": "Maito_Kylma", "theme": "tuoreus", "severity": "Medium", "type": "complaint", "language": "FI"}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.NotNull(attempt.Structure);
         Assert.True(attempt.Normalized);
@@ -97,7 +100,7 @@ public class StructuringOutputParserTests
     {
         var raw = """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint"}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.Null(attempt.Structure);
         Assert.Contains(attempt.Violations, v => v.Contains("language"));
@@ -109,7 +112,7 @@ public class StructuringOutputParserTests
         var raw =
             """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi", "confidence": 0.9}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.NotNull(attempt.Structure);
         Assert.Contains(attempt.Notes, n => n.Contains("confidence"));
@@ -118,7 +121,7 @@ public class StructuringOutputParserTests
     [Fact]
     public void GarbageWithoutJson_IsViolation()
     {
-        var attempt = StructuringOutputParser.Parse("Selvä homma, tässä analyysi palautteesta!");
+        var attempt = StructuringOutputParser.Parse("Selvä homma, tässä analyysi palautteesta!", Retail);
 
         Assert.Null(attempt.Structure);
         Assert.Contains(attempt.Violations, v => v.Contains("no parseable JSON"));
@@ -129,7 +132,7 @@ public class StructuringOutputParserTests
     {
         var raw = "<think>Pohditaan osastoa hetki.</think>\n" + ValidJson;
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.NotNull(attempt.Structure);
         Assert.True(attempt.Salvaged);
@@ -141,7 +144,7 @@ public class StructuringOutputParserTests
         var raw =
             """{"category": "maito_kylma", "theme": "tuoreus", "severity": 3, "type": "complaint", "language": "fi"}""";
 
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
 
         Assert.Null(attempt.Structure);
         Assert.Contains(attempt.Violations, v => v.Contains("severity"));

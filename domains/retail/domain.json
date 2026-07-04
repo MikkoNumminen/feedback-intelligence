@@ -1,0 +1,26 @@
+{
+  "name": "retail",
+  "categoryFieldLabel": "osasto",
+  "categories": {
+    "maito_kylma": "Maito & kylmä",
+    "hevi": "Hevi",
+    "kuiva_elintarvike": "Kuivat elintarvikkeet",
+    "liha_kala": "Liha & kala",
+    "leipa": "Leipä",
+    "kassa_palvelu": "Kassa & palvelu",
+    "piha_puutarha": "Piha & puutarha",
+    "rakennustarvike": "Rakennustarvikkeet",
+    "tyokalut": "Työkalut",
+    "sisustus_maalit": "Sisustus & maalit",
+    "sahko_lvi": "Sähkö & LVI",
+    "varasto_nouto": "Varasto & nouto",
+    "verkkokauppa_toimitus": "Verkkokauppa & toimitus",
+    "muu": "Muu"
+  },
+  "severities": { "low": "Matala", "medium": "Keskitaso", "high": "Korkea", "critical": "Kriittinen" },
+  "types": { "complaint": "Valitus", "praise": "Kehu", "suggestion": "Ehdotus", "question": "Kysymys", "other": "Muu" },
+  "prompts": {
+    "synthesis": "prompts/synthesis-v0.txt",
+    "alertNomination": "prompts/alert-nomination-v0.txt"
+  }
+}

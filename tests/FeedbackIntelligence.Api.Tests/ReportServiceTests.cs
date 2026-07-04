@@ -46,12 +46,11 @@ public class ReportServiceTests : IDisposable
         Options.Create(new ReportOptions
         {
             SnapshotDir = _snapshotDir,
-            SynthesisPromptPath = _promptPath,
-            AlertNominationPromptPath = _promptPath,
             AlertNominationEnabled = nominations,
             MaxLlmCallsPerReport = llmBudget,
             ReportCacheSeconds = cacheSeconds,
         }),
+        TestDomains.RetailActive(_promptPath),
         NullLogger<ReportService>.Instance);
 
     private async Task SeedDairyAsync(int earlyCount, int lateCount, string lateSeverity = "high")

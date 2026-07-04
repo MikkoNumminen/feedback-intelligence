@@ -1,12 +1,13 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using FeedbackIntelligence.Core.Domain;
 
 namespace FeedbackIntelligence.Generator;
 
 /// <summary>File IO around <see cref="CorpusComposer"/>. Contains NO LLM
 /// dependency by design — generate only ever composes from the committed
 /// variants file.</summary>
-public sealed class GenerateRunner(IOptions<GeneratorOptions> options)
+public sealed class GenerateRunner(IOptions<GeneratorOptions> options, IActiveDomain activeDomain)
 {
     private static readonly JsonSerializerOptions Pretty = new()
     {
@@ -17,6 +18,12 @@ public sealed class GenerateRunner(IOptions<GeneratorOptions> options)
     public async Task<int> RunAsync(int seed, CancellationToken ct)
     {
         var opts = options.Value;
+
+        // Stories are domain data — load and validate them from the active domain
+        // module (throws with a full failure list on any taxonomy violation).
+        opts.Stories = StoryLibrary.Load(activeDomain.StoriesPath, activeDomain.Descriptor);
+        Console.WriteLine($"Loaded {opts.Stories.Count} planted stories from domain '{activeDomain.Name}'.");
+
         if (!File.Exists(opts.VariantsPath))
         {
             Console.Error.WriteLine(

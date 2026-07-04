@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Options;
-using FeedbackIntelligence.Core.Structuring;
 
 namespace FeedbackIntelligence.Generator;
 
 /// <summary>Bound from the "Generator" config section; validated at startup.
-/// Story definitions live fully in appsettings (config over hardcoding).</summary>
+/// Story definitions are domain DATA, loaded at runtime from the active domain
+/// module (<c>domains/&lt;active&gt;/stories.json</c>) — not from this config —
+/// and validated against the domain taxonomy by <see cref="StoryLibrary"/>.</summary>
 public sealed class GeneratorOptions
 {
     public const string SectionName = "Generator";
@@ -45,7 +46,9 @@ public sealed class GeneratorOptions
     public float VariantsTemperature { get; init; } = 0.8f;
     public int VariantsMaxOutputTokens { get; init; } = 1024;
 
-    public List<StoryConfig> Stories { get; init; } = [];
+    /// <summary>Planted stories for the active domain. Empty from config; the
+    /// generate/variants runners populate it from the active domain module.</summary>
+    public List<StoryConfig> Stories { get; set; } = [];
 }
 
 public sealed class StoryConfig
@@ -64,8 +67,6 @@ public sealed class StoryConfig
 
 public sealed class GeneratorOptionsValidator : IValidateOptions<GeneratorOptions>
 {
-    private static readonly IReadOnlySet<string> Trends = new HashSet<string>(StringComparer.Ordinal) { "worsening", "stable" };
-
     public ValidateOptionsResult Validate(string? name, GeneratorOptions options)
     {
         var failures = new List<string>();
@@ -93,30 +94,10 @@ public sealed class GeneratorOptionsValidator : IValidateOptions<GeneratorOption
         if (options.SequenceCollisionGapMinMinutes < 1
             || options.SequenceCollisionGapMaxMinutes <= options.SequenceCollisionGapMinMinutes)
             failures.Add($"Generator:SequenceCollisionGap minutes must satisfy 1 <= min < max, got {options.SequenceCollisionGapMinMinutes}/{options.SequenceCollisionGapMaxMinutes}.");
-        if (options.Stories.Count == 0)
-            failures.Add("Generator:Stories must define at least one planted story.");
 
-        var ids = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var story in options.Stories)
-        {
-            var label = $"Generator:Stories['{story.Id}']";
-            if (string.IsNullOrWhiteSpace(story.Id) || !ids.Add(story.Id))
-                failures.Add($"{label}: id must be set and unique.");
-            if (!StructuringSchema.Categories.Contains(story.Category))
-                failures.Add($"{label}: category '{story.Category}' is not a schema enum value.");
-            if (story.ThemeKeywords.Count == 0)
-                failures.Add($"{label}: themeKeywords must be a non-empty keyword set.");
-            if (story.Sources.Count == 0)
-                failures.Add($"{label}: sources must be non-empty.");
-            if (story.WindowDays < 1)
-                failures.Add($"{label}: windowDays must be >= 1.");
-            if (story.Count < 1)
-                failures.Add($"{label}: count must be >= 1.");
-            if (!Trends.Contains(story.Trend))
-                failures.Add($"{label}: trend must be one of [{string.Join(", ", Trends)}].");
-            if (story.MinGroundedIds < 1 || story.MinGroundedIds > story.Count)
-                failures.Add($"{label}: minGroundedIds must be within 1..count.");
-        }
+        // Stories are NOT validated here — they come from the active domain module
+        // at runtime, so their taxonomy check needs the domain descriptor. See
+        // StoryLibrary.Load, invoked by the runners.
 
         return failures.Count > 0 ? ValidateOptionsResult.Fail(failures) : ValidateOptionsResult.Success;
     }

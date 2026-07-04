@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Core.Structuring;
 
 namespace FeedbackIntelligence.Llm.Structuring;
@@ -9,6 +11,7 @@ namespace FeedbackIntelligence.Llm.Structuring;
 public sealed class LlmStructuringService(
     [FromKeyedServices(LlmServiceCollectionExtensions.StructuringKey)] IChatClient chatClient,
     IOptions<StructuringOptions> options,
+    IActiveDomain activeDomain,
     ILogger<LlmStructuringService> logger) : IStructuringService
 {
     private string? _template;
@@ -24,7 +27,7 @@ public sealed class LlmStructuringService(
         };
 
         var raw = (await chatClient.GetResponseAsync(prompt, chatOptions, ct)).Text;
-        var attempt = StructuringOutputParser.Parse(raw);
+        var attempt = StructuringOutputParser.Parse(raw, activeDomain.Descriptor);
         if (attempt.Structure is not null)
         {
             LogNotes(attempt);
@@ -41,7 +44,7 @@ public sealed class LlmStructuringService(
             + "\nReturn ONLY the corrected single JSON object, nothing else.";
 
         raw = (await chatClient.GetResponseAsync(retryPrompt, chatOptions, ct)).Text;
-        var retry = StructuringOutputParser.Parse(raw);
+        var retry = StructuringOutputParser.Parse(raw, activeDomain.Descriptor);
         if (retry.Structure is not null)
         {
             LogNotes(retry);
@@ -79,6 +82,18 @@ public sealed class LlmStructuringService(
         if (!template.Contains("{{text}}", StringComparison.Ordinal))
             throw new InvalidOperationException($"Structuring prompt '{path}' must contain the {{{{text}}}} placeholder.");
 
+        // Fill the domain-taxonomy placeholders once — they are constant per
+        // active domain. {{text}} stays for per-call substitution. A neutral
+        // prompt names no categories itself; the active domain supplies them.
+        var d = activeDomain.Descriptor;
+        template = template
+            .Replace("{{categories}}", RenderJsonArray(d.CategoryLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{severities}}", RenderJsonArray(d.SeverityLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{types}}", RenderJsonArray(d.TypeLabels.Keys), StringComparison.Ordinal);
+
         return _template = template;
     }
+
+    private static string RenderJsonArray(IEnumerable<string> values) =>
+        "[" + string.Join(", ", values.Select(v => JsonSerializer.Serialize(v))) + "]";
 }

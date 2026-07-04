@@ -9,6 +9,7 @@ using FeedbackIntelligence.Api.Alerts;
 using FeedbackIntelligence.Api.Analysis;
 using FeedbackIntelligence.Api.Ingest;
 using FeedbackIntelligence.Api.Storage;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Llm;
 using FeedbackIntelligence.Llm.Structuring;
 
@@ -23,8 +24,10 @@ builder.Services.AddOptions<IngestOptions>()
     .Bind(builder.Configuration.GetSection(IngestOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<IngestOptions>, IngestOptionsValidator>();
+// The alert lexicon is domain data — loaded from the active domain module, not
+// a fixed path. Switching Domain:Active swaps the keyword list with everything else.
 builder.Services.AddSingleton(sp =>
-    AlertKeywordSet.LoadFrom(sp.GetRequiredService<IOptions<IngestOptions>>().Value.AlertKeywordsPath));
+    AlertKeywordSet.LoadFrom(sp.GetRequiredService<IActiveDomain>().AlertKeywordsPath));
 builder.Services.AddSingleton<FeedbackStore>();
 builder.Services.AddSingleton<LlmGate>();
 builder.Services.AddSingleton<IngestService>();
@@ -89,9 +92,10 @@ app.MapPost("/feedback", async (
     FeedbackRequest request,
     IngestService ingest,
     IOptions<IngestOptions> options,
+    IActiveDomain domain,
     CancellationToken ct) =>
 {
-    var errors = RequestValidator.Validate(request, options.Value);
+    var errors = RequestValidator.Validate(request, options.Value, domain.Descriptor);
     if (errors.Count > 0)
         return Results.BadRequest(new { errors });
     try
@@ -138,14 +142,23 @@ app.MapPost("/interpret", async (
     }
 });
 
-// Schema enums for UI dropdowns — single source of truth is StructuringSchema,
-// never a copy in the frontend.
-app.MapGet("/schema", () => Results.Ok(new
+// Schema enums + display labels for UI dropdowns — single source of truth is the
+// active domain descriptor, never a copy in the frontend. The frontend renders
+// labels from here, so switching Domain:Active reskins the desk with no code change.
+app.MapGet("/schema", (IActiveDomain domain) =>
 {
-    categories = FeedbackIntelligence.Core.Structuring.StructuringSchema.Categories,
-    severities = FeedbackIntelligence.Core.Structuring.StructuringSchema.Severities,
-    types = FeedbackIntelligence.Core.Structuring.StructuringSchema.Types,
-}));
+    var d = domain.Descriptor;
+    return Results.Ok(new
+    {
+        categoryField = d.CategoryFieldLabel,
+        categories = d.CategoryLabels.Keys,
+        severities = d.SeverityLabels.Keys,
+        types = d.TypeLabels.Keys,
+        categoryLabels = d.CategoryLabels,
+        severityLabels = d.SeverityLabels,
+        typeLabels = d.TypeLabels,
+    });
+});
 
 app.MapGet("/feedback/{id}", async (string id, FeedbackStore store, CancellationToken ct) =>
     await store.GetAsync(id, ct) is { } item ? Results.Ok(item) : Results.NotFound());

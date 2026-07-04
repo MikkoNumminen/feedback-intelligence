@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Core.Structuring;
 
 namespace FeedbackIntelligence.Api;
 
 public static partial class RequestValidator
 {
-    public static List<string> Validate(FeedbackRequest request, IngestOptions options)
+    public static List<string> Validate(FeedbackRequest request, IngestOptions options, DomainDescriptor domain)
     {
         var errors = ValidateText(request.Text, options);
 
@@ -20,7 +21,7 @@ public static partial class RequestValidator
 
         // Corrected values from the desk UI must be schema-legal too.
         if (request.AcceptedStructure is not null)
-            errors.AddRange(StructureValidator.Validate(request.AcceptedStructure));
+            errors.AddRange(StructureValidator.Validate(request.AcceptedStructure, domain));
         if (request.Corrections is not null)
         {
             if (request.AcceptedStructure is null)

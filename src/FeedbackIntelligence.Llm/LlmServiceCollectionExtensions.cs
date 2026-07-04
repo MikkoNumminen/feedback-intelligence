@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using FeedbackIntelligence.Core.Domain;
 
 namespace FeedbackIntelligence.Llm;
 
@@ -15,6 +16,10 @@ public static class LlmServiceCollectionExtensions
 
     public static IServiceCollection AddFeedbackIntelligenceLlm(this IServiceCollection services, IConfiguration configuration)
     {
+        // Structuring reads its taxonomy from the active domain; register it here
+        // so every LLM host has one (idempotent if the host also registers it).
+        services.AddActiveDomain(configuration);
+
         services.AddOptions<LlmOptions>()
             .Bind(configuration.GetSection(LlmOptions.SectionName))
             .ValidateOnStart();

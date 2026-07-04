@@ -1,0 +1,38 @@
+[
+  {
+    "Id": "dairy-freshness-worsening",
+    "Kind": "recurring_signal",
+    "Category": "maito_kylma",
+    "ThemeKeywords": ["tuoreus", "vanhentunut", "päiväys", "maito", "pilaantunut"],
+    "Sources": ["google_review", "email", "web_form", "desk"],
+    "WindowDays": 14,
+    "Count": 9,
+    "Trend": "worsening",
+    "MinGroundedIds": 4,
+    "ExpectAlert": false
+  },
+  {
+    "Id": "safety-no-keyword",
+    "Kind": "alert_by_understanding",
+    "Category": "rakennustarvike",
+    "ThemeKeywords": ["turvallisuus", "petti", "sortui", "terassi", "rakenne"],
+    "Sources": ["web_form"],
+    "WindowDays": 7,
+    "Count": 1,
+    "Trend": "stable",
+    "MinGroundedIds": 1,
+    "ExpectAlert": true
+  },
+  {
+    "Id": "availability-slow-burn",
+    "Kind": "recurring_signal",
+    "Category": "leipa",
+    "ThemeKeywords": ["saatavuus", "loppu", "hylly", "tyhjä"],
+    "Sources": ["desk", "google_review"],
+    "WindowDays": 21,
+    "Count": 7,
+    "Trend": "worsening",
+    "MinGroundedIds": 3,
+    "ExpectAlert": false
+  }
+]

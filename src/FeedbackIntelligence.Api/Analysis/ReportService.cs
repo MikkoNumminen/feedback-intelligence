@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using FeedbackIntelligence.Api.Storage;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Llm;
 using FeedbackIntelligence.Llm.Structuring;
 
@@ -26,6 +27,7 @@ public sealed class ReportService(
     LlmGate llmGate,
     ReportCache cache,
     IOptions<ReportOptions> options,
+    IActiveDomain activeDomain,
     ILogger<ReportService> logger)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
@@ -169,7 +171,7 @@ public sealed class ReportService(
         foreach (var item in batch)
             data.AppendLine($"- [{item.Id}] ({item.Structure?.Category ?? "?"}/{item.Structure?.Severity ?? "?"}) \"{Excerpt(item.Text)}\"");
 
-        var raw = await TryLlmAsync(options.Value.AlertNominationPromptPath, data.ToString(), state, ct);
+        var raw = await TryLlmAsync(activeDomain.PromptPath("alertNomination"), data.ToString(), state, ct);
         if (raw is null)
             return [];
         if (!LlmJsonExtractor.TryExtractObject(raw, out var doc, out _))
@@ -205,7 +207,7 @@ public sealed class ReportService(
         }
 
         var data = new StringBuilder();
-        data.AppendLine($"osasto: {category}");
+        data.AppendLine($"{activeDomain.Descriptor.CategoryFieldLabel}: {category}");
         data.AppendLine($"palautteita: {groupItems.Count}");
         data.AppendLine($"suunta: {direction}");
         data.AppendLine("vakavuudet: " + string.Join(", ", groupItems
@@ -218,7 +220,7 @@ public sealed class ReportService(
         foreach (var item in groupItems.Take(Math.Min(8, opts.MaxItemsPerLlmCall)))
             data.AppendLine($"- [{item.Id}] \"{Excerpt(item.Text)}\" ({item.Structure!.Severity})");
 
-        var raw = await TryLlmAsync(opts.SynthesisPromptPath, data.ToString(), state, ct);
+        var raw = await TryLlmAsync(activeDomain.PromptPath("synthesis"), data.ToString(), state, ct);
         if (raw is null)
             return null;
         if (!LlmJsonExtractor.TryExtractObject(raw, out var doc, out _))

@@ -1,4 +1,5 @@
 using FeedbackIntelligence.Api;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Core.Structuring;
 
 namespace FeedbackIntelligence.Api.Tests;
@@ -6,6 +7,7 @@ namespace FeedbackIntelligence.Api.Tests;
 public class RequestValidatorTests
 {
     private static readonly IngestOptions Options = new();
+    private static readonly DomainDescriptor Retail = TestDomains.Retail();
 
     private static FeedbackRequest Valid() => new(
         null, "desk", "maito oli vanhaa", "2026-07-01T10:00:00+03:00", null, null);
@@ -13,7 +15,7 @@ public class RequestValidatorTests
     [Fact]
     public void ValidRequest_PassesClean()
     {
-        Assert.Empty(RequestValidator.Validate(Valid(), Options));
+        Assert.Empty(RequestValidator.Validate(Valid(), Options, Retail));
     }
 
     [Fact]
@@ -21,7 +23,7 @@ public class RequestValidatorTests
     {
         var request = Valid() with { Text = new string('a', Options.InputMaxChars + 1) };
 
-        var errors = RequestValidator.Validate(request, Options);
+        var errors = RequestValidator.Validate(request, Options, Retail);
 
         Assert.Contains(errors, e => e.Contains("cap"));
     }
@@ -29,7 +31,7 @@ public class RequestValidatorTests
     [Fact]
     public void UnknownSource_IsRejected()
     {
-        var errors = RequestValidator.Validate(Valid() with { Source = "fax" }, Options);
+        var errors = RequestValidator.Validate(Valid() with { Source = "fax" }, Options, Retail);
 
         Assert.Contains(errors, e => e.Contains("source"));
     }
@@ -37,7 +39,7 @@ public class RequestValidatorTests
     [Fact]
     public void NonIsoTimestamp_IsRejected()
     {
-        var errors = RequestValidator.Validate(Valid() with { Timestamp = "eilen kello kolme" }, Options);
+        var errors = RequestValidator.Validate(Valid() with { Timestamp = "eilen kello kolme" }, Options, Retail);
 
         Assert.Contains(errors, e => e.Contains("timestamp"));
     }
@@ -47,7 +49,7 @@ public class RequestValidatorTests
     {
         var request = Valid() with { Corrections = [new FieldCorrection("severity", "low", "high")] };
 
-        var errors = RequestValidator.Validate(request, Options);
+        var errors = RequestValidator.Validate(request, Options, Retail);
 
         Assert.Contains(errors, e => e.Contains("acceptedStructure"));
     }
@@ -57,9 +59,9 @@ public class RequestValidatorTests
     {
         // The id lands in the Location header — a Finnish 'ä' or a newline
         // there would 500 AFTER the row was stored.
-        Assert.Contains(RequestValidator.Validate(Valid() with { Id = "kuitti-ä1" }, Options), e => e.Contains("id"));
-        Assert.Contains(RequestValidator.Validate(Valid() with { Id = "a\nb" }, Options), e => e.Contains("id"));
-        Assert.Empty(RequestValidator.Validate(Valid() with { Id = "gen-42-0001" }, Options));
+        Assert.Contains(RequestValidator.Validate(Valid() with { Id = "kuitti-ä1" }, Options, Retail), e => e.Contains("id"));
+        Assert.Contains(RequestValidator.Validate(Valid() with { Id = "a\nb" }, Options, Retail), e => e.Contains("id"));
+        Assert.Empty(RequestValidator.Validate(Valid() with { Id = "gen-42-0001" }, Options, Retail));
     }
 
     [Fact]
@@ -72,11 +74,11 @@ public class RequestValidatorTests
             Corrections = [new FieldCorrection("vakavuus", "low", "high")],
         };
 
-        var errors = RequestValidator.Validate(request, Options);
+        var errors = RequestValidator.Validate(request, Options, Retail);
 
         Assert.Contains(errors, e => e.Contains("vakavuus"));
         Assert.Empty(RequestValidator.Validate(
-            request with { Corrections = [new FieldCorrection("severity", "low", "high")] }, Options));
+            request with { Corrections = [new FieldCorrection("severity", "low", "high")] }, Options, Retail));
     }
 
     [Fact]
@@ -90,7 +92,7 @@ public class RequestValidatorTests
             ModelInterpretationFailed = true,
         };
 
-        Assert.Contains(RequestValidator.Validate(request, Options), e => e.Contains("modelInterpretationFailed"));
+        Assert.Contains(RequestValidator.Validate(request, Options, Retail), e => e.Contains("modelInterpretationFailed"));
     }
 
     [Fact]
@@ -101,7 +103,7 @@ public class RequestValidatorTests
             AcceptedStructure = new FeedbackStructure("kylmäosasto", "tuoreus", "high", "complaint", "fi"),
         };
 
-        var errors = RequestValidator.Validate(request, Options);
+        var errors = RequestValidator.Validate(request, Options, Retail);
 
         Assert.Contains(errors, e => e.Contains("kylmäosasto"));
     }

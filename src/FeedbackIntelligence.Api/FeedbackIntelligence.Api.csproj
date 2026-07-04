@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <None Include="..\..\prompts\*.txt" Link="prompts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\config\alert-keywords.json" Link="config\alert-keywords.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\domains\**\*" Link="domains\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

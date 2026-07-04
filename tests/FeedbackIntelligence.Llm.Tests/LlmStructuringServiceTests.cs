@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Llm.Structuring;
 
 namespace FeedbackIntelligence.Llm.Tests;
@@ -20,9 +21,12 @@ public class LlmStructuringServiceTests : IDisposable
 
     public void Dispose() => File.Delete(_promptPath);
 
+    private static readonly IActiveDomain Domain = new StubDomain(TestDomains.Retail());
+
     private LlmStructuringService CreateService(ScriptedChatClient client) => new(
         client,
         Options.Create(new StructuringOptions { PromptPath = _promptPath }),
+        Domain,
         NullLogger<LlmStructuringService>.Instance);
 
     [Fact]
@@ -78,6 +82,17 @@ public class LlmStructuringServiceTests : IDisposable
         Assert.True(result.Salvaged);
         Assert.False(result.Retried);
         Assert.Single(client.Prompts);
+    }
+
+    private sealed class StubDomain(DomainDescriptor descriptor) : IActiveDomain
+    {
+        public DomainDescriptor Descriptor { get; } = descriptor;
+        public string Name => Descriptor.Name;
+        public string AlertKeywordsPath => "";
+        public string StoriesPath => "";
+        public IReadOnlyDictionary<string, string> PromptPaths { get; } =
+            new Dictionary<string, string>(StringComparer.Ordinal);
+        public string PromptPath(string role) => throw new NotSupportedException();
     }
 
     /// <summary>Returns scripted responses in order; captures each prompt sent.</summary>

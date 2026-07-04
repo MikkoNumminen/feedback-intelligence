@@ -8,8 +8,10 @@ public sealed class ReportOptions
     public const string SectionName = "Report";
 
     public string SnapshotDir { get; init; } = "data/snapshots";
-    public string SynthesisPromptPath { get; init; } = "prompts/synthesis-v0.txt";
-    public string AlertNominationPromptPath { get; init; } = "prompts/alert-nomination-v0.txt";
+
+    // The synthesis and alert-nomination prompts are domain-voiced (persona,
+    // language) and live in the active domain module, resolved via IActiveDomain —
+    // not here. Adding a domain never edits this neutral config.
 
     public float SynthesisTemperature { get; init; } = 0.3f;
     public int SynthesisMaxOutputTokens { get; init; } = 700;
@@ -44,10 +46,6 @@ public sealed class ReportOptionsValidator : IValidateOptions<ReportOptions>
         var failures = new List<string>();
         if (string.IsNullOrWhiteSpace(options.SnapshotDir))
             failures.Add("Report:SnapshotDir must be set.");
-        if (string.IsNullOrWhiteSpace(options.SynthesisPromptPath))
-            failures.Add("Report:SynthesisPromptPath must be set.");
-        if (options.AlertNominationEnabled && string.IsNullOrWhiteSpace(options.AlertNominationPromptPath))
-            failures.Add("Report:AlertNominationPromptPath must be set when nomination is enabled.");
         if (options.SynthesisMaxOutputTokens < 0)
             failures.Add($"Report:SynthesisMaxOutputTokens must be >= 0, got {options.SynthesisMaxOutputTokens}.");
         if (options.MaxItemsPerLlmCall < 1)

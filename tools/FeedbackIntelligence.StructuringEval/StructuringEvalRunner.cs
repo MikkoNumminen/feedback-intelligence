@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Llm;
 
 namespace FeedbackIntelligence.StructuringEval;
@@ -18,7 +19,8 @@ public sealed record EvalRecord(
 public sealed class StructuringEvalRunner(
     ILlmClientFactory clientFactory,
     IOptions<LlmOptions> llmOptions,
-    IOptions<EvalOptions> evalOptions)
+    IOptions<EvalOptions> evalOptions,
+    IActiveDomain activeDomain)
 {
     private static readonly JsonSerializerOptions RawJsonOptions = new()
     {
@@ -80,6 +82,14 @@ public sealed class StructuringEvalRunner(
             return 1;
         }
 
+        // Fill the domain-taxonomy placeholders once (same neutral prompt the API
+        // uses); {{text}} stays for the per-item substitution below.
+        var descriptor = activeDomain.Descriptor;
+        promptTemplate = promptTemplate
+            .Replace("{{categories}}", RenderJsonArray(descriptor.CategoryLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{severities}}", RenderJsonArray(descriptor.SeverityLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{types}}", RenderJsonArray(descriptor.TypeLabels.Keys), StringComparison.Ordinal);
+
         if (!File.Exists(eval.InputPath))
         {
             Console.Error.WriteLine($"Input file not found: {Path.GetFullPath(eval.InputPath)} — run from the repo root.");
@@ -128,7 +138,7 @@ public sealed class StructuringEvalRunner(
                     }
                     sw.Stop();
 
-                    var validated = OutputValidation.Validate(raw);
+                    var validated = OutputValidation.Validate(raw, descriptor);
                     records.Add(new EvalRecord(model, item.Id, rep, sw.ElapsedMilliseconds, raw, validated));
                     Console.Write(validated switch
                     {
@@ -159,6 +169,9 @@ public sealed class StructuringEvalRunner(
     }
 
     private static string ResolvePromptPath(string configured) => AppPathResolver.Resolve(configured);
+
+    private static string RenderJsonArray(IEnumerable<string> values) =>
+        "[" + string.Join(", ", values.Select(v => JsonSerializer.Serialize(v))) + "]";
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 }

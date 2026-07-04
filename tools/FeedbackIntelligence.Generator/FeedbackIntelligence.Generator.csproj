@@ -12,6 +12,7 @@
   <ItemGroup>
     <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\prompts\variants-v0.txt" Link="prompts\variants-v0.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\domains\**\*" Link="domains\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

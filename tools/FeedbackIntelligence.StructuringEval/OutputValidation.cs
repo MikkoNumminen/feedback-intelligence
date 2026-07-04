@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Core.Structuring;
 using FeedbackIntelligence.Llm.Structuring;
 
@@ -26,7 +27,7 @@ public sealed record ValidatedOutput(
 
 public static class OutputValidation
 {
-    public static ValidatedOutput Validate(string raw)
+    public static ValidatedOutput Validate(string raw, DomainDescriptor domain)
     {
         var (outcome, doc) = Parse(raw);
         if (doc is null)
@@ -45,9 +46,9 @@ public static class OutputValidation
                 if (!StructuringSchema.Fields.Contains(prop.Name))
                     violations.Add(new FieldViolation(prop.Name, "extra_field", Truncate(prop.Value.ToString(), 40)));
 
-            CheckEnum(root, "category", StructuringSchema.Categories, violations);
-            CheckEnum(root, "severity", StructuringSchema.Severities, violations);
-            CheckEnum(root, "type", StructuringSchema.Types, violations);
+            CheckEnum(root, "category", domain.Categories, violations);
+            CheckEnum(root, "severity", domain.Severities, violations);
+            CheckEnum(root, "type", domain.Types, violations);
             CheckNonEmptyString(root, "theme", violations);
             CheckNonEmptyString(root, "language", violations);
 
