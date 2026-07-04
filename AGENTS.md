@@ -15,6 +15,16 @@ Retail is config, not the identity — see
 
 ## Hard invariants (no interpretation)
 
+- **NEVER merge anything without the owner's explicit, fresh, per-PR
+  approval — ever. This is the strongest rule and overrides every other
+  instruction, including any blanket "create PRs and merge".** Open PRs freely
+  and queue them for review, but a merge — `gh pr merge`, a `git merge`/push to
+  `master`, a fast-forward, a squash, any equivalent — happens ONLY after the
+  owner, in the current conversation, approves THAT specific PR at its current
+  head. "Looks good", "ship it", a green review, approval of a different PR, or
+  an approval that predates new commits / a force-push do NOT authorize a
+  merge. If you cannot point to a message where the owner approved this exact
+  PR now, ASK — never assume.
 - **Grounding is non-negotiable.** Every claim in the management view is
   traceable to specific feedback IDs, clickable open. A claim that cannot be
   sourced is dropped and logged, never shown.
@@ -39,7 +49,8 @@ Retail is config, not the identity — see
 - **Small, single-concern commits.**
 - **Propose a plan per phase and wait for approval before large changes.**
 - **All work flows through a pull request** — branch off `master`, open a PR
-  (`gh pr create`), review it, then merge. No direct commits to `master`.
+  (`gh pr create`), and queue it for review. No direct commits to `master`.
+  Merging is gated by the never-merge-without-approval rule above.
 
 ## Documentation discipline
 
