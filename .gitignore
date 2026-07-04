@@ -8,9 +8,10 @@ bin/
 obj/
 *.user
 
-# Regenerable dev artifacts (placeholder-derived, non-evidential by rule)
-data/corpus/generated-placeholder-*
-data/corpus/ground-truth-placeholder-*
+# Regenerable dev artifacts (placeholder-derived, non-evidential by rule).
+# Recursive so per-domain subfolders (e.g. data/corpus/game/) are covered too.
+data/corpus/**/generated-placeholder-*
+data/corpus/**/ground-truth-placeholder-*
 
 # Runtime state (any location — the API creates its DB and snapshots relative to its CWD)
 **/data/*.db
