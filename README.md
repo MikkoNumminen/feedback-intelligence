@@ -81,17 +81,17 @@ hosted is a data-residency decision that belongs to the customer.
 ```
 dotnet test                                   # unit tests, no LLM needed
 docker compose up -d ollama                   # local Ollama (isolated volume)
-dotnet run --project src/RetailFeedback.Api   # API + UIs on localhost
+dotnet run --project src/FeedbackIntelligence.Api   # API + UIs on localhost
 ```
 
 - `/` — management view (Finnish; live report with snapshot fallback)
 - `/desk.html` — desk entry: type one sentence, accept/correct, save
 - `POST /feedback` — the one ingest endpoint all four channels share
 
-Corpus pipeline: `tools/RetailFeedback.Generator` (`variants` = offline LLM
+Corpus pipeline: `tools/FeedbackIntelligence.Generator` (`variants` = offline LLM
 multiplication; `generate --seed N` = deterministic composition, never calls
 the LLM; `verify` = mechanized acceptance against ground truth). Structuring
-eval harness: `tools/RetailFeedback.StructuringEval`.
+eval harness: `tools/FeedbackIntelligence.StructuringEval`.
 
 ## Design & docs
 

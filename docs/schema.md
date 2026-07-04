@@ -5,7 +5,7 @@ becomes after the LLM structures it. It is the **shape** of a feedback record;
 it is domain-agnostic except for one field whose *values* are domain
 configuration.
 
-**Single source of truth:** `src/RetailFeedback.Domain/Structuring/StructuringSchema.cs`.
+**Single source of truth:** `src/FeedbackIntelligence.Core/Structuring/StructuringSchema.cs`.
 The eval runner and the ingest pipeline both validate against it, and
 `GET /schema` serves the enum sets to UIs so no frontend keeps its own copy.
 

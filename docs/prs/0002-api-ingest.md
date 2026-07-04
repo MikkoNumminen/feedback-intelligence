@@ -4,7 +4,7 @@ Branch `feat/api-ingest` → `main` (local; no remote exists).
 
 ## What
 
-`src/RetailFeedback.Api` (ASP.NET Core minimal API): `POST /feedback` (one
+`src/FeedbackIntelligence.Api` (ASP.NET Core minimal API): `POST /feedback` (one
 endpoint, channels as source values), `POST /interpret` (desk preview),
 `GET /feedback/{id}` + windowed archive query, `GET /health` (1-token real
 completion). SQLite single-table store (structure as JSON column, corrections

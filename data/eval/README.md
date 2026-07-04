@@ -39,4 +39,4 @@ synthesis-priority grounds, 2026-07-03 — placeholder metrics played no part.)
 
 Run against placeholders:
 
-    dotnet run --project tools/RetailFeedback.StructuringEval -- eval --Eval:InputPath=data/eval/placeholder-inputs.jsonl
+    dotnet run --project tools/FeedbackIntelligence.StructuringEval -- eval --Eval:InputPath=data/eval/placeholder-inputs.jsonl

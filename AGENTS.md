@@ -71,13 +71,13 @@ accounts/auth, native mobile apps, speech input, real channel integrations.
 ```
 dotnet test                                   # unit tests, no LLM needed
 docker compose up -d ollama                   # local Ollama — ANNOUNCE FIRST (shared GPU)
-dotnet run --project src/RetailFeedback.Api   # API + UIs (/ management view, /desk.html)
-dotnet run --project tools/RetailFeedback.Generator -- variants   # offline LLM corpus multiplication (announce)
-dotnet run --project tools/RetailFeedback.Generator -- generate --seed 42        # deterministic; no LLM
-dotnet run --project tools/RetailFeedback.Generator -- verify --ground-truth <f> --report <f>   # Phase 4 acceptance
+dotnet run --project src/FeedbackIntelligence.Api   # API + UIs (/ management view, /desk.html)
+dotnet run --project tools/FeedbackIntelligence.Generator -- variants   # offline LLM corpus multiplication (announce)
+dotnet run --project tools/FeedbackIntelligence.Generator -- generate --seed 42        # deterministic; no LLM
+dotnet run --project tools/FeedbackIntelligence.Generator -- verify --ground-truth <f> --report <f>   # Phase 4 acceptance
 ```
 
-**Operator CLI** — `dotnet run --project tools/RetailFeedback.Ctl -- <cmd>` (or
+**Operator CLI** — `dotnet run --project tools/FeedbackIntelligence.Ctl -- <cmd>` (or
 no args for an interactive console) wraps the above into one control surface:
 a live status board, `up`/`down` lifecycle (with the **shared-RAG guard** that
 refuses to grab the GPU while `mikkonumminendev` is running), and

@@ -24,11 +24,11 @@ varasto_nouto | verkkokauppa_toimitus | muu
 These values are retail configuration in principle, but today they live in
 engine code in **three** places, none of them config:
 
-- `src/RetailFeedback.Domain/Structuring/StructuringSchema.cs` — the canonical
+- `src/FeedbackIntelligence.Core/Structuring/StructuringSchema.cs` — the canonical
   `HashSet` (the Domain project = the engine).
 - `prompts/structuring-v0.txt` — the 14 values written inline into the Finnish
   structuring prompt.
-- `src/RetailFeedback.Api/wwwroot/desk.html` — the Finnish department **label**
+- `src/FeedbackIntelligence.Api/wwwroot/desk.html` — the Finnish department **label**
   map.
 
 Extracting the enum (and the labels) to configuration so the engine carries no
@@ -48,7 +48,7 @@ texts are verified against this list, not a guess of it.
 
 ## Generator story types
 
-Config: `Generator:Stories` in `tools/RetailFeedback.Generator/appsettings.json`.
+Config: `Generator:Stories` in `tools/FeedbackIntelligence.Generator/appsettings.json`.
 Three planted-story archetypes (the demo's ground truth):
 
 1. **dairy-freshness-worsening** — a repeating freshness/dairy signal across

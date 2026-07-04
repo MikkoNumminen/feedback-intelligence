@@ -1,0 +1,157 @@
+using FeedbackIntelligence.Generator;
+
+namespace FeedbackIntelligence.Generator.Tests;
+
+public class ReportVerifierTests
+{
+    private const string GroundTruth = """
+        {
+          "seed": 1, "anchorDate": "2026-07-01", "nonEvidential": true,
+          "stories": [
+            {
+              "id": "dairy", "kind": "recurring_signal",
+              "feedbackIds": ["a1", "a2", "a3", "a4"],
+              "expectedDepartment": "maito_kylma",
+              "expectedThemeKeywords": ["tuoreus"],
+              "windowFrom": "2026-06-18", "windowTo": "2026-07-01",
+              "trend": "worsening", "minGroundedIds": 3, "expectAlert": false
+            },
+            {
+              "id": "safety", "kind": "alert_by_understanding",
+              "feedbackIds": ["s1"],
+              "expectedDepartment": "rakennustarvike",
+              "expectedThemeKeywords": ["turvallisuus"],
+              "windowFrom": "2026-06-25", "windowTo": "2026-07-01",
+              "trend": "stable", "minGroundedIds": 1, "expectAlert": true
+            }
+          ]
+        }
+        """;
+
+    private static string Report(
+        string dairyDirection = "paheneva",
+        string dairyIds = """["a1","a2","a3","a4"]""",
+        string dairyDepartment = "maito_kylma",
+        string alerts = """[{"feedbackId":"s1"}]""",
+        string windowFrom = "2026-06-10T00:00:00.0000000+00:00",
+        string windowTo = "2026-07-02T00:00:00.0000000+00:00") => $$"""
+        {
+          "windowFrom": "{{windowFrom}}", "windowTo": "{{windowTo}}",
+          "alerts": {{alerts}},
+          "themes": [
+            {
+              "department": "{{dairyDepartment}}", "title": "Maidon tuoreus",
+              "narrative": "Tuoreus heikkenee.", "count": 4,
+              "direction": "{{dairyDirection}}", "feedbackIds": {{dairyIds}}
+            },
+            {
+              "department": "rakennustarvike", "title": "Terassi",
+              "narrative": "Rakenne petti.", "count": 1,
+              "direction": "vakaa", "feedbackIds": ["s1"]
+            }
+          ]
+        }
+        """;
+
+    [Fact]
+    public void FullyGroundedReport_Passes()
+    {
+        var results = ReportVerifier.Verify(GroundTruth, Report());
+
+        Assert.All(results, r => Assert.True(r.Pass));
+        Assert.Equal(4, results[0].GroundedIds);
+        Assert.True(results[0].KeywordSeen);
+    }
+
+    [Fact]
+    public void InsufficientGrounding_Fails()
+    {
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyIds: """["a1","a2"]"""));
+
+        Assert.False(results[0].GroundingPass);
+        Assert.Equal(2, results[0].GroundedIds);
+        Assert.False(results[0].Pass);
+    }
+
+    [Fact]
+    public void GroundingInWrongDepartment_DoesNotCount()
+    {
+        // The story ids appear under the WRONG department: misclassification,
+        // not grounding.
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDepartment: "hevi"));
+
+        Assert.False(results[0].GroundingPass);
+        Assert.Equal(0, results[0].GroundedIds);
+    }
+
+    [Fact]
+    public void UnexpectedTrendDirection_WarnsButDoesNotFail()
+    {
+        // The report's direction is a department AGGREGATE; same-department
+        // noise legitimately dilutes it. Warning tier, not a gate.
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "laskeva"));
+
+        Assert.False(results[0].TrendOk);
+        Assert.True(results[0].Pass);
+    }
+
+    [Fact]
+    public void KasvavaSatisfiesWorsening()
+    {
+        // Volume growth without a severity shift still satisfies a "worsening"
+        // plant — paheneva is the stricter, preferred read.
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "kasvava"));
+
+        Assert.True(results[0].TrendOk);
+    }
+
+    [Fact]
+    public void NoiseSharingTheDepartment_DoesNotBreakGrounding()
+    {
+        // Production-normal: the dairy theme carries story ids PLUS noise ids
+        // the LLM classified into the same department.
+        var results = ReportVerifier.Verify(GroundTruth,
+            Report(dairyIds: """["n9","a1","n8","a2","a3","n7","a4","n6"]"""));
+
+        Assert.True(results[0].GroundingPass);
+        Assert.Equal(4, results[0].GroundedIds);
+        Assert.True(results[0].Pass);
+    }
+
+    [Fact]
+    public void ReportWindowNotCoveringStoryWindow_FailsWithDiagnosis()
+    {
+        // Wrong-report operator error must be named, not read as a grounding
+        // regression.
+        var results = ReportVerifier.Verify(GroundTruth,
+            Report(windowFrom: "2026-07-10T00:00:00.0000000+00:00", windowTo: "2026-07-20T00:00:00.0000000+00:00"));
+
+        Assert.False(results[0].WindowCovered);
+        Assert.False(results[0].Pass);
+    }
+
+    [Fact]
+    public void EmptyGroundTruth_ThrowsInsteadOfVacuousPass()
+    {
+        var emptyTruth = """{ "seed": 1, "anchorDate": "2026-07-01", "nonEvidential": true, "stories": [] }""";
+
+        Assert.Throws<System.IO.InvalidDataException>(() => ReportVerifier.Verify(emptyTruth, Report()));
+    }
+
+    [Fact]
+    public void MissingExpectedAlert_Fails()
+    {
+        var results = ReportVerifier.Verify(GroundTruth, Report(alerts: "[]"));
+
+        Assert.False(results[1].AlertPass);
+        Assert.False(results[1].Pass);
+    }
+
+    [Fact]
+    public void UnparseableReportWindow_IsToleratedNotFailed()
+    {
+        var results = ReportVerifier.Verify(GroundTruth, Report(windowFrom: "x", windowTo: "y"));
+
+        Assert.True(results[0].WindowCovered);
+    }
+}
