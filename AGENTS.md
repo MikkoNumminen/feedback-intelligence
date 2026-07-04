@@ -38,6 +38,8 @@ Retail is config, not the identity — see
   (auto-labelled when a path contains "placeholder").
 - **Small, single-concern commits.**
 - **Propose a plan per phase and wait for approval before large changes.**
+- **All work flows through a pull request** — branch off `master`, open a PR
+  (`gh pr create`), review it, then merge. No direct commits to `master`.
 
 ## Documentation discipline
 
