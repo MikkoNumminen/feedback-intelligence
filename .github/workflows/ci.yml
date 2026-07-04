@@ -3,6 +3,11 @@ name: CI
 # Build + unit tests on every PR to master and on master itself. The unit tests
 # need no LLM/GPU (dotnet test # no LLM needed), so CI is fully hermetic — it
 # never touches the shared Ollama/RAG stack and needs no secrets.
+#
+# Docs-only PRs skip the .NET build/test but STILL report this check as green:
+# the job always runs and always reports the "build + test (.NET 8)" context, so
+# a required-status-check branch protection is satisfied without a wasted build
+# (skipping the job entirely would leave the required check unreported = blocked).
 on:
   push:
     branches: [master]
@@ -24,17 +29,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need history to diff changed files (docs-only detection)
+
+      - name: Detect docs-only change (PRs only)
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          echo "changed files:"; echo "$changed"
+          # docs-only = every changed file is under docs/ or ends in .md.
+          # A non-doc file makes `grep -qv` succeed → not docs-only.
+          if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '^docs/|\.md$'; then
+            echo "docs-only change — skipping .NET build/test."
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up .NET 8 (LTS)
+        if: steps.filter.outputs.docs_only != 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
       - name: Restore
+        if: steps.filter.outputs.docs_only != 'true'
         run: dotnet restore FeedbackIntelligence.sln
 
       - name: Build (Release)
+        if: steps.filter.outputs.docs_only != 'true'
         run: dotnet build FeedbackIntelligence.sln --configuration Release --no-restore
 
       - name: Test (Release, no LLM required)
+        if: steps.filter.outputs.docs_only != 'true'
         run: dotnet test FeedbackIntelligence.sln --configuration Release --no-build --verbosity normal
+
+      - name: Docs-only — build/test skipped
+        if: steps.filter.outputs.docs_only == 'true'
+        run: |
+          echo "Docs-only change - .NET build/test skipped; this check passes so branch protection stays satisfied."
