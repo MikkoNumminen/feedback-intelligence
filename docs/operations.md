@@ -56,6 +56,29 @@ Ported rather than reinvented; each was measured there.
 - **Health checks prove a 1-token real completion**, not merely that the server
   answers — "server up" does not mean "model loaded and generating".
 
+## feedctl — operator CLI
+
+`tools/RetailFeedback.Ctl` (`dotnet run --project tools/RetailFeedback.Ctl --
+<cmd>`, or no args for an interactive REPL) is the operator surface for the
+demo, modelled on the sibling RAG's `ragctl`. It orchestrates docker, the
+`dotnet` API process, and the local HTTP API — BCL-only, no dependencies.
+
+- **`status` / `watch`** — a colour-coded live board: docker · **shared-RAG
+  guard** · isolated ollama · model loaded · GPU (nvidia-smi) · API process ·
+  `/health` · demo data count · snapshot. Headline verdict: "demo is LIVE".
+- **`up` / `down`** — bring the demo live (start ollama → start the API
+  detached with a tracked PID → warm Poro) / stop both and free the GPU. `up`
+  **refuses if the shared `mikkonumminendev` RAG is running** — the
+  announce-before-GPU hard rule, enforced by the tool.
+- **`demo [--seed N]`** — the full run-through: `generate → up → load →
+  report → verify` in one command.
+- **`interpret "…"`** (live desk structuring, timed) · **`load` / `report` /
+  `verify`** (ingest a corpus / generate + summarize a report / acceptance vs
+  ground truth) · **`telemetry`** (per-field desk correction rates) ·
+  **`logs`** · **`open`**.
+
+Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
+
 ## Deploy topology (Phase 5)
 
 - **Frontend → Azure Static Web Apps** (free tier). The two pages read

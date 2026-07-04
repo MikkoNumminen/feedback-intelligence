@@ -64,6 +64,12 @@ dotnet run --project tools/RetailFeedback.Generator -- generate --seed 42       
 dotnet run --project tools/RetailFeedback.Generator -- verify --ground-truth <f> --report <f>   # Phase 4 acceptance
 ```
 
+**Operator CLI** — `dotnet run --project tools/RetailFeedback.Ctl -- <cmd>` (or
+no args for an interactive console) wraps the above into one control surface:
+a live status board, `up`/`down` lifecycle (with the **shared-RAG guard** that
+refuses to grab the GPU while `mikkonumminendev` is running), and
+`demo`/`interpret`/`report`/`verify`/`telemetry`. See [docs/operations.md](docs/operations.md).
+
 ## Docs map
 
 - [docs/architecture.md](docs/architecture.md) — engine design, two-layer
