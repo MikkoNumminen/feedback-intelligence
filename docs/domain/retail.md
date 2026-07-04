@@ -1,18 +1,19 @@
 # Domain: Finnish retail (first application)
 
-> **First application, config-level, not core.** This document holds the
-> retail-specific taxonomy that parameterizes the domain-agnostic engine
-> ([ADR-0007](../decisions/0007-domain-agnostic-core.md)). The engine must not
-> hardcode any of these values; where it currently does, that is flagged below
-> as a gap to close, not as intended design.
+> **First application, a data-only module, not core.** This is the retail
+> taxonomy that parameterizes the domain-neutral engine
+> ([ADR-0007](../decisions/0007-domain-agnostic-core.md),
+> [ADR-0012](../decisions/0012-pluggable-domain-modules.md)). It lives entirely
+> under **`domains/retail/`** — the engine hardcodes none of it. The authoring
+> contract common to all domains is in [../domains.md](../domains.md).
 
 The retail application is a hybrid hardware-store / grocery, matching the
 hand-written corpus.
 
-## Department taxonomy (the `department` enum)
+## Category taxonomy (`domains/retail/domain.json`)
 
-The one domain-specific schema field ([../schema.md](../schema.md)). Fourteen
-values:
+The `category` field ([../schema.md](../schema.md)). Fourteen values, each with a
+Finnish display label; `categoryFieldLabel` is `osasto`:
 
 ```
 maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | kassa_palvelu |
@@ -20,44 +21,43 @@ piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit | sahko_lvi |
 varasto_nouto | verkkokauppa_toimitus | muu
 ```
 
-**⚠ Boundary gap — hardcoded in the engine, flagged for a separate change.**
-These values are retail configuration in principle, but today they live in
-engine code in **three** places, none of them config:
+Severities and types are not overridden — retail inherits the core defaults
+(`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).
 
-- `src/RetailFeedback.Domain/Structuring/StructuringSchema.cs` — the canonical
-  `HashSet` (the Domain project = the engine).
-- `prompts/structuring-v0.txt` — the 14 values written inline into the Finnish
-  structuring prompt.
-- `src/RetailFeedback.Api/wwwroot/desk.html` — the Finnish department **label**
-  map.
+The structuring model receives these values through the neutral core prompt
+(`prompts/structuring-v0.txt`), templated from the active domain at load time;
+the desk UI renders the labels from `/schema`. **No retail value is written into
+engine code** — the boundary gap ADR-0007 flagged is closed (ADR-0012).
 
-Extracting the enum (and the labels) to configuration so the engine carries no
-retail taxonomy is a separate code change. This doc names the gap; it does not
-perform the extraction.
+## Alert keywords (`domains/retail/alert-keywords.json`)
 
-## Alert keywords
-
-Config, loaded and validated at startup: **`config/alert-keywords.json`**.
-Case-insensitive substring match over the raw feedback text, Finnish stems, in
-three categories: injury/safety, payment, legal-threat. The file also records
-**deliberate exclusions** — structural-failure verbs (pettää, sortua, irrota,
-antaa periksi, romahtaa) are *non-keywords on purpose*: they are the no-keyword
-safety story's vocabulary, which must be detectable only by understanding
+Loaded and validated at startup. Case-insensitive substring match over the raw
+feedback text, Finnish stems, in three categories: injury/safety, payment,
+legal-threat. The file also records **deliberate exclusions** — structural-failure
+verbs (pettää, sortua, irrota, antaa periksi, romahtaa) are *non-keywords on
+purpose*: they are the no-keyword safety story's vocabulary, which must be
+detectable only by understanding
 ([ADR-0006](../decisions/0006-ai-in-exactly-two-places.md)). Safety-story corpus
 texts are verified against this list, not a guess of it.
 
-## Generator story types
+## Generator stories (`domains/retail/stories.json`)
 
-Config: `Generator:Stories` in `tools/RetailFeedback.Generator/appsettings.json`.
-Three planted-story archetypes (the demo's ground truth):
+Three planted-story archetypes (the demo's ground truth), validated against the
+retail taxonomy by `StoryLibrary` at generate time:
 
 1. **dairy-freshness-worsening** — a repeating freshness/dairy signal across
    channels, worsening (a sequenced arc — [ADR-0011](../decisions/0011-sequence-preserving-arcs.md)).
 2. **safety-no-keyword** — a safety complaint containing no alert keywords,
    detectable only by understanding.
-3. **availability-slow-burn** — a slow-burn availability trend on one department.
+3. **availability-slow-burn** — a slow-burn availability trend on one category.
 
-Story definitions (department, theme keywords, sources, window, trend,
-`minGroundedIds`, `expectAlert`) are config values; the authoritative corpus
+Story definitions (category, theme keywords, sources, window, trend,
+`minGroundedIds`, `expectAlert`) are domain data; the authoritative corpus
 composition guidance is in
 [../../data/corpus/README.md](../../data/corpus/README.md).
+
+## Domain-voiced prompts (`domains/retail/prompts/`)
+
+`synthesis-v0.txt` (management narrative, Finnish, retail-analyst persona) and
+`alert-nomination-v0.txt` (safety/urgency screen) carry the retail voice and
+language and live in the module, not the core.

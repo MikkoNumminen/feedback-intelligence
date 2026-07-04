@@ -1,0 +1,30 @@
+{"id":"gpc-001-v0","source":"support_ticket","text":"Lost about two hours of progress after the game crashed during a save.","story":"progression-loss-worsening","sourceId":"gpc-001"}
+{"id":"gpc-001-v1","source":"steam_review","text":"Game crashed on save and I lost a couple hours of progress.","story":"progression-loss-worsening","sourceId":"gpc-001"}
+{"id":"gpc-002-v0","source":"discord","text":"My save didn't load this morning, got dropped back to an old checkpoint.","story":"progression-loss-worsening","sourceId":"gpc-002"}
+{"id":"gpc-002-v1","source":"in_game","text":"Loaded in today and my save was reset to a much earlier point.","story":"progression-loss-worsening","sourceId":"gpc-002"}
+{"id":"gpc-003-v0","source":"support_ticket","text":"Second time this week my save file reset itself, losing a whole evening of play.","story":"progression-loss-worsening","sourceId":"gpc-003"}
+{"id":"gpc-003-v1","source":"steam_review","text":"Save wiped again, that's twice now, an entire evening of progress gone.","story":"progression-loss-worsening","sourceId":"gpc-003"}
+{"id":"gpc-004-v0","source":"discord","text":"Cloud sync overwrote my newer save and my progress is gone.","story":"progression-loss-worsening","sourceId":"gpc-004"}
+{"id":"gpc-005-v0","source":"support_ticket","text":"Third time now my entire campaign save has vanished, I'm losing days of progress.","story":"progression-loss-worsening","sourceId":"gpc-005"}
+{"id":"gpc-005-v1","source":"steam_review","text":"For the third time my whole campaign save is gone. Days of progress lost, this is unacceptable.","story":"progression-loss-worsening","sourceId":"gpc-005"}
+{"id":"gpc-006-v0","source":"support_ticket","text":"All my characters and progress were wiped after the latest patch, completely gone.","story":"progression-loss-worsening","sourceId":"gpc-006"}
+{"id":"gpc-006-v1","source":"discord","text":"Post-patch my progress is fully reset, characters gone, starting from zero.","story":"progression-loss-worsening","sourceId":"gpc-006"}
+{"id":"gpc-007-v0","source":"steam_review","text":"Refunding — lost all my save progress twice and support hasn't restored it.","story":"progression-loss-worsening","sourceId":"gpc-007"}
+{"id":"npc-001","source":"steam_review","text":"The new sniper is way overtuned, it dominates every match right now."}
+{"id":"npc-002","source":"discord","text":"Matchmaking keeps putting me against players ten levels above me."}
+{"id":"npc-003","source":"in_game","text":"Frame rate tanks hard in the swamp zone on my machine."}
+{"id":"npc-004","source":"support_ticket","text":"The battle pass price went up again and the rewards feel worse."}
+{"id":"npc-005","source":"steam_review","text":"Absolutely love the new soundtrack, the boss theme is incredible."}
+{"id":"npc-006","source":"discord","text":"UI menus are confusing, took me ages to find the loadout screen."}
+{"id":"npc-007","source":"in_game","text":"Ran out of endgame content after a week, need more to grind for."}
+{"id":"npc-008","source":"steam_review","text":"Voice chat is full of toxic players and there's no easy mute."}
+{"id":"npc-009","source":"support_ticket","text":"Audio cuts out completely whenever I open the map."}
+{"id":"npc-010","source":"discord","text":"Netcode feels laggy in ranked, hits don't register half the time."}
+{"id":"npc-011","source":"steam_review","text":"Great game overall but the tutorial is way too long."}
+{"id":"npc-012","source":"in_game","text":"The new map is gorgeous, best environment art so far."}
+{"id":"npc-013","source":"discord","text":"Please add colorblind options, the objective markers are hard to see."}
+{"id":"npc-014","source":"support_ticket","text":"Purchased the deluxe skin bundle but only half of it unlocked."}
+{"id":"npc-015","source":"steam_review","text":"Balance patch made my favorite class useless, kind of bummed."}
+{"id":"npc-016","source":"in_game","text":"Matchmaking wait times are really long during off-peak hours."}
+{"id":"npc-017","source":"discord","text":"Loving the seasonal event, the cosmetics are fantastic this time."}
+{"id":"npc-018","source":"steam_review","text":"Game stutters every time an ability effect plays, needs optimization."}

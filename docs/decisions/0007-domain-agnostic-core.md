@@ -1,7 +1,15 @@
 # ADR-0007 — Domain-agnostic core, retail as configuration
 
-- **Status:** Accepted (2026-07-04)
+- **Status:** Accepted (2026-07-04); the flagged boundary gap is now **realized by
+  [ADR-0012](0012-pluggable-domain-modules.md)** (pluggable domain modules).
 - **Deciders:** Mikko
+
+> **Update (2026-07-04):** This ADR named the principle and honestly flagged that
+> the taxonomy was still hardcoded in the engine. [ADR-0012](0012-pluggable-domain-modules.md)
+> performs the extraction: the taxonomy, alert lexicon, stories, and domain-voiced
+> prompts now live in data-only modules under `domains/<name>/`, selected by
+> `Domain:Active`. The "known boundary violation" below is closed; the schema
+> field it calls `department` has since been renamed to the neutral `category`.
 
 ## Context
 
@@ -32,13 +40,13 @@ Treat the engine as **domain-agnostic core** and the retail specifics as
 
 - The README's first line states the framing plainly: a domain-agnostic feedback
   intelligence engine, with Finnish retail as the first application.
-- **Known boundary violation, flagged not fixed here:** the retail `department`
-  taxonomy is currently **hardcoded in the engine** — `StructuringSchema.cs`
-  (the Domain project), and re-hardcoded in `prompts/structuring-v0.txt` and the
-  desk UI label map. Alert keywords and story types are already externalized to
-  config. Extracting the `department` enum to config is a separate code change,
-  recorded in [domain/retail.md](../domain/retail.md). This ADR does not perform
-  that extraction — it names the boundary and the current gap.
+- **Known boundary violation, since CLOSED by [ADR-0012](0012-pluggable-domain-modules.md):**
+  at the time of this ADR the retail `department` taxonomy was **hardcoded in the
+  engine** — `StructuringSchema.cs`, re-hardcoded in `prompts/structuring-v0.txt`
+  and the desk UI label map. ADR-0012 extracted all of it into
+  `domains/retail/domain.json` (with the field renamed `department` → `category`);
+  the neutral structuring prompt is now templated from the active domain and the
+  desk renders labels from `/schema`. The engine carries no retail taxonomy.
 - The schema fields `theme`, `severity`, `type`, `language` are domain-agnostic
   feedback dimensions; `department` is the one domain-specific field, and its
   value set is domain configuration.

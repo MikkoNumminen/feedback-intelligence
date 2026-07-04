@@ -5,7 +5,7 @@ session task list; this file is the durable copy.
 
 | # | Item | Blocked on | Unblocks |
 |---|------|-----------|----------|
-| 1 | Write core corpus into `data/corpus/core.jsonl` — format and the authoritative per-story breakdown: `data/corpus/README.md`; safety texts verified against `config/alert-keywords.json` | Mikko writing | announced variants run → real generated corpus → salvage smoke test |
+| 1 | Write core corpus into `data/corpus/core.jsonl` — format and the authoritative per-story breakdown: `data/corpus/README.md`; safety texts verified against `domains/retail/alert-keywords.json` | Mikko writing | announced variants run → real generated corpus → salvage smoke test |
 | 2 | Judge story-variant intensity stability after the first real variants run (keep ×2 or drop to ×0) | #1 | final variants.jsonl commit |
 | 3 | Azure Static Web Apps deployment | Azure account; remote-repo decision | Phase 5 public frontend |
 | 4 | Tailscale Funnel exposure of the backend | Mikko's tailnet + funnel setup | Phase 5 public backend |

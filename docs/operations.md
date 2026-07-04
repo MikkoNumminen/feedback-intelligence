@@ -58,7 +58,7 @@ Ported rather than reinvented; each was measured there.
 
 ## feedctl — operator CLI
 
-`tools/RetailFeedback.Ctl` (`dotnet run --project tools/RetailFeedback.Ctl --
+`tools/FeedbackIntelligence.Ctl` (`dotnet run --project tools/FeedbackIntelligence.Ctl --
 <cmd>`, or no args for an interactive REPL) is the operator surface for the
 demo, modelled on the sibling RAG's `ragctl`. It orchestrates docker, the
 `dotnet` API process, and the local HTTP API — BCL-only, no dependencies.

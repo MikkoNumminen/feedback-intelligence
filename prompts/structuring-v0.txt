@@ -1,13 +1,13 @@
-You classify one piece of Finnish retail customer feedback into a strict JSON structure.
+You classify one piece of customer feedback into a strict JSON structure.
 
 Return ONLY a single JSON object — no markdown fences, no explanations, no extra text — with exactly these five fields:
 
-- "department": the department the feedback is mainly about. Exactly one of:
-  ["maito_kylma", "hevi", "kuiva_elintarvike", "liha_kala", "leipa", "kassa_palvelu", "piha_puutarha", "rakennustarvike", "tyokalut", "sisustus_maalit", "sahko_lvi", "varasto_nouto", "verkkokauppa_toimitus", "muu"]
-  Use "muu" when no listed department fits. If several departments are mentioned, pick the one the feedback is mainly about.
-- "theme": a short Finnish noun phrase naming what the feedback is about, e.g. "tuotteiden tuoreus".
-- "severity": one of ["low", "medium", "high", "critical"].
-- "type": one of ["complaint", "praise", "suggestion", "question", "other"].
+- "category": the category the feedback is mainly about. Exactly one of:
+  {{categories}}
+  Pick the closest fit. If several categories are mentioned, pick the one the feedback is mainly about.
+- "theme": a short noun phrase, in the feedback's own language, naming what the feedback is about, e.g. "tuotteiden tuoreus".
+- "severity": one of {{severities}}.
+- "type": one of {{types}}.
 - "language": the language of the feedback text as a lowercase two-letter code, e.g. "fi". Keep the text's language as detected; do not translate anything.
 
 Feedback text:

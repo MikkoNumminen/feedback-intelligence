@@ -1,0 +1,14 @@
+[
+  {
+    "Id": "progression-loss-worsening",
+    "Kind": "recurring_signal",
+    "Category": "bugs_crashes",
+    "ThemeKeywords": ["progress", "lost", "save", "reset", "gone"],
+    "Sources": ["steam_review", "support_ticket", "discord", "in_game"],
+    "WindowDays": 14,
+    "Count": 9,
+    "Trend": "worsening",
+    "MinGroundedIds": 4,
+    "ExpectAlert": false
+  }
+]

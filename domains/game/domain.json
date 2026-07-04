@@ -1,0 +1,20 @@
+{
+  "name": "game",
+  "categoryFieldLabel": "area",
+  "categories": {
+    "gameplay_balance": "Gameplay & balance",
+    "performance_stability": "Performance & stability",
+    "bugs_crashes": "Bugs & crashes",
+    "monetization": "Monetization & store",
+    "matchmaking": "Matchmaking & netcode",
+    "ui_ux": "UI & UX",
+    "content_progression": "Content & progression",
+    "audio": "Audio",
+    "community_toxicity": "Community & toxicity",
+    "other": "Other"
+  },
+  "prompts": {
+    "synthesis": "prompts/synthesis-v0.txt",
+    "alertNomination": "prompts/alert-nomination-v0.txt"
+  }
+}

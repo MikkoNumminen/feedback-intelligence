@@ -34,8 +34,8 @@ if (-not $OutDir) { $OutDir = Join-Path $repoRoot "dist" }
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force -Confirm:$false }
 New-Item -ItemType Directory $OutDir | Out-Null
 
-Copy-Item (Join-Path $repoRoot "src/RetailFeedback.Api/wwwroot/index.html") $OutDir/
-Copy-Item (Join-Path $repoRoot "src/RetailFeedback.Api/wwwroot/desk.html") $OutDir/
+Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/index.html") $OutDir/
+Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/desk.html") $OutDir/
 Copy-Item (Join-Path $repoRoot "deploy/staticwebapp.config.json") $OutDir/
 
 # UTF-8 without BOM so browsers parse it identically everywhere.
@@ -46,7 +46,7 @@ Copy-Item (Join-Path $repoRoot "deploy/staticwebapp.config.json") $OutDir/
 if ($PublishSnapshot) {
     # Report:SnapshotDir is relative to the API's working directory; check both
     # plausible locations and take the NEWEST, never first-match.
-    $candidates = @("data/snapshots", "src/RetailFeedback.Api/data/snapshots") |
+    $candidates = @("data/snapshots", "src/FeedbackIntelligence.Api/data/snapshots") |
         ForEach-Object { Join-Path $repoRoot "$_/report-latest.json" } |
         Where-Object { Test-Path $_ } |
         Sort-Object { (Get-Item $_).LastWriteTime } -Descending

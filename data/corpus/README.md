@@ -16,7 +16,7 @@ calibrated GDPR decision, see CLAUDE.md). One JSON object per line:
 | `id`       | unique string, e.g. `core-001`                                   |
 | `source`   | `google_review` \| `email` \| `web_form` \| `desk`               |
 | `text`     | the feedback, exactly as a human would write it                  |
-| `story`    | OPTIONAL — tags the item as raw material for a planted story. Must match a `Generator:Stories` id: `dairy-freshness-worsening`, `safety-no-keyword`, `availability-slow-burn`. Untagged items become base noise. |
+| `story`    | OPTIONAL — tags the item as raw material for a planted story. Must match a story id in the active domain's `domains/<active>/stories.json` (retail: `dairy-freshness-worsening`, `safety-no-keyword`, `availability-slow-burn`). Untagged items become base noise. |
 | `sequence` | OPTIONAL, story items only — position in the authored escalation arc (1 = first/mildest). Per story: all items sequenced or none. Generate assigns timestamps strictly monotonic with sequence and composes ONE realization per step per set; variants inherit story + sequence. |
 
 The one line present is Mikko's own example from the project spec. Target
@@ -24,8 +24,8 @@ The one line present is Mikko's own example from the project spec. Target
 (sequenced), safety 1–2, noise 15–20 diverse untagged (noise survives ×6
 multiplication; story items multiply only ×2 through an intensity-preserving
 prompt). Safety-story texts must contain NONE of the deterministic alert
-keywords — verify against `config/alert-keywords.json`, which also lists the
-deliberately non-keyword structural-failure verbs (pettää, sortua, irrota…)
+keywords — verify against `domains/retail/alert-keywords.json`, which also lists
+the deliberately non-keyword structural-failure verbs (pettää, sortua, irrota…)
 that are safe to use.
 
 Composition tip (from the 2026-07-04 verifier review): keep untagged NOISE

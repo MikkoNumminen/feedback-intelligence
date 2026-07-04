@@ -3,7 +3,7 @@ You rewrite one piece of Finnish retail customer feedback so it reads as if a DI
 CRITICAL, do not deviate:
 - Keep the intensity and frustration level EXACTLY as in the original — a mild remark stays mild, an angry one stays angry.
 - Keep every count, ordinal and repetition marker unchanged ("kolmas kerta" stays a third time, "taas" stays a repeat, a first-time complaint stays a first-time complaint).
-- Keep the department, the concrete facts, and the language of the original.
+- Keep the category, the concrete facts, and the language of the original.
 
 Vary only the wording, sentence rhythm, length and register; small typos and colloquialisms are welcome.
 
