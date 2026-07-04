@@ -6,7 +6,7 @@ namespace FeedbackIntelligence.Llm.Structuring;
 
 /// <summary>
 /// Pure salvage + validation layer over raw structuring-model output — a
-/// mandatory production component (CLAUDE.md, Phase 0 closure), unit-tested
+/// mandatory production component (ADR-0004), unit-tested
 /// against the exact failure shapes the placeholder run caught: fenced JSON,
 /// category-as-array, invented enum values.
 /// </summary>

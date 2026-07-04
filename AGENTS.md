@@ -89,8 +89,8 @@ refuses to grab the GPU while `mikkonumminendev` is running), and
   pipeline, ingest, LLM abstraction, the core/config boundary.
 - [docs/schema.md](docs/schema.md) — the feedback record shape and where the
   domain taxonomy is configured.
-- [docs/domain/retail.md](docs/domain/retail.md) — retail config: department
-  enum, alert keywords, story types (first application, config-level).
+- [docs/domain/retail.md](docs/domain/retail.md) — retail config: category enum,
+  alert keywords, stories, domain prompts (first application, config-level).
 - [docs/decisions/](docs/decisions/) — numbered ADRs (the *why*).
 - [docs/plan.md](docs/plan.md) — the original phased build spell (reference).
 - [docs/operations.md](docs/operations.md) — GPU sharing, containment, deploy.

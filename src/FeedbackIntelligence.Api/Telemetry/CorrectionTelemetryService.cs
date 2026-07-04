@@ -6,8 +6,8 @@ using FeedbackIntelligence.Core.Structuring;
 namespace FeedbackIntelligence.Api.Telemetry;
 
 /// <summary>
-/// The ongoing quality measure that replaced the cancelled up-front model eval
-/// (CLAUDE.md, Phase 0 closure): summarizes per-field correction rates from
+/// The ongoing quality measure that replaced the cancelled up-front model eval:
+/// summarizes per-field correction rates from
 /// the desk audit trail over time. Rising rates = the structuring model is
 /// drifting or underperforming on real input; the model stays swappable by
 /// config if this data ever says so.
