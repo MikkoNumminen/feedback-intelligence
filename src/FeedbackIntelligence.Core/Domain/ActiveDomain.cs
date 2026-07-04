@@ -36,10 +36,18 @@ public sealed class ActiveDomain : IActiveDomain
         var o = options.Value;
         var dir = ResolveDir(o.Root, o.Active);
         var domainJson = Path.Combine(dir, "domain.json");
-        Descriptor = LoadDescriptor(domainJson, o.Active);
+        if (!File.Exists(domainJson))
+            throw new InvalidOperationException($"Domain descriptor not found: {domainJson}");
+
+        // Parse domain.json ONCE — the descriptor and the prompt map both read it,
+        // and a double read opens a (small) window for them to disagree.
+        using var doc = JsonDocument.Parse(File.ReadAllText(domainJson));
+        var root = doc.RootElement;
+
+        Descriptor = BuildDescriptor(root, o.Active, domainJson);
         AlertKeywordsPath = Path.Combine(dir, "alert-keywords.json");
         StoriesPath = Path.Combine(dir, "stories.json");
-        PromptPaths = LoadPromptPaths(domainJson, dir);
+        PromptPaths = BuildPromptPaths(root, dir);
     }
 
     public string PromptPath(string role) =>
@@ -49,37 +57,50 @@ public sealed class ActiveDomain : IActiveDomain
                 $"Domain '{Name}' declares no '{role}' prompt (domain.json 'prompts' map).");
 
     /// <summary>Resolve the domain folder against the working directory first
-    /// (repo checkout), then the binary's own directory.</summary>
+    /// (repo checkout), then the binary's own directory. Returns an ABSOLUTE path
+    /// so every derived data-file and prompt path honors the absolute contract.</summary>
     private static string ResolveDir(string root, string active)
     {
         var cwd = Path.Combine(root, active);
         if (Directory.Exists(cwd))
-            return cwd;
+            return Path.GetFullPath(cwd);
         var beside = Path.Combine(AppContext.BaseDirectory, root, active);
         if (Directory.Exists(beside))
-            return beside;
+            return Path.GetFullPath(beside);
         throw new InvalidOperationException(
             $"Domain module '{active}' not found under '{root}/' (cwd: {Environment.CurrentDirectory}).");
     }
 
+    /// <summary>Loads a descriptor from a domain.json path (reads + parses the
+    /// file). Kept for callers that only need the descriptor (tests); the runtime
+    /// constructor parses once and calls <see cref="BuildDescriptor"/> directly.</summary>
     public static DomainDescriptor LoadDescriptor(string domainJsonPath, string fallbackName)
     {
         if (!File.Exists(domainJsonPath))
             throw new InvalidOperationException($"Domain descriptor not found: {domainJsonPath}");
         using var doc = JsonDocument.Parse(File.ReadAllText(domainJsonPath));
-        var root = doc.RootElement;
+        return BuildDescriptor(doc.RootElement, fallbackName, domainJsonPath);
+    }
 
+    private static DomainDescriptor BuildDescriptor(JsonElement root, string fallbackName, string sourcePath)
+    {
         var name = root.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
             ? n.GetString()! : fallbackName;
         var label = root.TryGetProperty("categoryFieldLabel", out var l) && l.ValueKind == JsonValueKind.String
             ? l.GetString()! : "category";
 
         var categories = ReadMap(root, "categories")
-            ?? throw new InvalidOperationException($"{domainJsonPath}: 'categories' is required.");
+            ?? throw new InvalidOperationException($"{sourcePath}: 'categories' is required.");
         if (categories.Count == 0)
-            throw new InvalidOperationException($"{domainJsonPath}: 'categories' must be non-empty.");
-        var severities = ReadMap(root, "severities") ?? new Dictionary<string, string>(CoreDefaults.Severities, StringComparer.Ordinal);
-        var types = ReadMap(root, "types") ?? new Dictionary<string, string>(CoreDefaults.Types, StringComparer.Ordinal);
+            throw new InvalidOperationException($"{sourcePath}: 'categories' must be non-empty.");
+
+        // A missing OR EMPTY severities/types map falls back to the core defaults —
+        // an empty "{}" must not silently produce an empty enum set (which would
+        // reject every item at structuring time).
+        var severities = ReadMap(root, "severities") is { Count: > 0 } sev
+            ? sev : new Dictionary<string, string>(CoreDefaults.Severities, StringComparer.Ordinal);
+        var types = ReadMap(root, "types") is { Count: > 0 } typ
+            ? typ : new Dictionary<string, string>(CoreDefaults.Types, StringComparer.Ordinal);
 
         return new DomainDescriptor
         {
@@ -95,11 +116,10 @@ public sealed class ActiveDomain : IActiveDomain
     }
 
     /// <summary>Reads the optional "prompts" role→file map and resolves each file
-    /// relative to the domain directory. Absent map = no domain prompts.</summary>
-    private static IReadOnlyDictionary<string, string> LoadPromptPaths(string domainJsonPath, string dir)
+    /// relative to the (absolute) domain directory. Absent map = no domain prompts.</summary>
+    private static IReadOnlyDictionary<string, string> BuildPromptPaths(JsonElement root, string dir)
     {
-        using var doc = JsonDocument.Parse(File.ReadAllText(domainJsonPath));
-        var map = ReadMap(doc.RootElement, "prompts");
+        var map = ReadMap(root, "prompts");
         if (map is null)
             return new Dictionary<string, string>(StringComparer.Ordinal);
         return map.ToDictionary(p => p.Key, p => Path.Combine(dir, p.Value), StringComparer.Ordinal);

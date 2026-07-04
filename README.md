@@ -22,7 +22,7 @@ shared link never shows a dead page.
 
 This design survived four rounds of "why does this need AI at all" scrutiny.
 Everything that CAN be rule-coded IS rule-coded: alert keywords are a
-deterministic substring scan (`config/alert-keywords.json`) that runs first,
+deterministic substring scan (the active domain's `alert-keywords.json`) that runs first,
 never sleeps and never hallucinates; theme grouping, counts and trend
 direction are computed arithmetic; grounding is enforced by validation, not by
 prompt-wording. The LLM remains only where free-form language genuinely cannot

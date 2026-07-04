@@ -57,8 +57,11 @@ The full authoring contract is in [../domains.md](../domains.md).
   module is available after a rebuild (or immediately when running from a
   checkout whose working directory holds `domains/`).
 - **Behavior preservation was proven, not asserted.** The retail seed-42 corpus
-  is byte-identical before and after the extraction (SHA-256 reproduced from the
-  pre-refactor commit and the refactored tree); all 81 tests stay green.
+  composed from the committed placeholder pool is byte-identical before and after
+  the extraction — SHA-256 `732BE558…` reproduced both from the pre-refactor commit
+  `df704be` (in an isolated worktree) and from the refactored tree (the real corpus
+  does not exist yet, so the placeholder pool is the available fixture). All 81
+  tests stay green.
 - **Cost:** a domain now spans several small files instead of one appsettings
   block, and the generator can only compose a domain whose variants pool carries
   matching story tags (a game corpus is required before `generate` runs with

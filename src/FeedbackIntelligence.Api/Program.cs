@@ -66,8 +66,25 @@ var app = builder.Build();
 // Fail fast on config errors — the validated-at-startup rule.
 _ = app.Services.GetRequiredService<IOptions<LlmOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<IngestOptions>>().Value;
-_ = app.Services.GetRequiredService<IOptions<ReportOptions>>().Value;
+var reportOptions = app.Services.GetRequiredService<IOptions<ReportOptions>>().Value;
 _ = app.Services.GetRequiredService<AlertKeywordSet>();
+
+// The report resolves its prompts from the active domain at generation time.
+// Validate those roles (and their files) HERE so a domain that omits/misspells a
+// prompt fails the boot, not mid-report with a 500 — the "report always renders"
+// guarantee only covers an unreachable LLM, never a misconfigured domain.
+var activeDomain = app.Services.GetRequiredService<IActiveDomain>();
+var requiredPromptRoles = reportOptions.AlertNominationEnabled
+    ? new[] { "synthesis", "alertNomination" }
+    : new[] { "synthesis" };
+foreach (var role in requiredPromptRoles)
+{
+    var promptPath = activeDomain.PromptPath(role); // throws if the role is undeclared
+    if (!File.Exists(FeedbackIntelligence.Llm.AppPathResolver.Resolve(promptPath)))
+        throw new InvalidOperationException(
+            $"Domain '{activeDomain.Name}' declares a '{role}' prompt but the file is missing: {promptPath}");
+}
+
 app.Services.GetRequiredService<FeedbackStore>().Initialize();
 
 // The public deployment sits behind a local tunnel daemon: without forwarded

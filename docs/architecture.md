@@ -102,8 +102,8 @@ provenance (measured in a sibling project) are in [operations.md](operations.md)
 
 The engine owns the pipeline, the two-layer design, the abstraction, the salvage
 layer, the grounded analysis, and the schema *shape*. A domain owns its taxonomy
-values (for retail: the `department` enum, the alert-keyword list, the story
-types). The boundary — and one place where the retail taxonomy currently leaks
-into engine code — is recorded in
-[domain/retail.md](domain/retail.md) and
-[ADR-0007](decisions/0007-domain-agnostic-core.md).
+values (for retail: the `category` enum, the alert-keyword list, the stories, and
+the domain-voiced prompts) — all in a data-only module under `domains/<name>/`,
+selected by `Domain:Active`. The boundary is clean in code (no domain values in
+the engine) as of [ADR-0012](decisions/0012-pluggable-domain-modules.md); see
+[domains.md](domains.md) and [domain/retail.md](domain/retail.md).

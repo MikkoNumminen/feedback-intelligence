@@ -81,6 +81,10 @@ public sealed class LlmStructuringService(
         var template = await File.ReadAllTextAsync(path, ct);
         if (!template.Contains("{{text}}", StringComparison.Ordinal))
             throw new InvalidOperationException($"Structuring prompt '{path}' must contain the {{{{text}}}} placeholder.");
+        if (!template.Contains("{{categories}}", StringComparison.Ordinal))
+            logger.LogWarning(
+                "Structuring prompt '{Path}' has no {{{{categories}}}} placeholder — the model gets no taxonomy "
+                + "list, so it may emit out-of-domain category values the salvage layer then rejects.", path);
 
         // Fill the domain-taxonomy placeholders once — they are constant per
         // active domain. {{text}} stays for per-call substitution. A neutral

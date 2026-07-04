@@ -6,8 +6,9 @@ namespace FeedbackIntelligence.Generator;
 /// <summary>
 /// One corpus JSONL line — shared shape for the hand-written core, the
 /// committed LLM variants, and the generated output. `story` tags an item as
-/// raw material for a planted story (must match a Generator:Stories id); it is
-/// NEVER written into generated output — the analyzer meets the data cold.
+/// raw material for a planted story (must match a story id in the active domain's
+/// stories.json); it is NEVER written into generated output — the analyzer meets
+/// the data cold.
 /// </summary>
 public sealed record CorpusItem(
     [property: JsonPropertyName("id")] string Id,

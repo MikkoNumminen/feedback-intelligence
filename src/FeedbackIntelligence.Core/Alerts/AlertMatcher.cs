@@ -5,7 +5,7 @@ public sealed record AlertHit(string Category, string Pattern);
 /// <summary>
 /// The deterministic alert layer's core: case-insensitive invariant substring
 /// over the RAW feedback text; patterns are Finnish stems (the exact contract
-/// documented in config/alert-keywords.json). Runs FIRST and independent of
+/// documented in the active domain's alert-keywords.json). Runs FIRST and independent of
 /// any LLM — cheap, never sleeps, never hallucinates. The LLM layer may ADD
 /// alerts but can never remove a deterministic one.
 /// </summary>

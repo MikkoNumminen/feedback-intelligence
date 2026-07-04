@@ -129,6 +129,14 @@ try
             return args.Length == 0 ? 0 : 1;
     }
 }
+catch (InvalidDataException ex)
+{
+    // Story/corpus data errors (e.g. a domain's stories.json fails validation, or
+    // a story has no matching pool items) are operator/data errors: exit 2 with the
+    // message, never a stack trace, and never confusable with a gate failure (exit 1).
+    Console.Error.WriteLine(ex.Message);
+    return 2;
+}
 catch (OperationCanceledException)
 {
     Console.Error.WriteLine("Cancelled.");

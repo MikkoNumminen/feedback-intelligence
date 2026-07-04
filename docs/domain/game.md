@@ -63,3 +63,9 @@ blockers for this proof, flagged honestly):
   used only when a noise item declares no source; the mock pool sidesteps it by
   giving every item an explicit source. Making both source lists domain data is
   the natural next step to full neutrality.
+- **The corpus pool path is not domain-owned.** `Generator:VariantsPath` /
+  `OutputDir` stay global, so `--Domain:Active=game` alone does not pick up the
+  game pool — the explicit `--Generator:VariantsPath=…`/`--Generator:OutputDir=…`
+  above are required. It fails *safe* (a bare command errors with "variants file
+  not found" rather than composing against the wrong pool); making the pool path a
+  domain property is the clean fix.
