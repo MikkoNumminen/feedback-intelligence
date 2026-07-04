@@ -23,3 +23,4 @@ these ADRs relocate that reasoning into durable records.
 | [0010](0010-verify-gate-tiering.md) | Acceptance gate: hard gates vs. trend warning tier | Accepted |
 | [0011](0011-sequence-preserving-arcs.md) | Sequence-preserving story arcs in the generator | Accepted |
 | [0012](0012-pluggable-domain-modules.md) | Domain-neutral core with pluggable domain modules | Accepted |
+| [0013](0013-ci-on-github-actions.md) | Continuous integration on GitHub Actions | Accepted |

@@ -1,0 +1,40 @@
+name: CI
+
+# Build + unit tests on every PR to master and on master itself. The unit tests
+# need no LLM/GPU (dotnet test # no LLM needed), so CI is fully hermetic — it
+# never touches the shared Ollama/RAG stack and needs no secrets.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Superseded runs on the same ref are cancelled to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: build + test (.NET 8)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8 (LTS)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore FeedbackIntelligence.sln
+
+      - name: Build (Release)
+        run: dotnet build FeedbackIntelligence.sln --configuration Release --no-restore
+
+      - name: Test (Release, no LLM required)
+        run: dotnet test FeedbackIntelligence.sln --configuration Release --no-build --verbosity normal
