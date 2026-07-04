@@ -86,6 +86,9 @@ public sealed class ActiveDomain : IActiveDomain
     {
         var name = root.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
             ? n.GetString()! : fallbackName;
+        // Output language: domain property, English default (retail overrides to fi).
+        var language = root.TryGetProperty("language", out var lg) && lg.ValueKind == JsonValueKind.String
+            ? lg.GetString()! : "en";
         var label = root.TryGetProperty("categoryFieldLabel", out var l) && l.ValueKind == JsonValueKind.String
             ? l.GetString()! : "category";
 
@@ -111,6 +114,7 @@ public sealed class ActiveDomain : IActiveDomain
         return new DomainDescriptor
         {
             Name = name,
+            Language = language,
             CategoryFieldLabel = label,
             Categories = categories.Keys.ToHashSet(StringComparer.Ordinal),
             Severities = severities.Keys.ToHashSet(StringComparer.Ordinal),

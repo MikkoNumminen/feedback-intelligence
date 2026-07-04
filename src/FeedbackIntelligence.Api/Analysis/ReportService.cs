@@ -113,6 +113,7 @@ public sealed class ReportService(
         }
 
         // --- Layer 1: deterministic theme groups; Layer 2b: cited narratives ---
+        var lang = activeDomain.Descriptor.Language;
         var themes = new List<ReportTheme>();
         var structured = items.Where(i => i.Structure is not null).ToList();
         foreach (var group in structured
@@ -122,17 +123,19 @@ public sealed class ReportService(
         {
             var groupItems = group.ToList();
             var direction = ComputeDirection(groupItems, fromIso, toIso);
+            var directionLabel = ReportText.DirectionLabel(direction, lang);
             var ids = groupItems.Select(i => i.Id).ToList();
 
-            var narrative = await SynthesizeThemeAsync(group.Key, groupItems, direction, state, ct);
+            var narrative = await SynthesizeThemeAsync(group.Key, groupItems, directionLabel, state, ct);
             themes.Add(narrative is { } ok
-                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, ids, true)
+                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, directionLabel, ids, true)
                 : new ReportTheme(
                     group.Key,
                     FallbackTitle(group.Key, groupItems),
-                    FallbackNarrative(groupItems, direction),
+                    FallbackNarrative(groupItems, directionLabel, lang),
                     groupItems.Count,
                     direction,
+                    directionLabel,
                     ids,
                     false));
         }
@@ -146,7 +149,8 @@ public sealed class ReportService(
             alerts,
             themes,
             state.DroppedClaims,
-            state.LlmFallbacks);
+            state.LlmFallbacks,
+            lang);
 
         await PersistSnapshotAsync(report, ct);
         return report;
@@ -196,7 +200,7 @@ public sealed class ReportService(
     }
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
-        string category, IReadOnlyList<StoredFeedback> groupItems, string direction, GenState state, CancellationToken ct)
+        string category, IReadOnlyList<StoredFeedback> groupItems, string directionLabel, GenState state, CancellationToken ct)
     {
         var opts = options.Value;
         if (state.LlmCallsRemaining <= 0)
@@ -206,17 +210,18 @@ public sealed class ReportService(
             return null;
         }
 
+        var s = ReportText.Synthesis(activeDomain.Descriptor.Language);
         var data = new StringBuilder();
         data.AppendLine($"{activeDomain.Descriptor.CategoryFieldLabel}: {category}");
-        data.AppendLine($"palautteita: {groupItems.Count}");
-        data.AppendLine($"suunta: {direction}");
-        data.AppendLine("vakavuudet: " + string.Join(", ", groupItems
+        data.AppendLine($"{s.Count}: {groupItems.Count}");
+        data.AppendLine($"{s.Trend}: {directionLabel}");
+        data.AppendLine($"{s.Severities}: " + string.Join(", ", groupItems
             .GroupBy(i => i.Structure!.Severity).OrderByDescending(g => g.Count())
             .Select(g => $"{g.Key} {g.Count()}")));
-        data.AppendLine("teemat: " + string.Join(", ", groupItems
+        data.AppendLine($"{s.Themes}: " + string.Join(", ", groupItems
             .GroupBy(i => i.Structure!.Theme).OrderByDescending(g => g.Count())
             .Take(6).Select(g => $"{g.Key} ({g.Count()})")));
-        data.AppendLine("poimintoja:");
+        data.AppendLine($"{s.Excerpts}:");
         foreach (var item in groupItems.Take(Math.Min(8, opts.MaxItemsPerLlmCall)))
             data.AppendLine($"- [{item.Id}] \"{Excerpt(item.Text)}\" ({item.Structure!.Severity})");
 
@@ -294,15 +299,18 @@ public sealed class ReportService(
         }
     }
 
-    /// <summary>First vs second half of the window by volume. "paheneva" needs
+    /// <summary>First vs second half of the window by volume. "worsening" needs
     /// BOTH growth and a severity shift measured against a non-empty early half
-    /// — a theme that only just appeared can be "kasvava", never "paheneva".</summary>
+    /// — a theme that only just appeared can be "growing", never "worsening".</summary>
+    // Neutral direction KEYS (stable/growing/declining/worsening); the localized
+    // label is applied at presentation time via ReportText so the verify gate and
+    // JSON stay language-independent.
     private static string ComputeDirection(IReadOnlyList<StoredFeedback> groupItems, string fromIso, string toIso)
     {
         if (groupItems.Count < 3
             || !DateTimeOffset.TryParse(fromIso, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var from)
             || !DateTimeOffset.TryParse(toIso, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var to))
-            return "vakaa";
+            return "stable";
 
         var midpoint = from + (to - from) / 2;
         var first = new List<StoredFeedback>();
@@ -316,11 +324,11 @@ public sealed class ReportService(
 
         if (second.Count > first.Count * 1.25)
             return first.Count > 0 && AverageSeverityRank(second) > AverageSeverityRank(first)
-                ? "paheneva"
-                : "kasvava";
+                ? "worsening"
+                : "growing";
         if (first.Count > second.Count * 1.25)
-            return "laskeva";
-        return "vakaa";
+            return "declining";
+        return "stable";
     }
 
     private static double AverageSeverityRank(IReadOnlyList<StoredFeedback> items)
@@ -342,14 +350,14 @@ public sealed class ReportService(
         return $"{category}: {topTheme}";
     }
 
-    private static string FallbackNarrative(IReadOnlyList<StoredFeedback> groupItems, string direction)
+    private string FallbackNarrative(IReadOnlyList<StoredFeedback> groupItems, string directionLabel, string language)
     {
         var themes = string.Join(", ", groupItems
             .GroupBy(i => i.Structure!.Theme)
             .OrderByDescending(g => g.Count())
             .Take(3)
             .Select(g => $"{g.Key} ({g.Count()})"));
-        return $"{groupItems.Count} palautetta aikavälillä. Yleisimmät aiheet: {themes}. Suunta: {direction}. (Automaattinen kooste — kielimallin tiivistelmä ei ollut käytettävissä.)";
+        return ReportText.FallbackNarrative(groupItems.Count, themes, directionLabel, language);
     }
 
     private string Excerpt(string text) =>
@@ -366,7 +374,7 @@ public sealed class ReportService(
             // Atomic temp-then-rename: a concurrent snapshot reader must never
             // observe a truncated file.
             await WriteAtomicAsync(Path.Combine(dir, "report-latest.json"), JsonSerializer.Serialize(report, Json), ct);
-            await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report), ct);
+            await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report, activeDomain.Descriptor.Language), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

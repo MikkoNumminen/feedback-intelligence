@@ -1,5 +1,6 @@
 {
   "name": "game",
+  "language": "en",
   "categoryFieldLabel": "area",
   "categories": {
     "gameplay_balance": "Gameplay & balance",

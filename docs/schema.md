@@ -24,7 +24,7 @@ Exactly five fields — no more, no fewer.
 | `theme` | free text | Short noun phrase in the feedback's own language; deliberately not an enum. |
 | `severity` | enum | Domain-overridable; defaults to `low \| medium \| high \| critical` ([`CoreDefaults`](../src/FeedbackIntelligence.Core/Domain/CoreDefaults.cs)). |
 | `type` | enum | Domain-overridable; defaults to `complaint \| praise \| suggestion \| question \| other`. |
-| `language` | string | Kept **as detected**, never translated. |
+| `language` | string | Each item's **detected** language, kept as-is, never translated. Distinct from the *domain's* output language (`DomainDescriptor.Language` / [domains.md](domains.md)), which is the presentation language of the whole domain. |
 
 There is deliberately **no alert field**. Alert decisions belong to the
 deterministic layer and the separate analysis pass, never to the structuring

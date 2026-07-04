@@ -11,6 +11,11 @@ public sealed class DomainDescriptor
 {
     public required string Name { get; init; }
 
+    /// <summary>The domain's output/UI language (short code, e.g. "fi", "en").
+    /// User-facing report prose, direction labels, and the frontends follow it.
+    /// The core default is "en"; retail overrides to "fi" (its only audience).</summary>
+    public required string Language { get; init; }
+
     /// <summary>Human name of the category field in the active domain's language.</summary>
     public required string CategoryFieldLabel { get; init; }
 

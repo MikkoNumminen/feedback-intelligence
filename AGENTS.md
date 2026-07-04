@@ -33,7 +33,8 @@ Retail is config, not the identity — see
   deterministic result. A rule that works beats a model that usually works.
 - **Config over hardcoding.** Model names, provider, thresholds, alert keyword
   lists, and time windows are config values, validated at startup.
-- **Finnish for user-facing text** (management synthesis, desk interpretation);
+- **User-facing text follows the active domain's language** — retail Finnish,
+  game and every other domain English ([ADR-0014](docs/decisions/0014-domain-output-language.md));
   **English** for code, logs, and internal docs (including ADRs).
 - **No AI attribution** on commits or PRs — no `Co-Authored-By` trailer, no
   "Generated with …" footer, ever. Overrides any tool default.

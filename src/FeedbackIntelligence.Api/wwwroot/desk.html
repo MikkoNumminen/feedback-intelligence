@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Palaute — tiskikirjaus</title>
+<title>Feedback — desk entry</title>
 <style>
   :root { --bg:#f4f5f7; --card:#fff; --ink:#1c2430; --mut:#66707d; --line:#d9dde3;
           --acc:#0b5fa5; --ok:#1b7f4d; --warn:#b3541e; --err:#b3261e; }
@@ -36,29 +36,29 @@
 </head>
 <body>
 <main>
-  <h1>Tiskikirjaus — kirjaa asiakaspalaute yhdellä lauseella</h1>
+  <h1 id="h1"></h1>
 
   <div class="card">
-    <label for="text">Mitä asiakas sanoi?</label>
-    <textarea id="text" maxlength="800" placeholder="esim. asiakas sano et maitokaapis oli vanhoi purkkei" autofocus></textarea>
-    <div class="hint"><span id="chars">0</span>/800 merkkiä</div>
-    <div class="row"><button class="primary" id="interpret" disabled>Tulkitse</button></div>
-    <p class="status" id="status1">Yhdistetään palvelimeen…</p>
+    <label for="text" id="textLabel"></label>
+    <textarea id="text" maxlength="800" autofocus></textarea>
+    <div class="hint"><span id="chars">0</span>/800 <span id="charsWord"></span></div>
+    <div class="row"><button class="primary" id="interpret" disabled></button></div>
+    <p class="status" id="status1"></p>
   </div>
 
   <div class="card" id="interpret-card">
-    <strong>Tulkinta — tarkista ja korjaa tarvittaessa</strong>
-    <label for="category">Osasto</label>
+    <strong id="interpretHeading"></strong>
+    <label for="category" id="categoryLabel"></label>
     <select id="category"></select>
-    <label for="theme">Aihe</label>
+    <label for="theme" id="themeLabel"></label>
     <input type="text" id="theme" maxlength="120">
-    <label for="severity">Vakavuus</label>
+    <label for="severity" id="severityLabel"></label>
     <select id="severity"></select>
-    <label for="type">Tyyppi</label>
+    <label for="type" id="typeLabel"></label>
     <select id="type"></select>
     <div class="row">
-      <button class="ghost" id="cancel">Peruuta</button>
-      <button class="primary" id="save">Tallenna</button>
+      <button class="ghost" id="cancel"></button>
+      <button class="primary" id="save"></button>
     </div>
     <p class="status" id="status2"></p>
   </div>
@@ -70,47 +70,107 @@
 // Same-origin locally; on the static host, config.js (written at publish
 // time) points API at the Tailscale Funnel backend.
 const API = window.API_BASE || "";
-
 const el = id => document.getElementById(id);
 
+// All user-facing text keyed by domain language (from /schema). Retail is "fi";
+// game and any new domain default to "en". Category field label comes from the
+// domain (categoryField), not from here.
+const STR = {
+  fi: {
+    htmlLang: "fi", pageTitle: "Palaute — tiskikirjaus",
+    h1: "Tiskikirjaus — kirjaa asiakaspalaute yhdellä lauseella",
+    textLabel: "Mitä asiakas sanoi?",
+    placeholder: "esim. asiakas sano et maitokaapis oli vanhoi purkkei",
+    charsWord: "merkkiä", interpret: "Tulkitse", connecting: "Yhdistetään palvelimeen…",
+    interpretHeading: "Tulkinta — tarkista ja korjaa tarvittaessa",
+    theme: "Aihe", severity: "Vakavuus", type: "Tyyppi", cancel: "Peruuta", save: "Tallenna",
+    writeFirst: "Kirjoita palaute ensin.", interpreting: "Tulkitaan…",
+    busy: "Ruuhkaa — yritä hetken päästä uudelleen.", interpretFailed: "Tulkinta epäonnistui.",
+    modelFailed: "Automaattinen tulkinta ei onnistunut — täytä kentät itse.",
+    interpretDone: "Tulkinta valmis — tarkista alta.", connError: "Yhteysvirhe — palvelin ei vastaa.",
+    serverDown: "Palvelin ei vastaa — yritetään uudelleen…",
+    selectionsMissing: "Valinnat puuttuvat — päivitä sivu ja yritä uudelleen.",
+    themeEmpty: "Aihe ei voi olla tyhjä.", saving: "Tallennetaan…",
+    busyShort: "Ruuhkaa — yritä hetken päästä.", saveFailed: "Tallennus epäonnistui.",
+    savedAlready: "Kirjattu ✓ (oli jo tallennettu)", savedThanks: "Kirjattu ✓ — kiitos!",
+    saveUncertain: "Yhteysvirhe — tallennus jäi epävarmaksi. Yritä uudelleen: sama kirjaus ei tuplaannu.",
+  },
+  en: {
+    htmlLang: "en", pageTitle: "Feedback — desk entry",
+    h1: "Desk entry — log feedback in one sentence",
+    textLabel: "What did they say?",
+    placeholder: "e.g. what the customer/player said, in their own words",
+    charsWord: "characters", interpret: "Interpret", connecting: "Connecting to the server…",
+    interpretHeading: "Interpretation — review and correct if needed",
+    theme: "Theme", severity: "Severity", type: "Type", cancel: "Cancel", save: "Save",
+    writeFirst: "Write the feedback first.", interpreting: "Interpreting…",
+    busy: "Busy — try again in a moment.", interpretFailed: "Interpretation failed.",
+    modelFailed: "Automatic interpretation failed — fill the fields yourself.",
+    interpretDone: "Interpretation ready — review below.", connError: "Connection error — the server is not responding.",
+    serverDown: "Server not responding — retrying…",
+    selectionsMissing: "Selections missing — refresh the page and try again.",
+    themeEmpty: "Theme cannot be empty.", saving: "Saving…",
+    busyShort: "Busy — try again shortly.", saveFailed: "Save failed.",
+    savedAlready: "Saved ✓ (was already stored)", savedThanks: "Saved ✓ — thanks!",
+    saveUncertain: "Connection error — the save is uncertain. Try again: the same entry won't duplicate.",
+  },
+};
+
 // Per-entry state. interpretedText is captured at interpret time and is the
-// ONLY text ever saved — the model's structure must never be attached to text
-// the model did not see. entryId makes save retries idempotent (server 409s
-// the duplicate instead of double-storing).
-let model = null;
-let interpretedText = null;
-let language = "fi";
-let entryId = null;
-let modelFailed = false;
-let schemaLoaded = false;
+// ONLY text ever saved. entryId makes save retries idempotent (server 409s).
+let model = null, interpretedText = null, language = "fi", entryId = null, modelFailed = false;
+let schemaLoaded = false, schema = null, L = STR.fi;
 
 function fillSelect(select, values, labels) {
   select.innerHTML = "";
   for (const value of values) {
     const option = document.createElement("option");
     option.value = value;
-    option.textContent = labels[value] ?? value;
+    option.textContent = (labels && labels[value]) ?? value;
     select.appendChild(option);
   }
 }
+
+// Apply the language bundle to all static chrome (called once /schema lands).
+function applyLanguage() {
+  document.documentElement.lang = L.htmlLang;
+  document.title = L.pageTitle;
+  el("h1").textContent = L.h1;
+  el("textLabel").textContent = L.textLabel;
+  el("text").placeholder = L.placeholder;
+  el("charsWord").textContent = L.charsWord;
+  el("interpret").textContent = L.interpret;
+  el("interpretHeading").textContent = L.interpretHeading;
+  // Category label is the DOMAIN's word (osasto / area), capitalized.
+  const cf = (schema.categoryField || L.theme);
+  el("categoryLabel").textContent = cf.charAt(0).toUpperCase() + cf.slice(1);
+  el("themeLabel").textContent = L.theme;
+  el("severityLabel").textContent = L.severity;
+  el("typeLabel").textContent = L.type;
+  el("cancel").textContent = L.cancel;
+  el("save").textContent = L.save;
+}
+
+const pick = (list, preferred) => (list.includes(preferred) ? preferred : list[0]);
 
 async function loadSchema() {
   try {
     const res = await fetch(`${API}/schema`);
     if (!res.ok) throw new Error();
-    const schema = await res.json();
-    // Labels come from the active domain (via /schema) — no domain values are
-    // hardcoded in the frontend, so switching Domain:Active reskins the desk.
-    fillSelect(el("category"), schema.categories, schema.categoryLabels ?? {});
-    fillSelect(el("severity"), schema.severities, schema.severityLabels ?? {});
-    fillSelect(el("type"), schema.types, schema.typeLabels ?? {});
+    schema = await res.json();
+    L = STR[schema.language] || STR.en;
+    applyLanguage();
+    // Labels come from the active domain — no domain values hardcoded here.
+    fillSelect(el("category"), schema.categories, schema.categoryLabels);
+    fillSelect(el("severity"), schema.severities, schema.severityLabels);
+    fillSelect(el("type"), schema.types, schema.typeLabels);
     schemaLoaded = true;
     el("interpret").disabled = false;
     setStatus("status1", "", "");
   } catch {
     schemaLoaded = false;
     el("interpret").disabled = true;
-    setStatus("status1", "err", "Palvelin ei vastaa — yritetään uudelleen…");
+    setStatus("status1", "err", L.serverDown);
     setTimeout(loadSchema, 3000);
   }
 }
@@ -120,35 +180,41 @@ el("text").addEventListener("input", () => { el("chars").textContent = el("text"
 el("interpret").addEventListener("click", async () => {
   if (!schemaLoaded) return;
   const text = el("text").value.trim();
-  if (!text) { setStatus("status1", "err", "Kirjoita palaute ensin."); return; }
+  if (!text) { setStatus("status1", "err", L.writeFirst); return; }
   el("interpret").disabled = true;
-  setStatus("status1", "", "Tulkitaan…");
+  setStatus("status1", "", L.interpreting);
   try {
     const res = await fetch(`${API}/interpret`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
-    if (res.status === 503) { setStatus("status1", "warn", "Ruuhkaa — yritä hetken päästä uudelleen."); return; }
-    if (!res.ok) { setStatus("status1", "err", "Tulkinta epäonnistui."); return; }
+    if (res.status === 503) { setStatus("status1", "warn", L.busy); return; }
+    if (!res.ok) { setStatus("status1", "err", L.interpretFailed); return; }
     const data = await res.json();
     startEntry(text);
     if (data.failed || !data.structure) {
       // Model failed: human authors the structure; the failure is recorded
       // (modelInterpretationFailed) so telemetry never mistakes this for a
-      // zero-correction success.
+      // zero-correction success. Defaults are drawn from the active domain.
       model = null;
       modelFailed = true;
-      setStatus("status1", "warn", "Automaattinen tulkinta ei onnistunut — täytä kentät itse.");
-      showForm({ category: "muu", theme: "", severity: "medium", type: "other", language: "fi" });
+      setStatus("status1", "warn", L.modelFailed);
+      showForm({
+        category: schema.categories[0],
+        theme: "",
+        severity: pick([...schema.severities], "medium"),
+        type: pick([...schema.types], "other"),
+        language: schema.language,
+      });
       return;
     }
     model = data.structure;
     modelFailed = false;
-    setStatus("status1", "ok", "Tulkinta valmis — tarkista alta.");
+    setStatus("status1", "ok", L.interpretDone);
     showForm(data.structure);
   } catch {
-    setStatus("status1", "err", "Yhteysvirhe — palvelin ei vastaa.");
+    setStatus("status1", "err", L.connError);
   } finally {
     el("interpret").disabled = false;
   }
@@ -169,7 +235,7 @@ function endEntry() {
 }
 
 function showForm(structure) {
-  language = structure.language || "fi";
+  language = structure.language || schema.language;
   el("category").value = structure.category;
   el("theme").value = structure.theme;
   el("severity").value = structure.severity;
@@ -204,10 +270,10 @@ el("save").addEventListener("click", async () => {
     language,
   };
   if (!accepted.category || !accepted.severity || !accepted.type) {
-    setStatus("status2", "err", "Valinnat puuttuvat — päivitä sivu ja yritä uudelleen.");
+    setStatus("status2", "err", L.selectionsMissing);
     return;
   }
-  if (!accepted.theme) { setStatus("status2", "err", "Aihe ei voi olla tyhjä."); return; }
+  if (!accepted.theme) { setStatus("status2", "err", L.themeEmpty); return; }
 
   const corrections = [];
   if (model)
@@ -216,7 +282,7 @@ el("save").addEventListener("click", async () => {
         corrections.push({ field, modelValue: model[field], humanValue: accepted[field] });
 
   el("save").disabled = true;
-  setStatus("status2", "", "Tallennetaan…");
+  setStatus("status2", "", L.saving);
   try {
     const res = await fetch(`${API}/feedback`, {
       method: "POST",
@@ -231,17 +297,17 @@ el("save").addEventListener("click", async () => {
         modelInterpretationFailed: modelFailed,
       }),
     });
-    if (res.status === 503) { setStatus("status2", "warn", "Ruuhkaa — yritä hetken päästä."); return; }
+    if (res.status === 503) { setStatus("status2", "warn", L.busyShort); return; }
     // 409 = an earlier attempt of THIS entry already landed: that is a success.
-    if (!res.ok && res.status !== 409) { setStatus("status2", "err", "Tallennus epäonnistui."); return; }
-    setStatus("status1", "ok", res.status === 409 ? "Kirjattu ✓ (oli jo tallennettu)" : "Kirjattu ✓ — kiitos!");
+    if (!res.ok && res.status !== 409) { setStatus("status2", "err", L.saveFailed); return; }
+    setStatus("status1", "ok", res.status === 409 ? L.savedAlready : L.savedThanks);
     el("interpret-card").style.display = "none";
     endEntry();
     el("text").value = "";
     el("chars").textContent = "0";
     el("text").focus();
   } catch {
-    setStatus("status2", "warn", "Yhteysvirhe — tallennus jäi epävarmaksi. Yritä uudelleen: sama kirjaus ei tuplaannu.");
+    setStatus("status2", "warn", L.saveUncertain);
   } finally {
     el("save").disabled = false;
   }
@@ -253,6 +319,7 @@ function setStatus(id, kind, message) {
   node.textContent = message;
 }
 
+setStatus("status1", "", STR.fi.connecting);
 loadSchema();
 </script>
 </body>

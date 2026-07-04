@@ -174,6 +174,7 @@ app.MapGet("/schema", (IActiveDomain domain) =>
     var d = domain.Descriptor;
     return Results.Ok(new
     {
+        language = d.Language,
         categoryField = d.CategoryFieldLabel,
         categories = d.CategoryLabels.Keys,
         severities = d.SeverityLabels.Keys,
