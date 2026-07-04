@@ -37,6 +37,7 @@ Retail is config, not the identity — see
   **non-evidential** — never used to pick a model or shown as demo evidence
   (auto-labelled when a path contains "placeholder").
 - **Small, single-concern commits.**
+- **Propose a plan per phase and wait for approval before large changes.**
 
 ## Documentation discipline
 

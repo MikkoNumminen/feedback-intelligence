@@ -30,7 +30,12 @@ timestamp }`. "Channels" are `source` *values* (`google_review`, `email`,
 1. The deterministic alert layer runs first; its hits are stored regardless of
    what the LLM does.
 2. The structuring model produces the JSON structure, through the salvage layer
-   ([ADR-0004](decisions/0004-salvage-layer-mandatory.md)).
+   ([ADR-0004](decisions/0004-salvage-layer-mandatory.md)) — **except** on the
+   desk path, where the request carries an already-accepted structure (the human
+   accepted or corrected the `/interpret` preview): that structure is stored
+   as-is, **without a second LLM pass**, so no redundant GPU call is made and the
+   stored structure cannot diverge from what the human approved. Corrected values
+   are schema-validated too.
 3. The row is stored: raw text + structure (JSON column) + source + timestamp +
    a correction-audit field. Storage is SQLite
    ([ADR-0008](decisions/0008-sqlite-over-postgres.md)); there is deliberately
