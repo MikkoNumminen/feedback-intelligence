@@ -24,7 +24,7 @@ public static class Commands
         while (!cts.IsCancellationRequested)
         {
             var rows = await Board.GatherAsync();
-            if (Term.UseColor) Console.Write("[H[J"); // home + clear
+            Console.Write(Term.Clear);
             Console.WriteLine(Board.Render(rows));
             try { await Task.Delay(2000, cts.Token); } catch (TaskCanceledException) { break; }
         }

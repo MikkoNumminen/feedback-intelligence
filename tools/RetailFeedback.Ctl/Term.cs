@@ -26,6 +26,10 @@ public static class Term
 
     public static string Bold(string text) => C(text, "1");
 
+    /// <summary>Cursor-home + clear-screen (for the refreshing watch board), or
+    /// empty when colour/VT is off. Uses an explicit  escape.</summary>
+    public static string Clear => UseColor ? "[H[J" : "";
+
     public static string Line(string label, State state, string detail)
     {
         var (glyph, code) = Glyph(state);

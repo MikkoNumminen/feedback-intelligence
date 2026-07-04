@@ -75,7 +75,7 @@ internal static class Program
         PrintMenu();
         while (true)
         {
-            Console.Write(Term.UseColor ? "[36mfeedctl>[0m " : "feedctl> ");
+            Console.Write(Term.C("feedctl>", "36") + " ");
             var line = Console.ReadLine();
             if (line is null) { Console.WriteLine(); break; } // Ctrl-D / EOF
             line = line.Trim();
