@@ -1,5 +1,7 @@
 # Feedback Intelligence
 
+[![CI](https://github.com/MikkoNumminen/feedback-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/MikkoNumminen/feedback-intelligence/actions/workflows/ci.yml)
+
 Domain-agnostic feedback intelligence: ingest messy free-text feedback, surface
 grounded situational signal. **First application: Finnish retail.**
 

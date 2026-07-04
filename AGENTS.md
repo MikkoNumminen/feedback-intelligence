@@ -51,6 +51,10 @@ Retail is config, not the identity — see
 - **All work flows through a pull request** — branch off `master`, open a PR
   (`gh pr create`), and queue it for review. No direct commits to `master`.
   Merging is gated by the never-merge-without-approval rule above.
+- **CI runs build + tests on every PR** — GitHub Actions
+  (`.github/workflows/ci.yml`), hermetic (no LLM/GPU/secrets), on `ubuntu-latest`
+  ([ADR-0013](docs/decisions/0013-ci-on-github-actions.md)). Keep it green; if the
+  solution or test layout changes, update `ci.yml` in the same change.
 
 ## Documentation discipline
 
