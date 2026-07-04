@@ -23,7 +23,7 @@ Treat the engine as **domain-agnostic core** and the retail specifics as
   (see [../schema.md](../schema.md)).
 - The **retail domain** owns its taxonomy values: the `department` enum, the
   alert-keyword list, and the generator's story types (see
-  [domain/retail.md](domain/retail.md)).
+  [domain/retail.md](../domain/retail.md)).
 - Documentation reflects the boundary: core docs describe the engine; retail
   lives in a clearly-labelled domain doc as "first application, config-level, not
   core."
@@ -37,7 +37,7 @@ Treat the engine as **domain-agnostic core** and the retail specifics as
   (the Domain project), and re-hardcoded in `prompts/structuring-v0.txt` and the
   desk UI label map. Alert keywords and story types are already externalized to
   config. Extracting the `department` enum to config is a separate code change,
-  recorded in [domain/retail.md](domain/retail.md). This ADR does not perform
+  recorded in [domain/retail.md](../domain/retail.md). This ADR does not perform
   that extraction — it names the boundary and the current gap.
 - The schema fields `theme`, `severity`, `type`, `language` are domain-agnostic
   feedback dimensions; `department` is the one domain-specific field, and its
