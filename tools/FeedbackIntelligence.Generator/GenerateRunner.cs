@@ -19,9 +19,11 @@ public sealed class GenerateRunner(IOptions<GeneratorOptions> options, IActiveDo
     {
         var opts = options.Value;
 
-        // Stories are domain data — load and validate them from the active domain
-        // module (throws with a full failure list on any taxonomy violation).
+        // Stories and ingest channels are domain data — load/validate stories,
+        // and take the channel list from the active domain (the noise-source
+        // fallback must never invent a channel foreign to the domain).
         opts.Stories = StoryLibrary.Load(activeDomain.StoriesPath, activeDomain.Descriptor);
+        opts.Sources = activeDomain.Descriptor.Sources.ToList();
         Console.WriteLine($"Loaded {opts.Stories.Count} planted stories from domain '{activeDomain.Name}'.");
 
         if (!File.Exists(opts.VariantsPath))

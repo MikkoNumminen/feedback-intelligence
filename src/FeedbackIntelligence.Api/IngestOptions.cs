@@ -36,7 +36,8 @@ public sealed class IngestOptions
 
     public string DbPath { get; init; } = "data/feedback.db";
 
-    public List<string> AllowedSources { get; init; } = ["google_review", "email", "web_form", "desk"];
+    // Accepted `source` values are domain data (ingest channels differ per
+    // domain) — validated against the active domain, not configured here.
 
     public int IdMaxLength { get; init; } = 100;
     public int QueryDefaultLimit { get; init; } = 200;
@@ -71,8 +72,6 @@ public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>
             failures.Add($"Ingest:LlmAcquireTimeoutMs must be positive, got {options.LlmAcquireTimeoutMs}.");
         if (string.IsNullOrWhiteSpace(options.DbPath))
             failures.Add("Ingest:DbPath must be set.");
-        if (options.AllowedSources.Count == 0 || options.AllowedSources.Any(string.IsNullOrWhiteSpace))
-            failures.Add("Ingest:AllowedSources must be a non-empty list of source names.");
         if (options.IdMaxLength < 1)
             failures.Add($"Ingest:IdMaxLength must be positive, got {options.IdMaxLength}.");
         if (options.QueryDefaultLimit < 1 || options.QueryMaxLimit < options.QueryDefaultLimit)

@@ -52,6 +52,11 @@ public static class StoryLibrary
                 failures.Add($"{label}: themeKeywords must be a non-empty keyword set.");
             if (story.Sources.Count == 0)
                 failures.Add($"{label}: sources must be non-empty.");
+            // Story sources must be domain channels too — else `generate` composes
+            // items the same domain's ingest would 400 (the story-path analogue of
+            // the noise-path guard in CorpusComposer.PickNoiseSource).
+            foreach (var s in story.Sources.Where(s => !domain.Sources.Contains(s, StringComparer.Ordinal)))
+                failures.Add($"{label}: source '{s}' is not a '{domain.Name}' domain source.");
             if (story.WindowDays < 1)
                 failures.Add($"{label}: windowDays must be >= 1.");
             if (story.Count < 1)

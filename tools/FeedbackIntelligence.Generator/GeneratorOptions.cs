@@ -49,6 +49,11 @@ public sealed class GeneratorOptions
     /// <summary>Planted stories for the active domain. Empty from config; the
     /// generate/variants runners populate it from the active domain module.</summary>
     public List<StoryConfig> Stories { get; set; } = [];
+
+    /// <summary>The active domain's ingest channels, populated from the domain
+    /// module at runtime. Used only as the source for a noise item that declares
+    /// none — so noise never gets a channel that doesn't belong to the domain.</summary>
+    public List<string> Sources { get; set; } = [];
 }
 
 public sealed class StoryConfig
