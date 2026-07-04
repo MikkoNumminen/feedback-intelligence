@@ -69,9 +69,10 @@ it is templated with the active domain's taxonomy at load time via the
   `categories`.
 - `sources` is **required and non-empty** — the ingest channels the domain
   accepts as `source` values (a game studio's `steam_review`/`discord`/…, a
-  retailer's `google_review`/`email`/…). `POST /feedback` rejects a source not
-  in this list, so a domain that wants the desk UI must include `desk`. The
-  generator also draws from this list for a noise item that declares no source.
+  retailer's `google_review`/`email`/…). `POST /feedback` rejects a source not in
+  this list, and it **must include `desk`**: the desk-entry UI is always served
+  and posts `source=desk`, so the API fails to boot otherwise. The generator also
+  draws from this list for a noise item (and validates story sources against it).
 - `categoryFieldLabel` is the domain's word for the category dimension
   (`osasto` for retail, `area` for game); it appears in the report and the desk.
 
@@ -115,7 +116,7 @@ the domain taxonomy and fails loudly on any mismatch. See
 ## Checklist: adding a domain
 
 1. `mkdir domains/<name>` and author `domain.json` (`categories` + `sources` at
-   minimum; include `desk` in `sources` if you want the desk UI).
+   minimum; `sources` must include `desk` — the desk UI is always served).
 2. Add `alert-keywords.json` (the API loads it at startup).
 3. Add `prompts/synthesis-v0.txt` and `prompts/alert-nomination-v0.txt` in the
    domain's voice/language; list them in `domain.json`'s `prompts` map.

@@ -85,6 +85,13 @@ foreach (var role in requiredPromptRoles)
             $"Domain '{activeDomain.Name}' declares a '{role}' prompt but the file is missing: {promptPath}");
 }
 
+// The desk-entry UI is always served and posts source="desk"; require the active
+// domain to accept that channel, or every desk save would 400 despite a working
+// preview. "desk" is the core-reserved human-in-the-loop channel.
+if (!activeDomain.Descriptor.Sources.Contains("desk", StringComparer.Ordinal))
+    throw new InvalidOperationException(
+        $"Domain '{activeDomain.Name}' must include \"desk\" in its sources — the desk-entry UI posts source=desk.");
+
 app.Services.GetRequiredService<FeedbackStore>().Initialize();
 
 // The public deployment sits behind a local tunnel daemon: without forwarded
