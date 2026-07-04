@@ -1,14 +1,19 @@
-# Retail Feedback Intelligence — work-sample demo
+# Feedback Intelligence
 
-A feedback-intelligence system for a Finnish retail context: customer feedback
-flows in from four channels (Google reviews, email, web form, service desk),
-gets structured, and store management sees a grounded, live situational view —
-alerts on top, themes and trends below, every claim clickable down to the
-exact feedback items behind it.
+Domain-agnostic feedback intelligence: ingest messy free-text feedback, surface
+grounded situational signal. **First application: Finnish retail.**
 
-Built as a demonstrable work sample: .NET 8 backend, local LLM serving
-(Ollama), 100 % synthetic data, live-runnable in an interview with a snapshot
-fallback so a shared link never shows a dead page.
+The engine ingests feedback from multiple channels, runs a **deterministic alert
+layer** in front of an LLM that structures messy input and reads themes/trends
+out of free text, and gives management a grounded, live situational view —
+alerts on top, themes and trends below, every claim clickable down to the exact
+feedback items behind it. Retail is the first application, carried in
+configuration and a domain module; it is not the engine's identity (see
+[ADR-0007](docs/decisions/0007-domain-agnostic-core.md)).
+
+Built as a demonstrable work sample: .NET 8 backend, local LLM serving (Ollama),
+100% synthetic data, live-runnable in an interview with a snapshot fallback so a
+shared link never shows a dead page.
 
 ## Why AI is only in two places
 
@@ -30,6 +35,9 @@ be rule-coded:
    narrative whose citations fail validation is dropped to a deterministic
    fallback and the drop is logged. The view never shows an ungrounded claim.
 
+The full four-round elimination — the ideas rejected and why — is recorded in
+[ADR-0006](docs/decisions/0006-ai-in-exactly-two-places.md).
+
 ## Synthetic data as a GDPR decision
 
 No scraped reviews, no real personal data — deliberately. Real customer
@@ -41,6 +49,7 @@ seeded generator into datasets with *planted, machine-checkable stories*
 fresh-looking dataset with the same findable stories. The ground-truth file
 names the exact item IDs each story consists of — so "the report found the
 dairy story" is verified by ID matching, not by prose vibes.
+([ADR-0005](docs/decisions/0005-synthetic-corpus-gdpr.md).)
 
 ## Model choices are measurements
 
@@ -54,6 +63,8 @@ dairy story" is verified by ID matching, not by prose vibes.
   unit-tested against measured failure shapes), and correction telemetry from
   the desk UI (model-assigned vs human-corrected per field) as the ongoing
   quality measure. The model stays swappable by config if the data says so.
+  ([ADR-0003](docs/decisions/0003-poro-for-both-roles.md),
+  [ADR-0004](docs/decisions/0004-salvage-layer-mandatory.md).)
 
 ## The provider abstraction, honestly
 
@@ -63,11 +74,12 @@ structuring and synthesis as independently configurable models. Switching to
 Azure OpenAI is a config change *plus an eval run* — prompts are not perfectly
 portable across models, quality must be re-measured, and moving from local to
 hosted is a data-residency decision that belongs to the customer.
+([ADR-0002](docs/decisions/0002-llm-behind-one-abstraction.md).)
 
 ## Running it
 
 ```
-dotnet test                                   # 60+ unit tests, no LLM needed
+dotnet test                                   # unit tests, no LLM needed
 docker compose up -d ollama                   # local Ollama (isolated volume)
 dotnet run --project src/RetailFeedback.Api   # API + UIs on localhost
 ```
@@ -78,7 +90,16 @@ dotnet run --project src/RetailFeedback.Api   # API + UIs on localhost
 
 Corpus pipeline: `tools/RetailFeedback.Generator` (`variants` = offline LLM
 multiplication; `generate --seed N` = deterministic composition, never calls
-the LLM). Structuring eval harness: `tools/RetailFeedback.StructuringEval`.
+the LLM; `verify` = mechanized acceptance against ground truth). Structuring
+eval harness: `tools/RetailFeedback.StructuringEval`.
+
+## Design & docs
+
+- Engine design and the two-layer pipeline: [docs/architecture.md](docs/architecture.md)
+- The decisions behind it (numbered ADRs): [docs/decisions/](docs/decisions/)
+- Feedback schema + the domain boundary: [docs/schema.md](docs/schema.md),
+  [docs/domain/retail.md](docs/domain/retail.md)
+- Conventions for agents working here: [AGENTS.md](AGENTS.md)
 
 ## Honest status
 
