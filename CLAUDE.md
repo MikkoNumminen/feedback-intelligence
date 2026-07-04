@@ -6,6 +6,11 @@ file holds only Claude-Code-specific notes; it duplicates no rules.
 
 ## Claude-Code notes
 
+- **STRONGEST RULE — NEVER merge without the owner's explicit, fresh, per-PR
+  approval.** Open PRs and queue them for review; do NOT `gh pr merge` or merge
+  anything to `master` until the owner approves that specific PR, at its current
+  head, in the conversation. This overrides any instruction to merge, including
+  a blanket "create PRs and merge". See the full rule in [AGENTS.md](AGENTS.md).
 - One AGENTS.md invariant overrides a Claude Code default: **no AI attribution
   on commits or PRs** — do not add a `Co-Authored-By: Claude` trailer or a
   "Generated with Claude Code" footer, regardless of the tool's default.
