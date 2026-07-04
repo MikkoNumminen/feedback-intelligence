@@ -54,7 +54,9 @@ Retail is config, not the identity — see
 - **CI runs build + tests on every PR** — GitHub Actions
   (`.github/workflows/ci.yml`), hermetic (no LLM/GPU/secrets), on `ubuntu-latest`
   ([ADR-0013](docs/decisions/0013-ci-on-github-actions.md)). Keep it green; if the
-  solution or test layout changes, update `ci.yml` in the same change.
+  solution or test layout changes, update `ci.yml` in the same change. Docs-only
+  PRs (only `docs/**` or `*.md`) skip the .NET build/test but STILL report the
+  check green, so a required-status-check stays satisfiable without a wasted build.
 
 ## Documentation discipline
 
