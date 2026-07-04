@@ -27,9 +27,11 @@ Make the **output/UI language a domain property**: `domain.json` gains
 
 Localized by the active domain's language:
 
-- **Report (backend):** the deterministic fallback narrative and the
-  direction/severity/etc. **labels**; the digest labels fed to the synthesis
-  model. Centralized in `ReportText` (fi/en).
+- **Report (backend):** the deterministic fallback narrative, the trend/`direction`
+  label, and the row labels of the digest fed to the synthesis model. Centralized
+  in `ReportText` (fi/en). (Category/severity/type **value** labels are a separate
+  domain axis — `categoryLabels`/`severityLabels`/`typeLabels` in `domain.json` —
+  not driven by `language`.)
 - **`direction` is stored as a language-neutral KEY**
   (`stable/growing/declining/worsening`) with a separate localized
   `DirectionLabel`. The verify gate and report JSON key off the neutral value, so

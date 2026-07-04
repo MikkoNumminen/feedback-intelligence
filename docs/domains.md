@@ -76,10 +76,12 @@ it is templated with the active domain's taxonomy at load time via the
   draws from this list for a noise item (and validates story sources against it).
 - `language` is the domain's **output/UI language** (short code, e.g. `fi`, `en`).
   Optional, **default `en`**; retail sets `fi`. It drives the report's fallback
-  prose + direction/severity labels, the snapshot page, and the desk/management
-  frontends. (Not the same as the per-item `language` in the feedback schema, which
-  is each item's *detected* language — see [schema.md](schema.md).) The LLM
-  narratives follow the domain's voiced prompts.
+  prose, the trend/`direction` label, the snapshot page, and the desk/management
+  frontend chrome. (It does NOT localize category/severity/type **value** labels —
+  those come from `categoryLabels`/`severityLabels`/`typeLabels`; a domain that
+  omits `severityLabels` shows raw keys like `low/high`. Nor is it the per-item
+  `language` in the feedback schema, which is each item's *detected* language —
+  see [schema.md](schema.md).) The LLM narratives follow the domain's voiced prompts.
 - `categoryFieldLabel` is the domain's word for the category dimension
   (`osasto` for retail, `area` for game); it appears in the report and the desk.
 

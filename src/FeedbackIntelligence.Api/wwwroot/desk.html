@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -90,6 +90,7 @@ const STR = {
     interpretDone: "Tulkinta valmis — tarkista alta.", connError: "Yhteysvirhe — palvelin ei vastaa.",
     serverDown: "Palvelin ei vastaa — yritetään uudelleen…",
     selectionsMissing: "Valinnat puuttuvat — päivitä sivu ja yritä uudelleen.",
+    chooseCategory: "Valitse luokka ennen tallennusta.",
     themeEmpty: "Aihe ei voi olla tyhjä.", saving: "Tallennetaan…",
     busyShort: "Ruuhkaa — yritä hetken päästä.", saveFailed: "Tallennus epäonnistui.",
     savedAlready: "Kirjattu ✓ (oli jo tallennettu)", savedThanks: "Kirjattu ✓ — kiitos!",
@@ -109,6 +110,7 @@ const STR = {
     interpretDone: "Interpretation ready — review below.", connError: "Connection error — the server is not responding.",
     serverDown: "Server not responding — retrying…",
     selectionsMissing: "Selections missing — refresh the page and try again.",
+    chooseCategory: "Choose a category before saving.",
     themeEmpty: "Theme cannot be empty.", saving: "Saving…",
     busyShort: "Busy — try again shortly.", saveFailed: "Save failed.",
     savedAlready: "Saved ✓ (was already stored)", savedThanks: "Saved ✓ — thanks!",
@@ -119,7 +121,9 @@ const STR = {
 // Per-entry state. interpretedText is captured at interpret time and is the
 // ONLY text ever saved. entryId makes save retries idempotent (server 409s).
 let model = null, interpretedText = null, language = "fi", entryId = null, modelFailed = false;
-let schemaLoaded = false, schema = null, L = STR.fi;
+// Default to the engine default (en); resolve to the domain language once /schema
+// lands. Offline stays en (never a wrong specific language) — matches index.html.
+let schemaLoaded = false, schema = null, L = STR.en;
 
 function fillSelect(select, values, labels) {
   select.innerHTML = "";
@@ -131,8 +135,10 @@ function fillSelect(select, values, labels) {
   }
 }
 
-// Apply the language bundle to all static chrome (called once /schema lands).
-function applyLanguage() {
+// Apply the language bundle to the static chrome. Called once at boot (en, no
+// schema yet) and again once /schema resolves the domain language.
+function applyLanguage(lang) {
+  L = STR[lang] || STR.en;
   document.documentElement.lang = L.htmlLang;
   document.title = L.pageTitle;
   el("h1").textContent = L.h1;
@@ -141,14 +147,16 @@ function applyLanguage() {
   el("charsWord").textContent = L.charsWord;
   el("interpret").textContent = L.interpret;
   el("interpretHeading").textContent = L.interpretHeading;
-  // Category label is the DOMAIN's word (osasto / area), capitalized.
-  const cf = (schema.categoryField || L.theme);
-  el("categoryLabel").textContent = cf.charAt(0).toUpperCase() + cf.slice(1);
   el("themeLabel").textContent = L.theme;
   el("severityLabel").textContent = L.severity;
   el("typeLabel").textContent = L.type;
   el("cancel").textContent = L.cancel;
   el("save").textContent = L.save;
+  // Category label is the DOMAIN's word (osasto / area) — only known once /schema lands.
+  if (schema && schema.categoryField) {
+    const cf = schema.categoryField;
+    el("categoryLabel").textContent = cf.charAt(0).toUpperCase() + cf.slice(1);
+  }
 }
 
 const pick = (list, preferred) => (list.includes(preferred) ? preferred : list[0]);
@@ -158,8 +166,7 @@ async function loadSchema() {
     const res = await fetch(`${API}/schema`);
     if (!res.ok) throw new Error();
     schema = await res.json();
-    L = STR[schema.language] || STR.en;
-    applyLanguage();
+    applyLanguage(schema.language);
     // Labels come from the active domain — no domain values hardcoded here.
     fillSelect(el("category"), schema.categories, schema.categoryLabels);
     fillSelect(el("severity"), schema.severities, schema.severityLabels);
@@ -207,6 +214,10 @@ el("interpret").addEventListener("click", async () => {
         type: pick([...schema.types], "other"),
         language: schema.language,
       });
+      // The model gave no category — force the clerk to choose one rather than
+      // silently defaulting to a real category (which risks misfiling). The save
+      // gate blocks an empty category.
+      el("category").selectedIndex = -1;
       return;
     }
     model = data.structure;
@@ -269,7 +280,8 @@ el("save").addEventListener("click", async () => {
     type: el("type").value,
     language,
   };
-  if (!accepted.category || !accepted.severity || !accepted.type) {
+  if (!accepted.category) { setStatus("status2", "err", L.chooseCategory); return; }
+  if (!accepted.severity || !accepted.type) {
     setStatus("status2", "err", L.selectionsMissing);
     return;
   }
@@ -319,7 +331,8 @@ function setStatus(id, kind, message) {
   node.textContent = message;
 }
 
-setStatus("status1", "", STR.fi.connecting);
+applyLanguage();                 // en chrome immediately (resolves on /schema)
+setStatus("status1", "", L.connecting);
 loadSchema();
 </script>
 </body>
