@@ -7,9 +7,12 @@ The engine ingests feedback from multiple channels, runs a **deterministic alert
 layer** in front of an LLM that structures messy input and reads themes/trends
 out of free text, and gives management a grounded, live situational view —
 alerts on top, themes and trends below, every claim clickable down to the exact
-feedback items behind it. Retail is the first application, carried in
-configuration and a domain module; it is not the engine's identity (see
-[ADR-0007](docs/decisions/0007-domain-agnostic-core.md)).
+feedback items behind it. Retail is the first application, carried in a data-only
+domain module; it is not the engine's identity. A second `domains/game/` module
+proves a new domain is a new folder with zero core edits — switch with
+`--Domain:Active=game` (see [docs/domains.md](docs/domains.md),
+[ADR-0007](docs/decisions/0007-domain-agnostic-core.md),
+[ADR-0012](docs/decisions/0012-pluggable-domain-modules.md)).
 
 Built as a demonstrable work sample: .NET 8 backend, local LLM serving (Ollama),
 100% synthetic data, live-runnable in an interview with a snapshot fallback so a

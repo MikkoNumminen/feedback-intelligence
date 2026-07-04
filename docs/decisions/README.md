@@ -17,8 +17,9 @@ these ADRs relocate that reasoning into durable records.
 | [0004](0004-salvage-layer-mandatory.md) | Salvage layer is a mandatory production component | Accepted |
 | [0005](0005-synthetic-corpus-gdpr.md) | Synthetic, expert-calibrated corpus (GDPR) | Accepted |
 | [0006](0006-ai-in-exactly-two-places.md) | AI in exactly two places (four-round elimination) | Accepted |
-| [0007](0007-domain-agnostic-core.md) | Domain-agnostic core, retail as config | Accepted |
+| [0007](0007-domain-agnostic-core.md) | Domain-agnostic core, retail as config | Accepted (realized by 0012) |
 | [0008](0008-sqlite-over-postgres.md) | SQLite over PostgreSQL for storage | Accepted |
 | [0009](0009-grounding-is-structural.md) | Grounding is structural, not prompt-wording | Accepted |
 | [0010](0010-verify-gate-tiering.md) | Acceptance gate: hard gates vs. trend warning tier | Accepted |
 | [0011](0011-sequence-preserving-arcs.md) | Sequence-preserving story arcs in the generator | Accepted |
+| [0012](0012-pluggable-domain-modules.md) | Domain-neutral core with pluggable domain modules | Accepted |
