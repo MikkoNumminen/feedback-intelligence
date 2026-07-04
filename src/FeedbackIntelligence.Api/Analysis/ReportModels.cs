@@ -14,13 +14,17 @@ public sealed record ReportAlert(
 
 /// <summary>One theme group. Count, direction and the feedback IDs are computed
 /// deterministically; only Title/Narrative come from the synthesis model, and
-/// they are dropped to a deterministic fallback if their citations fail.</summary>
+/// they are dropped to a deterministic fallback if their citations fail.
+/// <paramref name="Direction"/> is a language-neutral KEY
+/// (stable/growing/declining/worsening) — the verify gate and JSON key off it;
+/// <paramref name="DirectionLabel"/> is its display text in the domain's language.</summary>
 public sealed record ReportTheme(
     string Category,
     string Title,
     string Narrative,
     int Count,
     string Direction,
+    string DirectionLabel,
     IReadOnlyList<string> FeedbackIds,
     bool NarrativeFromLlm);
 
@@ -37,4 +41,7 @@ public sealed record ManagementReport(
     IReadOnlyList<ReportAlert> Alerts,
     IReadOnlyList<ReportTheme> Themes,
     int DroppedClaimCount,
-    int LlmFallbackCount);
+    int LlmFallbackCount,
+    // The active domain's language ("fi"/"en") so the snapshot page renders in the
+    // right language even when the backend (and /schema) is unreachable.
+    string Language);

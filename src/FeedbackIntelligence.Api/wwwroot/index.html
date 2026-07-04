@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Palautetilanne</title>
+<title>Feedback situation</title>
 <style>
   :root { --bg:#f4f5f7; --card:#fff; --ink:#1c2430; --mut:#66707d; --line:#d9dde3;
           --acc:#0b5fa5; --err:#b3261e; --warn:#b3541e; --ok:#1b7f4d; }
@@ -33,28 +33,27 @@
 <body>
 <main>
   <header>
-    <h1>Palautetilanne</h1>
+    <h1 id="h1"></h1>
     <span id="mode" class="badge live" hidden></span>
     <select id="window">
-      <option value="today">Tänään</option>
-      <option value="7" selected>7 päivää</option>
-      <option value="30">30 päivää</option>
-      <option value="custom">Oma aikaväli…</option>
+      <option value="today"></option>
+      <option value="7" selected></option>
+      <option value="30"></option>
+      <option value="custom"></option>
     </select>
     <span id="custom-range" hidden>
       <input type="date" id="from-date"> – <input type="date" id="to-date">
     </span>
-    <button class="primary" id="refresh">Päivitä</button>
+    <button class="primary" id="refresh"></button>
   </header>
   <p id="status"></p>
   <section id="report"></section>
-  <p class="foot">Jokainen väite on jäljitettävissä: tunnisteet avaavat alkuperäisen palautteen.
-     Kirjaa uusi palaute: <a href="/desk.html">tiskikirjaus</a>.</p>
+  <p class="foot" id="foot"></p>
 </main>
 
 <dialog id="item-dialog">
   <div id="item-body"></div>
-  <div style="text-align:right; margin-top:.8rem"><button id="close">Sulje</button></div>
+  <div style="text-align:right; margin-top:.8rem"><button id="close"></button></div>
 </dialog>
 
 <script src="./config.js"></script>
@@ -66,6 +65,46 @@ const API = window.API_BASE || "";
 const el = id => document.getElementById(id);
 const text = value => document.createTextNode(value ?? "");
 
+// User-facing text keyed by the domain language. The report carries `language`
+// (so snapshot mode is correct even with the backend down); /schema also gives
+// it (plus category labels) when the backend is up.
+const STR = {
+  fi: {
+    htmlLang: "fi", locale: "fi-FI", pageTitle: "Palautetilanne", h1: "Palautetilanne",
+    today: "Tänään", d7: "7 päivää", d30: "30 päivää", custom: "Oma aikaväli…", refresh: "Päivitä",
+    footBefore: "Jokainen väite on jäljitettävissä: tunnisteet avaavat alkuperäisen palautteen. Kirjaa uusi palaute: ",
+    footLink: "tiskikirjaus", close: "Sulje", live: "Live", snap: "Tilannekuva",
+    pickBothDates: "Valitse oman aikavälin molemmat päivät.",
+    compiling: "Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)",
+    window: "Aikaväli", items: "palautetta", noStructure: "ilman rakennetta",
+    dropped: "perustelematonta väitettä hylätty", fallbacks: "koostetta ilman kielimallia",
+    alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
+    themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
+    snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
+    noReport: "Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.",
+    itemError: "Palautetta ei voitu avata (palvelin ei vastaa).",
+    theme: "aihe", severity: "vakavuus", type: "tyyppi", correctedAtDesk: "korjattu tiskillä: ",
+  },
+  en: {
+    htmlLang: "en", locale: "en-GB", pageTitle: "Feedback situation", h1: "Feedback situation",
+    today: "Today", d7: "7 days", d30: "30 days", custom: "Custom range…", refresh: "Refresh",
+    footBefore: "Every claim is traceable: the IDs open the source feedback. Log new feedback: ",
+    footLink: "desk entry", close: "Close", live: "Live", snap: "Snapshot",
+    pickBothDates: "Pick both dates for the custom range.",
+    compiling: "Compiling the report… (the model writes the summaries)",
+    window: "Window", items: "items", noStructure: "without structure",
+    dropped: "ungrounded claim(s) dropped", fallbacks: "summary(ies) without the model",
+    alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
+    themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
+    snapShown: "The server was unreachable — showing the last saved snapshot.",
+    noReport: "No report and no saved snapshot found.",
+    itemError: "Could not open the feedback item (the server is not responding).",
+    theme: "theme", severity: "severity", type: "type", correctedAtDesk: "corrected at desk: ",
+  },
+};
+
+let schema = null, L = STR.fi;
+
 function node(tag, className, children) {
   const n = document.createElement(tag);
   if (className) n.className = className;
@@ -74,19 +113,35 @@ function node(tag, className, children) {
 }
 
 async function tryFetchJson(url) {
-  try {
-    const res = await fetch(url);
-    return res.ok ? await res.json() : null;
-  } catch {
-    return null;
-  }
+  try { const res = await fetch(url); return res.ok ? await res.json() : null; }
+  catch { return null; }
 }
+
+// Apply the language to the static chrome. Called from /schema on load and from
+// each render (report.language is authoritative and works in snapshot mode).
+function applyLanguage(lang) {
+  L = STR[lang] || STR.en;
+  document.documentElement.lang = L.htmlLang;
+  document.title = L.pageTitle;
+  el("h1").textContent = L.h1;
+  const w = el("window").options;
+  w[0].textContent = L.today; w[1].textContent = L.d7; w[2].textContent = L.d30; w[3].textContent = L.custom;
+  el("refresh").textContent = L.refresh;
+  el("close").textContent = L.close;
+  const foot = el("foot");
+  foot.innerHTML = "";
+  foot.appendChild(text(L.footBefore));
+  const a = node("a", null, [L.footLink]); a.href = "/desk.html";
+  foot.appendChild(a);
+}
+
+const catLabel = key => (schema && schema.categoryLabels && schema.categoryLabels[key]) || key;
+const labelOf = (map, key) => (map && map[key]) || key;
 
 function windowRange() {
   const choice = el("window").value;
   const to = new Date();
   if (choice === "today") {
-    // The calendar day, not a trailing 24 h — "Tänään" must mean today.
     const from = new Date();
     from.setHours(0, 0, 0, 0);
     return { from, to };
@@ -103,8 +158,8 @@ function windowRange() {
 
 async function loadReport() {
   const range = windowRange();
-  if (!range) { setStatus("Valitse oman aikavälin molemmat päivät."); return; }
-  setStatus("Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)");
+  if (!range) { setStatus(L.pickBothDates); return; }
+  setStatus(L.compiling);
   el("refresh").disabled = true;
   try {
     const res = await fetch(`${API}/report?from=${range.from.toISOString()}&to=${range.to.toISOString()}`);
@@ -112,17 +167,15 @@ async function loadReport() {
     render(await res.json(), true);
     setStatus("");
   } catch {
-    // Fallback chain: backend snapshot endpoint, then the static copy
-    // published next to this page. Each step must survive a NETWORK error
-    // (fetch throws, it does not return !ok) — a down backend must still
-    // reach the static copy.
+    // Fallback chain: backend snapshot endpoint, then the static copy published
+    // next to this page. Each step must survive a NETWORK error.
     const snap = await tryFetchJson(`${API}/report/snapshot`)
       ?? await tryFetchJson("./report-latest.json");
     if (snap) {
       render(snap, false);
-      setStatus("Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.");
+      setStatus(L.snapShown);
     } else {
-      setStatus("Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.");
+      setStatus(L.noReport);
     }
   } finally {
     el("refresh").disabled = false;
@@ -130,27 +183,29 @@ async function loadReport() {
 }
 
 function render(report, live) {
+  applyLanguage(report.language); // authoritative, works in snapshot mode too
+
   const mode = el("mode");
   mode.hidden = false;
   mode.className = "badge " + (live ? "live" : "snap");
-  mode.textContent = live ? "Live" : "Tilannekuva";
+  mode.textContent = live ? L.live : L.snap;
 
   const root = el("report");
   root.innerHTML = "";
   root.appendChild(node("p", "muted", [
-    `Aikaväli ${short(report.windowFrom)} – ${short(report.windowTo)} · ${report.totalItems} palautetta` +
-    (report.structureFailedCount ? ` · ${report.structureFailedCount} ilman rakennetta` : "") +
-    (report.droppedClaimCount ? ` · ${report.droppedClaimCount} perustelematonta väitettä hylätty` : "") +
-    (report.llmFallbackCount ? ` · ${report.llmFallbackCount} koostetta ilman kielimallia` : ""),
+    `${L.window} ${short(report.windowFrom)} – ${short(report.windowTo)} · ${report.totalItems} ${L.items}` +
+    (report.structureFailedCount ? ` · ${report.structureFailedCount} ${L.noStructure}` : "") +
+    (report.droppedClaimCount ? ` · ${report.droppedClaimCount} ${L.dropped}` : "") +
+    (report.llmFallbackCount ? ` · ${report.llmFallbackCount} ${L.fallbacks}` : ""),
   ]));
 
-  root.appendChild(node("h2", null, [`Hälytykset (${report.alerts.length})`]));
+  root.appendChild(node("h2", null, [`${L.alerts} (${report.alerts.length})`]));
   if (report.alerts.length === 0)
-    root.appendChild(node("p", "muted", ["Ei hälytyksiä aikavälillä."]));
+    root.appendChild(node("p", "muted", [L.noAlerts]));
   for (const alert of report.alerts) {
     const origin = alert.llmReason
-      ? "kielimalli: " + alert.llmReason
-      : "sanahaku: " + alert.deterministicHits.map(h => h.pattern).join(", ");
+      ? L.model + ": " + alert.llmReason
+      : L.keyword + ": " + alert.deterministicHits.map(h => h.pattern).join(", ");
     root.appendChild(node("div", "card alert", [
       node("strong", null, [alert.textExcerpt]),
       node("div", "muted", [`${alert.source} · ${short(alert.timestamp)} · ${origin}`]),
@@ -158,14 +213,14 @@ function render(report, live) {
     ]));
   }
 
-  root.appendChild(node("h2", null, [`Teemat ja trendit (${report.themes.length})`]));
+  root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
   for (const theme of report.themes) {
     const chips = node("div", null, []);
     for (const id of theme.feedbackIds) chips.appendChild(idChip(id));
     root.appendChild(node("div", "card", [
       node("strong", null, [theme.title]),
-      node("div", "muted", [`${theme.category} · ${theme.count} palautetta · suunta: ${theme.direction}` +
-        (theme.narrativeFromLlm ? "" : " · automaattinen kooste")]),
+      node("div", "muted", [`${catLabel(theme.category)} · ${theme.count} ${L.items} · ${L.trend}: ${theme.directionLabel ?? theme.direction}` +
+        (theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
       node("p", null, [theme.narrative]),
       chips,
     ]));
@@ -187,23 +242,26 @@ async function openItem(id) {
     body.innerHTML = "";
     body.appendChild(node("p", null, [item.text]));
     body.appendChild(node("p", "muted", [`${item.source} · ${short(item.timestamp)}`]));
-    if (item.structure)
+    if (item.structure) {
+      const cf = (schema && schema.categoryField) || "category";
       body.appendChild(node("p", "muted", [
-        `osasto: ${item.structure.category} · aihe: ${item.structure.theme} · ` +
-        `vakavuus: ${item.structure.severity} · tyyppi: ${item.structure.type}`,
+        `${cf}: ${catLabel(item.structure.category)} · ${L.theme}: ${item.structure.theme} · ` +
+        `${L.severity}: ${labelOf(schema && schema.severityLabels, item.structure.severity)} · ` +
+        `${L.type}: ${labelOf(schema && schema.typeLabels, item.structure.type)}`,
       ]));
+    }
     if (item.corrections?.length)
-      body.appendChild(node("p", "muted", ["korjattu tiskillä: " +
+      body.appendChild(node("p", "muted", [L.correctedAtDesk +
         item.corrections.map(c => `${c.field}: ${c.modelValue} → ${c.humanValue}`).join("; ")]));
     el("item-dialog").showModal();
   } catch {
-    setStatus("Palautetta ei voitu avata (palvelin ei vastaa).");
+    setStatus(L.itemError);
   }
 }
 
 function short(iso) {
   const d = new Date(iso);
-  return isNaN(d) ? iso : d.toLocaleString("fi-FI", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+  return isNaN(d) ? iso : d.toLocaleString(L.locale, { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function setStatus(message) { el("status").textContent = message; }
@@ -215,7 +273,15 @@ el("window").addEventListener("change", () => {
   if (!custom) loadReport();
 });
 el("close").addEventListener("click", () => el("item-dialog").close());
-loadReport();
+
+async function init() {
+  // /schema (when the backend is up) gives category labels + the language for the
+  // chrome before the first report; render() re-applies from report.language.
+  schema = await tryFetchJson(`${API}/schema`);
+  applyLanguage(schema && schema.language);
+  await loadReport();
+}
+init();
 </script>
 </body>
 </html>

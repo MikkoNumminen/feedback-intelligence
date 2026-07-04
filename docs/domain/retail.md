@@ -24,6 +24,11 @@ varasto_nouto | verkkokauppa_toimitus | muu
 Severities and types are not overridden — retail inherits the core defaults
 (`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).
 
+Output language (`language`): **`fi`** — retail's audience is Finnish only, so the
+report prose, direction labels, snapshot, and the desk/management frontends all
+render in Finnish ([ADR-0014](../decisions/0014-domain-output-language.md)). It is
+the one domain that overrides the engine's `en` default.
+
 Ingest channels (`sources`): `google_review | email | web_form | desk` — the
 `source` values `POST /feedback` accepts. `desk` is the human-in-the-loop console
 channel; the others are external feedback channels.

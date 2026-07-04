@@ -67,14 +67,15 @@ public class ReportServiceTests : IDisposable
         false, false, [], alerts ?? [], null);
 
     [Fact]
-    public async Task Direction_GrowingAndWorsening_IsPaheneva()
+    public async Task Direction_GrowingAndWorsening_IsWorsening()
     {
         await SeedDairyAsync(earlyCount: 2, lateCount: 6, lateSeverity: "high");
 
         var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
 
         var theme = Assert.Single(report.Themes);
-        Assert.Equal("paheneva", theme.Direction);
+        Assert.Equal("worsening", theme.Direction);
+        Assert.Equal("paheneva", theme.DirectionLabel); // retail test descriptor is fi
         Assert.Equal(8, theme.Count);
         Assert.Equal(8, theme.FeedbackIds.Count);
     }
@@ -141,7 +142,7 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task NewThemeWithEmptyFirstHalf_IsKasvava_NeverPaheneva()
+    public async Task NewThemeWithEmptyFirstHalf_IsGrowing_NeverWorsening()
     {
         // All items in the late half, all low severity: a theme that just
         // appeared has no baseline to "worsen" against.
@@ -149,7 +150,7 @@ public class ReportServiceTests : IDisposable
 
         var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
 
-        Assert.Equal("kasvava", Assert.Single(report.Themes).Direction);
+        Assert.Equal("growing", Assert.Single(report.Themes).Direction);
     }
 
     [Fact]

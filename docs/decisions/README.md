@@ -24,3 +24,4 @@ these ADRs relocate that reasoning into durable records.
 | [0011](0011-sequence-preserving-arcs.md) | Sequence-preserving story arcs in the generator | Accepted |
 | [0012](0012-pluggable-domain-modules.md) | Domain-neutral core with pluggable domain modules | Accepted |
 | [0013](0013-ci-on-github-actions.md) | Continuous integration on GitHub Actions | Accepted |
+| [0014](0014-domain-output-language.md) | Output language is a domain property (English default, retail Finnish) | Accepted |

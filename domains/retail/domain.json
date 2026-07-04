@@ -1,5 +1,6 @@
 {
   "name": "retail",
+  "language": "fi",
   "categoryFieldLabel": "osasto",
   "categories": {
     "maito_kylma": "Maito & kylmä",

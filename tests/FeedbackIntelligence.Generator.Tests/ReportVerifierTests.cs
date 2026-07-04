@@ -29,7 +29,7 @@ public class ReportVerifierTests
         """;
 
     private static string Report(
-        string dairyDirection = "paheneva",
+        string dairyDirection = "worsening",
         string dairyIds = """["a1","a2","a3","a4"]""",
         string dairyCategory = "maito_kylma",
         string alerts = """[{"feedbackId":"s1"}]""",
@@ -47,7 +47,7 @@ public class ReportVerifierTests
             {
               "category": "rakennustarvike", "title": "Terassi",
               "narrative": "Rakenne petti.", "count": 1,
-              "direction": "vakaa", "feedbackIds": ["s1"]
+              "direction": "stable", "feedbackIds": ["s1"]
             }
           ]
         }
@@ -89,18 +89,18 @@ public class ReportVerifierTests
     {
         // The report's direction is a category AGGREGATE; same-category
         // noise legitimately dilutes it. Warning tier, not a gate.
-        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "laskeva"));
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "declining"));
 
         Assert.False(results[0].TrendOk);
         Assert.True(results[0].Pass);
     }
 
     [Fact]
-    public void KasvavaSatisfiesWorsening()
+    public void GrowingSatisfiesWorsening()
     {
         // Volume growth without a severity shift still satisfies a "worsening"
-        // plant — paheneva is the stricter, preferred read.
-        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "kasvava"));
+        // plant — "worsening" is the stricter, preferred read.
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "growing"));
 
         Assert.True(results[0].TrendOk);
     }

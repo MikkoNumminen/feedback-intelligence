@@ -36,12 +36,13 @@ public static class ReportVerifier
         public bool Pass => WindowCovered && GroundingPass && AlertPass;
     }
 
-    /// <summary>"worsening" is satisfied by volume growth with or without the
-    /// severity shift; "stable" by "vakaa". Anything else is a dilution warning.</summary>
+    /// <summary>Report `direction` is a language-neutral KEY. "worsening" is
+    /// satisfied by volume growth with or without the severity shift (worsening or
+    /// growing); "stable" by "stable". Anything else is a dilution warning.</summary>
     private static readonly Dictionary<string, string[]> AcceptedDirections = new(StringComparer.Ordinal)
     {
-        ["worsening"] = ["paheneva", "kasvava"],
-        ["stable"] = ["vakaa"],
+        ["worsening"] = ["worsening", "growing"],
+        ["stable"] = ["stable"],
     };
 
     public static List<StoryResult> Verify(string groundTruthJson, string reportJson)

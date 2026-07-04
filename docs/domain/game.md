@@ -62,16 +62,21 @@ deterministic):
 - `GET /report` groups by game categories (`bugs_crashes`, `matchmaking`), each
   **grounded to the exact feedback IDs**, alert on top.
 
+## The report reads English
+
+`domain.json` sets `"language": "en"`, so the whole game surface is English
+([ADR-0014](../decisions/0014-domain-output-language.md)) — verified live (zero-GPU):
+the same data renders `Trend: growing` / "Automated summary…" under game where
+retail renders `Suunta: kasvava` / "Automaattinen kooste…", with an identical
+neutral `direction` key. The deterministic fallback prose, direction labels, the
+snapshot page, and the desk/management frontends all follow the domain language;
+the LLM narratives follow the English game prompt.
+
 ## Scope and known edges
 
 This module is a **switchability + loop proof**, not a shipping product. Remaining
 edges, flagged honestly:
 
-- **The report's fallback prose and `direction` words are Finnish** (`vakaa`,
-  "N palautetta aikavälillä…"). Correct for retail, wrong-language for the English
-  game domain. The report *structure* (grouping, counts, IDs, alerts) is
-  domain-neutral; localizing the deterministic narrative + direction labels (make
-  them domain-provided) is the next neutrality step.
 - **The corpus pool path is not domain-owned.** `Generator:VariantsPath` /
   `OutputDir` stay global, so `--Domain:Active=game` alone does not pick up the
   game pool — the explicit `--Generator:VariantsPath=…`/`--Generator:OutputDir=…`
