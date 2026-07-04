@@ -7,8 +7,8 @@ public static class StructureValidator
     public static List<string> Validate(FeedbackStructure structure)
     {
         var errors = new List<string>();
-        if (!StructuringSchema.Departments.Contains(structure.Department))
-            errors.Add($"department '{structure.Department}' is not a schema enum value");
+        if (!StructuringSchema.Categories.Contains(structure.Category))
+            errors.Add($"category '{structure.Category}' is not a schema enum value");
         if (!StructuringSchema.Severities.Contains(structure.Severity))
             errors.Add($"severity '{structure.Severity}' is not a schema enum value");
         if (!StructuringSchema.Types.Contains(structure.Type))

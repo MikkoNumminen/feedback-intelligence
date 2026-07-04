@@ -7,7 +7,7 @@ namespace FeedbackIntelligence.Llm.Structuring;
 /// Pure salvage + validation layer over raw structuring-model output — a
 /// mandatory production component (CLAUDE.md, Phase 0 closure), unit-tested
 /// against the exact failure shapes the placeholder run caught: fenced JSON,
-/// department-as-array, invented enum values.
+/// category-as-array, invented enum values.
 /// </summary>
 public static class StructuringOutputParser
 {
@@ -30,7 +30,7 @@ public static class StructuringOutputParser
             var violations = new List<string>();
             var normalized = false;
 
-            var department = ReadEnumField(root, "department", StructuringSchema.Departments, allowArrayFirst: true, notes, violations, ref normalized);
+            var category = ReadEnumField(root, "category", StructuringSchema.Categories, allowArrayFirst: true, notes, violations, ref normalized);
             var severity = ReadEnumField(root, "severity", StructuringSchema.Severities, allowArrayFirst: false, notes, violations, ref normalized);
             var type = ReadEnumField(root, "type", StructuringSchema.Types, allowArrayFirst: false, notes, violations, ref normalized);
             var theme = ReadTextField(root, "theme", lowercase: false, notes, violations, ref normalized);
@@ -46,7 +46,7 @@ public static class StructuringOutputParser
                 return new Attempt(null, !strict, normalized, notes, violations);
 
             return new Attempt(
-                new FeedbackStructure(department!, theme!, severity!, type!, language!),
+                new FeedbackStructure(category!, theme!, severity!, type!, language!),
                 Salvaged: !strict,
                 Normalized: normalized,
                 notes,
@@ -79,7 +79,7 @@ public static class StructuringOutputParser
             && value.GetArrayLength() > 0
             && value[0].ValueKind == JsonValueKind.String)
         {
-            // Measured Poro behavior on multi-department feedback (placeholder
+            // Measured Poro behavior on multi-category feedback (placeholder
             // run 2026-07-03): an array instead of one value. Primary = first
             // element by rule; the discard is logged, never silent.
             candidate = value[0].GetString();

@@ -16,7 +16,7 @@ public sealed record ReportAlert(
 /// deterministically; only Title/Narrative come from the synthesis model, and
 /// they are dropped to a deterministic fallback if their citations fail.</summary>
 public sealed record ReportTheme(
-    string Department,
+    string Category,
     string Title,
     string Narrative,
     int Count,

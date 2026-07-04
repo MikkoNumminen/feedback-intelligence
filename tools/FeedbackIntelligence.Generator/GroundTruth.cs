@@ -4,7 +4,7 @@ namespace FeedbackIntelligence.Generator;
 
 /// <summary>
 /// Machine-checkable ground truth for one planted story (Phase 1 decision,
-/// 2026-07-03): exact feedback IDs, expected department enum value, expected
+/// 2026-07-03): exact feedback IDs, expected category enum value, expected
 /// theme as a keyword set, time window, trend direction. Phase 4's acceptance
 /// eval verifies a report claim by matching it against these IDs — "the
 /// report's dairy claim grounds to >= minGroundedIds of these specific IDs
@@ -14,7 +14,7 @@ public sealed record GroundTruthStory(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("kind")] string Kind,
     [property: JsonPropertyName("feedbackIds")] IReadOnlyList<string> FeedbackIds,
-    [property: JsonPropertyName("expectedDepartment")] string ExpectedDepartment,
+    [property: JsonPropertyName("expectedCategory")] string ExpectedCategory,
     [property: JsonPropertyName("expectedThemeKeywords")] IReadOnlyList<string> ExpectedThemeKeywords,
     [property: JsonPropertyName("windowFrom")] string WindowFrom,
     [property: JsonPropertyName("windowTo")] string WindowTo,

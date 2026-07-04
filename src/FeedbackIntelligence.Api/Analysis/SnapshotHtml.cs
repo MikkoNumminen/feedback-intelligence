@@ -42,7 +42,7 @@ public static class SnapshotHtml
         foreach (var theme in report.Themes)
         {
             sb.AppendLine($"<div class=\"card\"><strong>{E(theme.Title)}</strong>" +
-                $"<div class=\"muted\">{E(theme.Department)} · {theme.Count} palautetta · suunta: {E(theme.Direction)}</div>" +
+                $"<div class=\"muted\">{E(theme.Category)} · {theme.Count} palautetta · suunta: {E(theme.Direction)}</div>" +
                 $"<p>{E(theme.Narrative)}</p>" +
                 $"<div class=\"ids\">{E(string.Join(" ", theme.FeedbackIds))}</div></div>");
         }

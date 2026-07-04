@@ -52,7 +52,7 @@ public sealed class StoryConfig
 {
     public string Id { get; init; } = "";
     public string Kind { get; init; } = "";
-    public string Department { get; init; } = "";
+    public string Category { get; init; } = "";
     public List<string> ThemeKeywords { get; init; } = [];
     public List<string> Sources { get; init; } = [];
     public int WindowDays { get; init; }
@@ -102,8 +102,8 @@ public sealed class GeneratorOptionsValidator : IValidateOptions<GeneratorOption
             var label = $"Generator:Stories['{story.Id}']";
             if (string.IsNullOrWhiteSpace(story.Id) || !ids.Add(story.Id))
                 failures.Add($"{label}: id must be set and unique.");
-            if (!StructuringSchema.Departments.Contains(story.Department))
-                failures.Add($"{label}: department '{story.Department}' is not a schema enum value.");
+            if (!StructuringSchema.Categories.Contains(story.Category))
+                failures.Add($"{label}: category '{story.Category}' is not a schema enum value.");
             if (story.ThemeKeywords.Count == 0)
                 failures.Add($"{label}: themeKeywords must be a non-empty keyword set.");
             if (story.Sources.Count == 0)

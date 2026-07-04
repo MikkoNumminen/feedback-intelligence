@@ -5,12 +5,12 @@ namespace FeedbackIntelligence.Llm.Tests;
 /// <summary>
 /// The salvage layer is tested against the EXACT failure shapes the 2026-07-03
 /// placeholder run caught (CLAUDE.md, Phase 0 closure): fenced JSON,
-/// department-as-array, invented enum values — plus the strict happy path.
+/// category-as-array, invented enum values — plus the strict happy path.
 /// </summary>
 public class StructuringOutputParserTests
 {
     private const string ValidJson =
-        """{"department": "maito_kylma", "theme": "tuotteiden tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
+        """{"category": "maito_kylma", "theme": "tuotteiden tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
 
     [Fact]
     public void StrictCleanJson_Succeeds_WithoutFlags()
@@ -21,7 +21,7 @@ public class StructuringOutputParserTests
         Assert.False(attempt.Salvaged);
         Assert.False(attempt.Normalized);
         Assert.Empty(attempt.Violations);
-        Assert.Equal("maito_kylma", attempt.Structure!.Department);
+        Assert.Equal("maito_kylma", attempt.Structure!.Category);
         Assert.Equal("fi", attempt.Structure.Language);
     }
 
@@ -39,37 +39,37 @@ public class StructuringOutputParserTests
     }
 
     [Fact]
-    public void DepartmentArray_PoroShape_NormalizesToFirstElement_AndLogsDiscard()
+    public void CategoryArray_PoroShape_NormalizesToFirstElement_AndLogsDiscard()
     {
         // Verbatim shape from the placeholder run (ph-009, all 3 reps).
         var raw =
-            """{"department": ["maito_kylma", "tyokalut"], "theme": "laatu ja palvelu", "severity": "medium", "type": "complaint", "language": "fi"}""";
+            """{"category": ["maito_kylma", "tyokalut"], "theme": "laatu ja palvelu", "severity": "medium", "type": "complaint", "language": "fi"}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 
         Assert.NotNull(attempt.Structure);
         Assert.True(attempt.Normalized);
-        Assert.Equal("maito_kylma", attempt.Structure!.Department);
-        Assert.Contains(attempt.Notes, n => n.Contains("array") && n.Contains("department"));
+        Assert.Equal("maito_kylma", attempt.Structure!.Category);
+        Assert.Contains(attempt.Notes, n => n.Contains("array") && n.Contains("category"));
     }
 
     [Fact]
-    public void DepartmentArray_WithInvalidFirstElement_IsViolation()
+    public void CategoryArray_WithInvalidFirstElement_IsViolation()
     {
         var raw =
-            """{"department": ["kylmäosasto", "tyokalut"], "theme": "laatu", "severity": "medium", "type": "complaint", "language": "fi"}""";
+            """{"category": ["kylmäosasto", "tyokalut"], "theme": "laatu", "severity": "medium", "type": "complaint", "language": "fi"}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 
         Assert.Null(attempt.Structure);
-        Assert.Contains(attempt.Violations, v => v.Contains("department"));
+        Assert.Contains(attempt.Violations, v => v.Contains("category"));
     }
 
     [Fact]
     public void InventedEnumValue_IsViolation()
     {
         var raw =
-            """{"department": "kylmäosasto", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
+            """{"category": "kylmäosasto", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 
@@ -81,13 +81,13 @@ public class StructuringOutputParserTests
     public void EnumCasing_IsNormalized_NotRejected()
     {
         var raw =
-            """{"department": "Maito_Kylma", "theme": "tuoreus", "severity": "Medium", "type": "complaint", "language": "FI"}""";
+            """{"category": "Maito_Kylma", "theme": "tuoreus", "severity": "Medium", "type": "complaint", "language": "FI"}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 
         Assert.NotNull(attempt.Structure);
         Assert.True(attempt.Normalized);
-        Assert.Equal("maito_kylma", attempt.Structure!.Department);
+        Assert.Equal("maito_kylma", attempt.Structure!.Category);
         Assert.Equal("medium", attempt.Structure.Severity);
         Assert.Equal("fi", attempt.Structure.Language);
     }
@@ -95,7 +95,7 @@ public class StructuringOutputParserTests
     [Fact]
     public void MissingField_IsViolation()
     {
-        var raw = """{"department": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint"}""";
+        var raw = """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint"}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 
@@ -107,7 +107,7 @@ public class StructuringOutputParserTests
     public void ExtraField_IsToleratedWithNote()
     {
         var raw =
-            """{"department": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi", "confidence": 0.9}""";
+            """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi", "confidence": 0.9}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 
@@ -139,7 +139,7 @@ public class StructuringOutputParserTests
     public void NonStringSeverity_IsViolation()
     {
         var raw =
-            """{"department": "maito_kylma", "theme": "tuoreus", "severity": 3, "type": "complaint", "language": "fi"}""";
+            """{"category": "maito_kylma", "theme": "tuoreus", "severity": 3, "type": "complaint", "language": "fi"}""";
 
         var attempt = StructuringOutputParser.Parse(raw);
 

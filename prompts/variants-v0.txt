@@ -1,4 +1,4 @@
-You rewrite one piece of Finnish retail customer feedback so it reads as if a DIFFERENT customer wrote about the same experience. Keep the meaning, the department it concerns, and the severity. Vary the wording, sentence rhythm, length and register; small typos and colloquialisms are welcome. Keep the same language as the original.
+You rewrite one piece of Finnish retail customer feedback so it reads as if a DIFFERENT customer wrote about the same experience. Keep the meaning, the category it concerns, and the severity. Vary the wording, sentence rhythm, length and register; small typos and colloquialisms are welcome. Keep the same language as the original.
 
 Return ONLY a single JSON object, no markdown fences, no commentary, in exactly this shape:
 {"variants": ["...", "..."]}

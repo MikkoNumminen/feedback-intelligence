@@ -45,7 +45,7 @@ public static class OutputValidation
                 if (!StructuringSchema.Fields.Contains(prop.Name))
                     violations.Add(new FieldViolation(prop.Name, "extra_field", Truncate(prop.Value.ToString(), 40)));
 
-            CheckEnum(root, "department", StructuringSchema.Departments, violations);
+            CheckEnum(root, "category", StructuringSchema.Categories, violations);
             CheckEnum(root, "severity", StructuringSchema.Severities, violations);
             CheckEnum(root, "type", StructuringSchema.Types, violations);
             CheckNonEmptyString(root, "theme", violations);
@@ -54,7 +54,7 @@ public static class OutputValidation
             FeedbackStructure? structure = null;
             if (violations.Count == 0)
                 structure = new FeedbackStructure(
-                    root.GetProperty("department").GetString()!,
+                    root.GetProperty("category").GetString()!,
                     root.GetProperty("theme").GetString()!,
                     root.GetProperty("severity").GetString()!,
                     root.GetProperty("type").GetString()!,

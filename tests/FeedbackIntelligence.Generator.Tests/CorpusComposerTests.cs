@@ -23,7 +23,7 @@ public class CorpusComposerTests
             {
                 Id = "dairy-freshness-worsening",
                 Kind = "recurring_signal",
-                Department = "maito_kylma",
+                Category = "maito_kylma",
                 ThemeKeywords = ["tuoreus", "vanhentunut"],
                 Sources = ["google_review", "email", "web_form", "desk"],
                 WindowDays = 14,
@@ -36,7 +36,7 @@ public class CorpusComposerTests
             {
                 Id = "safety-no-keyword",
                 Kind = "alert_by_understanding",
-                Department = "rakennustarvike",
+                Category = "rakennustarvike",
                 ThemeKeywords = ["turvallisuus"],
                 Sources = ["web_form"],
                 WindowDays = 7,
@@ -49,7 +49,7 @@ public class CorpusComposerTests
             {
                 Id = "availability-slow-burn",
                 Kind = "recurring_signal",
-                Department = "leipa",
+                Category = "leipa",
                 ThemeKeywords = ["saatavuus", "loppu"],
                 Sources = ["desk", "google_review"],
                 WindowDays = 21,
@@ -113,7 +113,7 @@ public class CorpusComposerTests
             var config = options.Stories.Single(s => s.Id == story.Id);
             Assert.Equal(config.Count, story.FeedbackIds.Count);
             Assert.True(story.MinGroundedIds >= 1 && story.MinGroundedIds <= story.FeedbackIds.Count);
-            Assert.Contains(story.ExpectedDepartment, StructuringSchema.Departments);
+            Assert.Contains(story.ExpectedCategory, StructuringSchema.Categories);
             Assert.NotEmpty(story.ExpectedThemeKeywords);
 
             var from = DateOnly.Parse(story.WindowFrom);
@@ -163,7 +163,7 @@ public class CorpusComposerTests
             {
                 Id = "dairy-freshness-worsening",
                 Kind = "recurring_signal",
-                Department = "maito_kylma",
+                Category = "maito_kylma",
                 ThemeKeywords = ["tuoreus"],
                 Sources = ["desk", "email"],
                 WindowDays = 14,
@@ -227,7 +227,7 @@ public class CorpusComposerTests
         {
             Id = "dairy-freshness-worsening",
             Kind = "recurring_signal",
-            Department = "maito_kylma",
+            Category = "maito_kylma",
             ThemeKeywords = ["tuoreus"],
             Sources = ["desk"],
             WindowDays = 1,

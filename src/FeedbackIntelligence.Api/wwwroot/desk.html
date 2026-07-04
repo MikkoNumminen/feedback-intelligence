@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fi">
 <head>
 <meta charset="utf-8">
@@ -48,8 +48,8 @@
 
   <div class="card" id="interpret-card">
     <strong>Tulkinta — tarkista ja korjaa tarvittaessa</strong>
-    <label for="department">Osasto</label>
-    <select id="department"></select>
+    <label for="category">Osasto</label>
+    <select id="category"></select>
     <label for="theme">Aihe</label>
     <input type="text" id="theme" maxlength="120">
     <label for="severity">Vakavuus</label>
@@ -71,7 +71,7 @@
 // time) points API at the Tailscale Funnel backend.
 const API = window.API_BASE || "";
 const FI = {
-  departments: {
+  categories: {
     maito_kylma: "Maito & kylmä", hevi: "Hevi", kuiva_elintarvike: "Kuivat elintarvikkeet",
     liha_kala: "Liha & kala", leipa: "Leipä", kassa_palvelu: "Kassa & palvelu",
     piha_puutarha: "Piha & puutarha", rakennustarvike: "Rakennustarvikkeet",
@@ -110,7 +110,7 @@ async function loadSchema() {
     const res = await fetch(`${API}/schema`);
     if (!res.ok) throw new Error();
     const schema = await res.json();
-    fillSelect(el("department"), schema.departments, FI.departments);
+    fillSelect(el("category"), schema.categories, FI.categories);
     fillSelect(el("severity"), schema.severities, FI.severities);
     fillSelect(el("type"), schema.types, FI.types);
     schemaLoaded = true;
@@ -149,7 +149,7 @@ el("interpret").addEventListener("click", async () => {
       model = null;
       modelFailed = true;
       setStatus("status1", "warn", "Automaattinen tulkinta ei onnistunut — täytä kentät itse.");
-      showForm({ department: "muu", theme: "", severity: "medium", type: "other", language: "fi" });
+      showForm({ category: "muu", theme: "", severity: "medium", type: "other", language: "fi" });
       return;
     }
     model = data.structure;
@@ -179,11 +179,11 @@ function endEntry() {
 
 function showForm(structure) {
   language = structure.language || "fi";
-  el("department").value = structure.department;
+  el("category").value = structure.category;
   el("theme").value = structure.theme;
   el("severity").value = structure.severity;
   el("type").value = structure.type;
-  for (const id of ["department", "theme", "severity", "type"]) el(id).classList.remove("corrected");
+  for (const id of ["category", "theme", "severity", "type"]) el(id).classList.remove("corrected");
   el("interpret-card").style.display = "block";
   setStatus("status2", "", "");
   el("interpret-card").scrollIntoView({ behavior: "smooth" });
@@ -191,10 +191,10 @@ function showForm(structure) {
 
 function markCorrections() {
   if (!model) return;
-  for (const field of ["department", "theme", "severity", "type"])
+  for (const field of ["category", "theme", "severity", "type"])
     el(field).classList.toggle("corrected", el(field).value !== model[field]);
 }
-for (const field of ["department", "theme", "severity", "type"])
+for (const field of ["category", "theme", "severity", "type"])
   el(field).addEventListener("change", markCorrections);
 el("theme").addEventListener("input", markCorrections);
 
@@ -206,13 +206,13 @@ el("cancel").addEventListener("click", () => {
 
 el("save").addEventListener("click", async () => {
   const accepted = {
-    department: el("department").value,
+    category: el("category").value,
     theme: el("theme").value.trim(),
     severity: el("severity").value,
     type: el("type").value,
     language,
   };
-  if (!accepted.department || !accepted.severity || !accepted.type) {
+  if (!accepted.category || !accepted.severity || !accepted.type) {
     setStatus("status2", "err", "Valinnat puuttuvat — päivitä sivu ja yritä uudelleen.");
     return;
   }
@@ -220,7 +220,7 @@ el("save").addEventListener("click", async () => {
 
   const corrections = [];
   if (model)
-    for (const field of ["department", "theme", "severity", "type"])
+    for (const field of ["category", "theme", "severity", "type"])
       if (accepted[field] !== model[field])
         corrections.push({ field, modelValue: model[field], humanValue: accepted[field] });
 

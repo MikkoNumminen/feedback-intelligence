@@ -11,7 +11,7 @@ public class ReportVerifierTests
             {
               "id": "dairy", "kind": "recurring_signal",
               "feedbackIds": ["a1", "a2", "a3", "a4"],
-              "expectedDepartment": "maito_kylma",
+              "expectedCategory": "maito_kylma",
               "expectedThemeKeywords": ["tuoreus"],
               "windowFrom": "2026-06-18", "windowTo": "2026-07-01",
               "trend": "worsening", "minGroundedIds": 3, "expectAlert": false
@@ -19,7 +19,7 @@ public class ReportVerifierTests
             {
               "id": "safety", "kind": "alert_by_understanding",
               "feedbackIds": ["s1"],
-              "expectedDepartment": "rakennustarvike",
+              "expectedCategory": "rakennustarvike",
               "expectedThemeKeywords": ["turvallisuus"],
               "windowFrom": "2026-06-25", "windowTo": "2026-07-01",
               "trend": "stable", "minGroundedIds": 1, "expectAlert": true
@@ -31,7 +31,7 @@ public class ReportVerifierTests
     private static string Report(
         string dairyDirection = "paheneva",
         string dairyIds = """["a1","a2","a3","a4"]""",
-        string dairyDepartment = "maito_kylma",
+        string dairyCategory = "maito_kylma",
         string alerts = """[{"feedbackId":"s1"}]""",
         string windowFrom = "2026-06-10T00:00:00.0000000+00:00",
         string windowTo = "2026-07-02T00:00:00.0000000+00:00") => $$"""
@@ -40,12 +40,12 @@ public class ReportVerifierTests
           "alerts": {{alerts}},
           "themes": [
             {
-              "department": "{{dairyDepartment}}", "title": "Maidon tuoreus",
+              "category": "{{dairyCategory}}", "title": "Maidon tuoreus",
               "narrative": "Tuoreus heikkenee.", "count": 4,
               "direction": "{{dairyDirection}}", "feedbackIds": {{dairyIds}}
             },
             {
-              "department": "rakennustarvike", "title": "Terassi",
+              "category": "rakennustarvike", "title": "Terassi",
               "narrative": "Rakenne petti.", "count": 1,
               "direction": "vakaa", "feedbackIds": ["s1"]
             }
@@ -74,11 +74,11 @@ public class ReportVerifierTests
     }
 
     [Fact]
-    public void GroundingInWrongDepartment_DoesNotCount()
+    public void GroundingInWrongCategory_DoesNotCount()
     {
-        // The story ids appear under the WRONG department: misclassification,
+        // The story ids appear under the WRONG category: misclassification,
         // not grounding.
-        var results = ReportVerifier.Verify(GroundTruth, Report(dairyDepartment: "hevi"));
+        var results = ReportVerifier.Verify(GroundTruth, Report(dairyCategory: "hevi"));
 
         Assert.False(results[0].GroundingPass);
         Assert.Equal(0, results[0].GroundedIds);
@@ -87,7 +87,7 @@ public class ReportVerifierTests
     [Fact]
     public void UnexpectedTrendDirection_WarnsButDoesNotFail()
     {
-        // The report's direction is a department AGGREGATE; same-department
+        // The report's direction is a category AGGREGATE; same-category
         // noise legitimately dilutes it. Warning tier, not a gate.
         var results = ReportVerifier.Verify(GroundTruth, Report(dairyDirection: "laskeva"));
 
@@ -106,10 +106,10 @@ public class ReportVerifierTests
     }
 
     [Fact]
-    public void NoiseSharingTheDepartment_DoesNotBreakGrounding()
+    public void NoiseSharingTheCategory_DoesNotBreakGrounding()
     {
         // Production-normal: the dairy theme carries story ids PLUS noise ids
-        // the LLM classified into the same department.
+        // the LLM classified into the same category.
         var results = ReportVerifier.Verify(GroundTruth,
             Report(dairyIds: """["n9","a1","n8","a2","a3","n7","a4","n6"]"""));
 

@@ -142,7 +142,7 @@ app.MapPost("/interpret", async (
 // never a copy in the frontend.
 app.MapGet("/schema", () => Results.Ok(new
 {
-    departments = FeedbackIntelligence.Core.Structuring.StructuringSchema.Departments,
+    categories = FeedbackIntelligence.Core.Structuring.StructuringSchema.Categories,
     severities = FeedbackIntelligence.Core.Structuring.StructuringSchema.Severities,
     types = FeedbackIntelligence.Core.Structuring.StructuringSchema.Types,
 }));

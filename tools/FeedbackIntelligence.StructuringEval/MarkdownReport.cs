@@ -62,7 +62,7 @@ public static class MarkdownReport
 
         sb.AppendLine("## Side by side (sensibility judgment)");
         sb.AppendLine();
-        sb.AppendLine("Majority result over repetitions as department/severity/type, then theme of the first adherent repetition.");
+        sb.AppendLine("Majority result over repetitions as category/severity/type, then theme of the first adherent repetition.");
         sb.AppendLine("⚠ = repetitions disagreed; ✗ = no schema-adherent output at all. (n/m✓) = adherent repetitions.");
         sb.AppendLine();
         sb.AppendLine($"| id | text |{string.Join("|", eval.Candidates.Select(m => $" {Short(m)} "))}|");
@@ -107,7 +107,7 @@ public static class MarkdownReport
     }
 
     /// <summary>Fraction of items where every repetition was schema-adherent AND
-    /// produced the same department/severity/type triple.</summary>
+    /// produced the same category/severity/type triple.</summary>
     private static string Consistency(List<EvalRecord> records)
     {
         var byItem = records.GroupBy(r => r.ItemId).ToList();
@@ -116,7 +116,7 @@ public static class MarkdownReport
             var structures = g.Select(r => r.Validated.Structure).ToList();
             if (structures.Any(s => s is null))
                 return false;
-            return structures.Select(s => (s!.Department, s.Severity, s.Type)).Distinct().Count() == 1;
+            return structures.Select(s => (s!.Category, s.Severity, s.Type)).Distinct().Count() == 1;
         });
         return Rate(consistent, byItem.Count);
     }
@@ -131,11 +131,11 @@ public static class MarkdownReport
         if (structures.Count == 0)
             return " ✗ ";
 
-        var triples = structures.GroupBy(s => (s.Department, s.Severity, s.Type)).OrderByDescending(g => g.Count()).ToList();
+        var triples = structures.GroupBy(s => (s.Category, s.Severity, s.Type)).OrderByDescending(g => g.Count()).ToList();
         var majority = triples[0].Key;
         var flag = triples.Count > 1 ? " ⚠" : "";
         var theme = structures[0].Theme;
-        return $" {majority.Department}/{majority.Severity}/{majority.Type}{flag} “{Escape(theme)}” ({structures.Count}/{reps.Count}✓) ";
+        return $" {majority.Category}/{majority.Severity}/{majority.Type}{flag} “{Escape(theme)}” ({structures.Count}/{reps.Count}✓) ";
     }
 
     private static string Rate(int hit, int total) => total == 0 ? "–" : $"{100.0 * hit / total:F0}% ({hit}/{total})";

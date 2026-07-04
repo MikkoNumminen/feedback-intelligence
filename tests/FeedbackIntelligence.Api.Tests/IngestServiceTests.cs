@@ -62,7 +62,7 @@ public class IngestServiceTests : IDisposable
     [Fact]
     public async Task StructuringPath_StoresStructureAndNotes()
     {
-        var structuring = new FakeStructuring(Success(salvaged: true, notes: ["'department' was an array; kept first element"]));
+        var structuring = new FakeStructuring(Success(salvaged: true, notes: ["'category' was an array; kept first element"]));
         var request = new FeedbackRequest(null, "email", "maito oli vanhaa", "2026-07-01T10:00:00+03:00", null, null);
 
         var stored = await CreateService(structuring).IngestAsync(request, CancellationToken.None);

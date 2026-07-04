@@ -90,7 +90,7 @@ try
                 Console.WriteLine(
                     $"{(r.Pass ? "PASS" : "FAIL")} {r.StoryId}: grounding {r.GroundedIds}/{r.RequiredIds} required" +
                     $"{(r.WindowCovered ? "" : "; WINDOW MISMATCH — the report window does not cover the story window (wrong report?)")}" +
-                    $"; trend {r.ExpectedTrend} -> {r.ReportedDirection} {(r.TrendOk ? "ok" : "WARNING: diluted/contradicted — check same-department noise share")}" +
+                    $"; trend {r.ExpectedTrend} -> {r.ReportedDirection} {(r.TrendOk ? "ok" : "WARNING: diluted/contradicted — check same-category noise share")}" +
                     $"{(r.AlertExpected ? $"; alert {(r.AlertPass ? "present" : "MISSING")}" : "")}" +
                     $"; keywords in narrative: {(r.KeywordSeen ? "yes" : "no (informational)")}");
             }

@@ -12,7 +12,7 @@ namespace FeedbackIntelligence.Api.Analysis;
 
 /// <summary>
 /// Two-layer analysis. Layer 1 is deterministic and always succeeds: window
-/// query, alert collection, department grouping, counts, trend direction.
+/// query, alert collection, category grouping, counts, trend direction.
 /// Layer 2 is the LLM: Finnish narratives per group and alert nominations over
 /// keyword-less items, under a per-report call budget so one refresh can never
 /// starve the desk path on the shared GPU gate. Every LLM claim must cite
@@ -114,7 +114,7 @@ public sealed class ReportService(
         var themes = new List<ReportTheme>();
         var structured = items.Where(i => i.Structure is not null).ToList();
         foreach (var group in structured
-                     .GroupBy(i => i.Structure!.Department)
+                     .GroupBy(i => i.Structure!.Category)
                      .OrderByDescending(g => g.Count())
                      .ThenBy(g => g.Key, StringComparer.Ordinal))
         {
@@ -167,7 +167,7 @@ public sealed class ReportService(
     {
         var data = new StringBuilder();
         foreach (var item in batch)
-            data.AppendLine($"- [{item.Id}] ({item.Structure?.Department ?? "?"}/{item.Structure?.Severity ?? "?"}) \"{Excerpt(item.Text)}\"");
+            data.AppendLine($"- [{item.Id}] ({item.Structure?.Category ?? "?"}/{item.Structure?.Severity ?? "?"}) \"{Excerpt(item.Text)}\"");
 
         var raw = await TryLlmAsync(options.Value.AlertNominationPromptPath, data.ToString(), state, ct);
         if (raw is null)
@@ -194,18 +194,18 @@ public sealed class ReportService(
     }
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
-        string department, IReadOnlyList<StoredFeedback> groupItems, string direction, GenState state, CancellationToken ct)
+        string category, IReadOnlyList<StoredFeedback> groupItems, string direction, GenState state, CancellationToken ct)
     {
         var opts = options.Value;
         if (state.LlmCallsRemaining <= 0)
         {
             state.LlmFallbacks++;
-            logger.LogInformation("LLM budget exhausted; deterministic fallback for '{Department}'.", department);
+            logger.LogInformation("LLM budget exhausted; deterministic fallback for '{Category}'.", category);
             return null;
         }
 
         var data = new StringBuilder();
-        data.AppendLine($"osasto: {department}");
+        data.AppendLine($"osasto: {category}");
         data.AppendLine($"palautteita: {groupItems.Count}");
         data.AppendLine($"suunta: {direction}");
         data.AppendLine("vakavuudet: " + string.Join(", ", groupItems
@@ -224,7 +224,7 @@ public sealed class ReportService(
         if (!LlmJsonExtractor.TryExtractObject(raw, out var doc, out _))
         {
             state.LlmFallbacks++;
-            logger.LogWarning("Synthesis output for '{Department}' was unparseable; deterministic fallback used.", department);
+            logger.LogWarning("Synthesis output for '{Category}' was unparseable; deterministic fallback used.", category);
             return null;
         }
         using (doc)
@@ -235,7 +235,7 @@ public sealed class ReportService(
                 || !root.TryGetProperty("citedIds", out var cited) || cited.ValueKind != JsonValueKind.Array)
             {
                 state.LlmFallbacks++;
-                logger.LogWarning("Synthesis for '{Department}' missing required fields; fallback used.", department);
+                logger.LogWarning("Synthesis for '{Category}' missing required fields; fallback used.", category);
                 return null;
             }
 
@@ -251,8 +251,8 @@ public sealed class ReportService(
             {
                 state.DroppedClaims++;
                 logger.LogWarning(
-                    "Dropped ungrounded synthesis for '{Department}': cited [{Cited}] vs provided {ProvidedCount} ids.",
-                    department, string.Join(", ", citedIds), providedIds.Count);
+                    "Dropped ungrounded synthesis for '{Category}': cited [{Cited}] vs provided {ProvidedCount} ids.",
+                    category, string.Join(", ", citedIds), providedIds.Count);
                 return null;
             }
 
@@ -331,13 +331,13 @@ public sealed class ReportService(
         });
     }
 
-    private static string FallbackTitle(string department, IReadOnlyList<StoredFeedback> groupItems)
+    private static string FallbackTitle(string category, IReadOnlyList<StoredFeedback> groupItems)
     {
         var topTheme = groupItems
             .GroupBy(i => i.Structure!.Theme)
             .OrderByDescending(g => g.Count())
             .First().Key;
-        return $"{department}: {topTheme}";
+        return $"{category}: {topTheme}";
     }
 
     private static string FallbackNarrative(IReadOnlyList<StoredFeedback> groupItems, string direction)

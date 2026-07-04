@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fi">
 <head>
 <meta charset="utf-8">
@@ -164,7 +164,7 @@ function render(report, live) {
     for (const id of theme.feedbackIds) chips.appendChild(idChip(id));
     root.appendChild(node("div", "card", [
       node("strong", null, [theme.title]),
-      node("div", "muted", [`${theme.department} · ${theme.count} palautetta · suunta: ${theme.direction}` +
+      node("div", "muted", [`${theme.category} · ${theme.count} palautetta · suunta: ${theme.direction}` +
         (theme.narrativeFromLlm ? "" : " · automaattinen kooste")]),
       node("p", null, [theme.narrative]),
       chips,
@@ -189,7 +189,7 @@ async function openItem(id) {
     body.appendChild(node("p", "muted", [`${item.source} · ${short(item.timestamp)}`]));
     if (item.structure)
       body.appendChild(node("p", "muted", [
-        `osasto: ${item.structure.department} · aihe: ${item.structure.theme} · ` +
+        `osasto: ${item.structure.category} · aihe: ${item.structure.theme} · ` +
         `vakavuus: ${item.structure.severity} · tyyppi: ${item.structure.type}`,
       ]));
     if (item.corrections?.length)

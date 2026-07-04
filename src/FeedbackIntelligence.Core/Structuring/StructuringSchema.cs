@@ -8,7 +8,7 @@ namespace FeedbackIntelligence.Core.Structuring;
 /// </summary>
 public static class StructuringSchema
 {
-    public static readonly IReadOnlySet<string> Departments = new HashSet<string>(StringComparer.Ordinal)
+    public static readonly IReadOnlySet<string> Categories = new HashSet<string>(StringComparer.Ordinal)
     {
         "maito_kylma",
         "hevi",
@@ -50,7 +50,7 @@ public static class StructuringSchema
     /// </summary>
     public static readonly IReadOnlySet<string> Fields = new HashSet<string>(StringComparer.Ordinal)
     {
-        "department",
+        "category",
         "theme",
         "severity",
         "type",

@@ -135,7 +135,7 @@ public static class Commands
         }
         var s = r.GetProperty("structure");
         var salvaged = r.TryGetProperty("salvaged", out var sv) && sv.GetBoolean() ? Term.C(" (salvaged)", "2") : "";
-        Console.WriteLine($"  {Term.C("→", "32")} {s.GetProperty("department").GetString()} / " +
+        Console.WriteLine($"  {Term.C("→", "32")} {s.GetProperty("category").GetString()} / " +
             $"\"{s.GetProperty("theme").GetString()}\" / {s.GetProperty("severity").GetString()} / " +
             $"{s.GetProperty("type").GetString()} / {s.GetProperty("language").GetString()}" +
             $"   {Term.C($"{sw.Elapsed.TotalSeconds:F1}s", "2")}{salvaged}\n");
@@ -197,7 +197,7 @@ public static class Commands
             Console.WriteLine($"    {Term.C("▲ ALERT", "31")} [{a.GetProperty("feedbackId").GetString()}] {reason}");
         }
         foreach (var t in rep.GetProperty("themes").EnumerateArray().Take(6))
-            Console.WriteLine($"    {Term.C("●", "32")} {t.GetProperty("department").GetString(),-22} " +
+            Console.WriteLine($"    {Term.C("●", "32")} {t.GetProperty("category").GetString(),-22} " +
                 $"({t.GetProperty("count").GetInt32()}, {t.GetProperty("direction").GetString()})  {t.GetProperty("title").GetString()}");
         Console.WriteLine();
         return 0;
@@ -265,7 +265,7 @@ public static class Commands
         {
             var failed = it.TryGetProperty("structureFailed", out var sf) && sf.GetBoolean();
             var dept = it.TryGetProperty("structure", out var st) && st.ValueKind == JsonValueKind.Object
-                ? st.GetProperty("department").GetString() : (failed ? Term.C("structure_failed", "31") : "?");
+                ? st.GetProperty("category").GetString() : (failed ? Term.C("structure_failed", "31") : "?");
             var text = it.GetProperty("text").GetString() ?? "";
             if (text.Length > 60) text = text[..60] + "…";
             Console.WriteLine($"    {Term.C(it.GetProperty("source").GetString() ?? "?", "36"),-16} {dept,-22} {text}");

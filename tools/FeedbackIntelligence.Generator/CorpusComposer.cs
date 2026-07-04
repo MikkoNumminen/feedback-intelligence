@@ -80,7 +80,7 @@ public static class CorpusComposer
                 w.Story.Id,
                 w.Story.Kind,
                 idsByStory[w.Story.Id],
-                w.Story.Department,
+                w.Story.Category,
                 w.Story.ThemeKeywords,
                 w.From.ToString("yyyy-MM-dd"),
                 w.To.ToString("yyyy-MM-dd"),

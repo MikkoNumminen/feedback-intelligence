@@ -8,10 +8,10 @@ namespace FeedbackIntelligence.Llm.Tests;
 public class LlmStructuringServiceTests : IDisposable
 {
     private const string ValidJson =
-        """{"department": "maito_kylma", "theme": "tuotteiden tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
+        """{"category": "maito_kylma", "theme": "tuotteiden tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
 
     private const string InvalidJson =
-        """{"department": "kylmäosasto", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
+        """{"category": "kylmäosasto", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
 
     private readonly string _promptPath = Path.Combine(Path.GetTempPath(), $"structuring-test-{Guid.NewGuid():N}.txt");
 
@@ -34,7 +34,7 @@ public class LlmStructuringServiceTests : IDisposable
 
         Assert.False(result.Failed);
         Assert.False(result.Retried);
-        Assert.Equal("maito_kylma", result.Structure!.Department);
+        Assert.Equal("maito_kylma", result.Structure!.Category);
         Assert.Single(client.Prompts);
         Assert.Contains("maito oli vanhaa", client.Prompts[0]);
     }

@@ -56,7 +56,7 @@ public class CorrectionTelemetryTests : IDisposable
         var severity = telemetry.PerField.Single(f => f.Field == "severity");
         Assert.Equal(1, severity.Corrections);
         Assert.Equal(0.5, severity.Rate);
-        Assert.Equal(0, telemetry.PerField.Single(f => f.Field == "department").Corrections);
+        Assert.Equal(0, telemetry.PerField.Single(f => f.Field == "category").Corrections);
     }
 
     [Fact]

@@ -12,8 +12,8 @@ namespace FeedbackIntelligence.Generator;
 ///
 /// Gate design (review 2026-07-04): grounding, alert and window coverage are
 /// HARD gates — they are story-owned and deterministic. Trend is a WARNING
-/// tier: the report's direction is a department AGGREGATE, and same-department
-/// noise (untagged corpus items the LLM classifies into a story's department)
+/// tier: the report's direction is a category AGGREGATE, and same-category
+/// noise (untagged corpus items the LLM classifies into a story's category)
 /// legitimately dilutes it. A diluted trend does not fail acceptance, but it
 /// is surfaced loudly — it means the planted story is less visible in the
 /// demo, which the corpus author wants to know.
@@ -68,7 +68,7 @@ public static class ReportVerifier
         foreach (var story in stories)
         {
             var storyId = story.GetProperty("id").GetString()!;
-            var department = story.GetProperty("expectedDepartment").GetString()!;
+            var category = story.GetProperty("expectedCategory").GetString()!;
             var expectedIds = story.GetProperty("feedbackIds").EnumerateArray()
                 .Select(e => e.GetString()!)
                 .ToHashSet(StringComparer.Ordinal);
@@ -85,19 +85,19 @@ public static class ReportVerifier
             var windowCovered = IsWindowCovered(story, reportFrom, reportTo);
 
             // The story must ground inside the theme(s) of its expected
-            // department — grounding elsewhere is a misclassification. Extra
+            // category — grounding elsewhere is a misclassification. Extra
             // (noise) IDs in the theme are expected and do not matter.
-            var departmentThemes = themes
-                .Where(theme => theme.GetProperty("department").GetString() == department)
+            var categoryThemes = themes
+                .Where(theme => theme.GetProperty("category").GetString() == category)
                 .ToList();
-            var themeIds = departmentThemes
+            var themeIds = categoryThemes
                 .SelectMany(theme => theme.GetProperty("feedbackIds").EnumerateArray())
                 .Select(e => e.GetString()!)
                 .ToHashSet(StringComparer.Ordinal);
             var grounded = expectedIds.Count(themeIds.Contains);
 
-            var direction = departmentThemes.Count > 0
-                ? departmentThemes[0].GetProperty("direction").GetString()!
+            var direction = categoryThemes.Count > 0
+                ? categoryThemes[0].GetProperty("direction").GetString()!
                 : "(ei teemaa)";
             var trendOk = AcceptedDirections.TryGetValue(expectedTrend, out var accepted)
                 && accepted.Contains(direction, StringComparer.Ordinal);
@@ -106,7 +106,7 @@ public static class ReportVerifier
 
             // Informational only — narratives may phrase things differently;
             // the ID grounding above is the gate.
-            var narrativeText = string.Join(" ", departmentThemes.Select(theme =>
+            var narrativeText = string.Join(" ", categoryThemes.Select(theme =>
                 $"{theme.GetProperty("title").GetString()} {theme.GetProperty("narrative").GetString()}"));
             var keywordSeen = keywords.Any(k => narrativeText.Contains(k, StringComparison.OrdinalIgnoreCase));
 
