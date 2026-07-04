@@ -8,7 +8,7 @@ namespace FeedbackIntelligence.Api.Storage;
 
 /// <summary>One row per feedback item: raw text always preserved; structure is
 /// the AI's OUTPUT stored as a JSON column — deliberately no normalized
-/// category hierarchy (see CLAUDE.md, stack decisions).</summary>
+/// category hierarchy (see ADR-0008).</summary>
 public sealed record StoredFeedback(
     string Id,
     string Source,

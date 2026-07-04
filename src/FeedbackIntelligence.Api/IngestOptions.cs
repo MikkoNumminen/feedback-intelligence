@@ -4,7 +4,7 @@ namespace FeedbackIntelligence.Api;
 
 /// <summary>
 /// Containment configuration, mirroring the values measured in the
-/// mikkonumminen.dev RAG (see CLAUDE.md "reuse" notes). Bound from "Ingest",
+/// mikkonumminen.dev RAG (containment notes: docs/operations.md). Bound from "Ingest",
 /// validated at startup. Containment is architectural, not prompt-wording: a
 /// bounded input cannot smuggle a giant payload past the model.
 /// </summary>

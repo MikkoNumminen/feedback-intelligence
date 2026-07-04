@@ -7,7 +7,7 @@ namespace FeedbackIntelligence.Api.Telemetry;
 
 /// <summary>
 /// The ongoing quality measure that replaced the cancelled up-front model eval
-/// (CLAUDE.md, Phase 0 closure): summarizes per-field correction rates from
+/// (ADR-0003): summarizes per-field correction rates from
 /// the desk audit trail over time. Rising rates = the structuring model is
 /// drifting or underperforming on real input; the model stays swappable by
 /// config if this data ever says so.

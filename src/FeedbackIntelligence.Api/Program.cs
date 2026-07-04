@@ -227,7 +227,8 @@ app.MapGet("/report", async (
 });
 
 // The ongoing quality measure that replaced the cancelled model eval: per-field
-// desk correction rates over time (drift detector; see CLAUDE.md Phase 0 closure).
+// desk correction rates over time (drift detector; the quality measure that
+// replaced the cancelled up-front model eval — see ADR-0003).
 app.MapGet("/telemetry/corrections", async (
     FeedbackIntelligence.Api.Telemetry.CorrectionTelemetryService telemetry,
     IOptions<ReportOptions> reportOptions,

@@ -5,7 +5,7 @@ namespace FeedbackIntelligence.Llm.Tests;
 
 /// <summary>
 /// The salvage layer is tested against the EXACT failure shapes the 2026-07-03
-/// placeholder run caught (CLAUDE.md, Phase 0 closure): fenced JSON,
+/// placeholder run caught (ADR-0004): fenced JSON,
 /// category-as-array, invented enum values — plus the strict happy path.
 /// </summary>
 public class StructuringOutputParserTests

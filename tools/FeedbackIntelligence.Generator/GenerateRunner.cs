@@ -53,7 +53,7 @@ public sealed class GenerateRunner(IOptions<GeneratorOptions> options, IActiveDo
         foreach (var story in groundTruth.Stories)
             Console.WriteLine($"  {story.Id}: {story.FeedbackIds.Count} items, {story.WindowFrom}..{story.WindowTo}, {story.Trend}");
         if (nonEvidential)
-            Console.WriteLine("NON-EVIDENTIAL: composed from placeholder pool — dev machinery exercise only; nothing derived from this appears in any demo or report (CLAUDE.md hard rule).");
+            Console.WriteLine("NON-EVIDENTIAL: composed from placeholder pool — dev machinery exercise only; nothing derived from this appears in any demo or report (AGENTS.md hard rule).");
         return 0;
     }
 }

@@ -16,7 +16,7 @@ public static class MarkdownReport
         if (IsPlaceholderRun(eval))
         {
             sb.AppendLine("> ⚠ **NON-EVIDENTIAL — PIPELINE TEST ONLY.** Inputs are synthetic,");
-            sb.AppendLine("> LLM-generated placeholder texts. Per the CLAUDE.md hard rule these");
+            sb.AppendLine("> LLM-generated placeholder texts. Per the AGENTS.md hard rule these");
             sb.AppendLine("> results prove the pipeline and MUST NOT be used to pick the");
             sb.AppendLine("> structuring model. The model decision waits for the hand-written corpus.");
             sb.AppendLine();
@@ -148,7 +148,7 @@ public static class MarkdownReport
     }
 
     /// <summary>Placeholder runs are detected from the input path so the
-    /// non-evidential label cannot be forgotten (CLAUDE.md hard rule).</summary>
+    /// non-evidential label cannot be forgotten (AGENTS.md hard rule).</summary>
     public static bool IsPlaceholderRun(EvalOptions eval) =>
         eval.InputPath.Contains("placeholder", StringComparison.OrdinalIgnoreCase);
 
