@@ -3,9 +3,9 @@ using System.Text.Json;
 namespace FeedbackIntelligence.Api.Alerts;
 
 /// <summary>
-/// The committed keyword config (config/alert-keywords.json), loaded and
-/// validated at startup — a malformed or empty list must fail the boot, not
-/// silently disable the deterministic alert layer.
+/// The active domain's committed keyword config (domains/&lt;active&gt;/alert-keywords.json),
+/// loaded and validated at startup — a malformed or empty list must fail the boot,
+/// not silently disable the deterministic alert layer.
 /// </summary>
 public sealed class AlertKeywordSet
 {
