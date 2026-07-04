@@ -102,6 +102,12 @@ public sealed class ActiveDomain : IActiveDomain
         var types = ReadMap(root, "types") is { Count: > 0 } typ
             ? typ : new Dictionary<string, string>(CoreDefaults.Types, StringComparer.Ordinal);
 
+        // Ingest channels are domain-specific (no universal default), so required.
+        var sources = ReadStringArray(root, "sources")
+            ?? throw new InvalidOperationException($"{sourcePath}: 'sources' is required.");
+        if (sources.Count == 0)
+            throw new InvalidOperationException($"{sourcePath}: 'sources' must be non-empty.");
+
         return new DomainDescriptor
         {
             Name = name,
@@ -112,7 +118,21 @@ public sealed class ActiveDomain : IActiveDomain
             CategoryLabels = categories,
             SeverityLabels = severities,
             TypeLabels = types,
+            Sources = sources,
         };
+    }
+
+    /// <summary>Reads a JSON array of strings (order preserved); null if absent
+    /// or not an array.</summary>
+    private static List<string>? ReadStringArray(JsonElement root, string prop)
+    {
+        if (!root.TryGetProperty(prop, out var el) || el.ValueKind != JsonValueKind.Array)
+            return null;
+        return el.EnumerateArray()
+            .Where(e => e.ValueKind == JsonValueKind.String)
+            .Select(e => e.GetString()!)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .ToList();
     }
 
     /// <summary>Reads the optional "prompts" role→file map and resolves each file

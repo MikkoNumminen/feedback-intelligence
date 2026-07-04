@@ -10,8 +10,8 @@ public static partial class RequestValidator
     {
         var errors = ValidateText(request.Text, options);
 
-        if (!options.AllowedSources.Contains(request.Source, StringComparer.Ordinal))
-            errors.Add($"source must be one of [{string.Join(", ", options.AllowedSources)}], got '{request.Source}'.");
+        if (!domain.Sources.Contains(request.Source, StringComparer.Ordinal))
+            errors.Add($"source must be one of [{string.Join(", ", domain.Sources)}], got '{request.Source}'.");
 
         if (!TimestampNormalizer.TryNormalize(request.Timestamp, out _))
             errors.Add($"timestamp must be a parseable ISO-8601 instant, got '{request.Timestamp}'.");

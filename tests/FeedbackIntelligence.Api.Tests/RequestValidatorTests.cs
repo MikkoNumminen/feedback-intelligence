@@ -37,6 +37,22 @@ public class RequestValidatorTests
     }
 
     [Fact]
+    public void Source_IsValidatedAgainstTheActiveDomain()
+    {
+        var game = TestDomains.Game();
+        // A game channel ingests under the game domain — the full game
+        // ingest->report loop starts here — but is rejected under retail.
+        Assert.Empty(RequestValidator.Validate(Valid() with { Source = "steam_review" }, Options, game));
+        Assert.Contains(
+            RequestValidator.Validate(Valid() with { Source = "steam_review" }, Options, Retail),
+            e => e.Contains("source"));
+        // ...and a retail channel is foreign to the game domain.
+        Assert.Contains(
+            RequestValidator.Validate(Valid() with { Source = "google_review" }, Options, game),
+            e => e.Contains("source"));
+    }
+
+    [Fact]
     public void NonIsoTimestamp_IsRejected()
     {
         var errors = RequestValidator.Validate(Valid() with { Timestamp = "eilen kello kolme" }, Options, Retail);

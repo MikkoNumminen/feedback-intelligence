@@ -171,6 +171,7 @@ app.MapGet("/schema", (IActiveDomain domain) =>
         categories = d.CategoryLabels.Keys,
         severities = d.SeverityLabels.Keys,
         types = d.TypeLabels.Keys,
+        sources = d.Sources,
         categoryLabels = d.CategoryLabels,
         severityLabels = d.SeverityLabels,
         typeLabels = d.TypeLabels,

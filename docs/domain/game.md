@@ -47,25 +47,37 @@ into the corpus (the analyzer meets it cold). The pool is NON-EVIDENTIAL and
 registered in [../mock-data-register.md](../mock-data-register.md); the generated
 output is gitignored and regenerable.
 
+## The full ingest→report loop runs for game
+
+Ingest channels are domain data (`sources` in `domain.json`), so a game item
+flows the whole pipeline. Verified live with **zero GPU** (desk/`acceptedStructure`
+path skips the model at ingest; `--Report:MaxLlmCallsPerReport=0` keeps the report
+deterministic):
+
+- `POST /feedback` with `source: steam_review | discord | in_game` → **201**; a
+  retail channel (`email`) or retail category (`maito_kylma`) → **400** under the
+  game domain.
+- The deterministic alert layer fires the **game** lexicon (`data_loss` /
+  "save wiped").
+- `GET /report` groups by game categories (`bugs_crashes`, `matchmaking`), each
+  **grounded to the exact feedback IDs**, alert on top.
+
 ## Scope and known edges
 
-This module is a **switchability proof**, not a shipping product. `/schema`, the
-desk, and the report/deterministic paths work immediately; the generator now
-runs for game via the mock pool above. Two source-related edges remain (not
-blockers for this proof, flagged honestly):
+This module is a **switchability + loop proof**, not a shipping product. Remaining
+edges, flagged honestly:
 
-- **`Ingest:AllowedSources`** is still a retail-flavored list
-  (`google_review/email/web_form/desk`). Pushing the game corpus (sources
-  `steam_review/support_ticket/discord/in_game`) through `POST /feedback` would
-  be rejected until that list is domain-configurable — so the full game
-  ingest→report loop is not wired yet.
-- **`CorpusComposer`'s noise-source fallback** is a hardcoded retail source set,
-  used only when a noise item declares no source; the mock pool sidesteps it by
-  giving every item an explicit source. Making both source lists domain data is
-  the natural next step to full neutrality.
+- **The report's fallback prose and `direction` words are Finnish** (`vakaa`,
+  "N palautetta aikavälillä…"). Correct for retail, wrong-language for the English
+  game domain. The report *structure* (grouping, counts, IDs, alerts) is
+  domain-neutral; localizing the deterministic narrative + direction labels (make
+  them domain-provided) is the next neutrality step.
 - **The corpus pool path is not domain-owned.** `Generator:VariantsPath` /
   `OutputDir` stay global, so `--Domain:Active=game` alone does not pick up the
   game pool — the explicit `--Generator:VariantsPath=…`/`--Generator:OutputDir=…`
   above are required. It fails *safe* (a bare command errors with "variants file
   not found" rather than composing against the wrong pool); making the pool path a
   domain property is the clean fix.
+- **LLM-written game narratives** (synthesis with the model up) need an announced
+  GPU window to exercise, exactly like retail's live run — the loop above proves
+  the wiring without one.

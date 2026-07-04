@@ -53,6 +53,7 @@ it is templated with the active domain's taxonomy at load time via the
   },
   "severities": { "low": "Matala", "medium": "Keskitaso", "high": "Korkea", "critical": "Kriittinen" },
   "types": { "complaint": "Valitus", "praise": "Kehu", "suggestion": "Ehdotus", "question": "Kysymys", "other": "Muu" },
+  "sources": ["google_review", "email", "web_form", "desk"],  // REQUIRED: accepted ingest channels
   "prompts": {                           // role -> file, relative to the module dir
     "synthesis": "prompts/synthesis-v0.txt",
     "alertNomination": "prompts/alert-nomination-v0.txt"
@@ -66,6 +67,11 @@ it is templated with the active domain's taxonomy at load time via the
   inherit the core defaults (`low/medium/high/critical` and
   `complaint/praise/suggestion/question/other`) — most domains only author
   `categories`.
+- `sources` is **required and non-empty** — the ingest channels the domain
+  accepts as `source` values (a game studio's `steam_review`/`discord`/…, a
+  retailer's `google_review`/`email`/…). `POST /feedback` rejects a source not
+  in this list, so a domain that wants the desk UI must include `desk`. The
+  generator also draws from this list for a noise item that declares no source.
 - `categoryFieldLabel` is the domain's word for the category dimension
   (`osasto` for retail, `area` for game); it appears in the report and the desk.
 
@@ -108,7 +114,8 @@ the domain taxonomy and fails loudly on any mismatch. See
 
 ## Checklist: adding a domain
 
-1. `mkdir domains/<name>` and author `domain.json` (`categories` at minimum).
+1. `mkdir domains/<name>` and author `domain.json` (`categories` + `sources` at
+   minimum; include `desk` in `sources` if you want the desk UI).
 2. Add `alert-keywords.json` (the API loads it at startup).
 3. Add `prompts/synthesis-v0.txt` and `prompts/alert-nomination-v0.txt` in the
    domain's voice/language; list them in `domain.json`'s `prompts` map.

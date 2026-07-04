@@ -49,14 +49,16 @@ public static class CorpusComposer
             throw new InvalidDataException("No untagged pool items available for base noise.");
         var noiseShuffled = noisePool.Count > 0 ? Shuffle(noisePool, rng) : [];
         var noiseFrom = anchor.AddDays(-(options.NoiseWindowDays - 1));
-        string[] allSources = ["google_review", "email", "web_form", "desk"];
         for (var n = 0; n < options.NoiseCount; n++)
         {
             var item = noiseShuffled[n % noiseShuffled.Count];
             var dt = RandomTime(noiseFrom.AddDays(rng.Next(0, options.NoiseWindowDays)), rng, options);
+            // `??` short-circuits: PickNoiseSource (and its RNG draw) runs ONLY
+            // for a source-less noise item — so a pool whose items all declare a
+            // source consumes no extra randomness and stays byte-identical.
             drafts.Add(new Draft(
                 item.Text,
-                item.Source ?? allSources[rng.Next(allSources.Length)],
+                item.Source ?? PickNoiseSource(options, rng),
                 Stamp(dt),
                 null));
         }
@@ -179,6 +181,17 @@ public static class CorpusComposer
 
     private static string PickSource(StoryConfig story, Random rng) =>
         story.Sources[rng.Next(story.Sources.Count)];
+
+    /// <summary>Channel for a noise item that declares none — drawn from the
+    /// active domain's channels (never a hardcoded/foreign one).</summary>
+    private static string PickNoiseSource(GeneratorOptions options, Random rng)
+    {
+        if (options.Sources.Count == 0)
+            throw new InvalidDataException(
+                "A noise pool item has no 'source' and the active domain declares no sources to draw from — " +
+                "give the item a source or add sources to the domain module.");
+        return options.Sources[rng.Next(options.Sources.Count)];
+    }
 
     /// <summary>Single point of truth for the time-of-day policy — story and noise
     /// items must share one hour distribution, or an hour histogram leaks story

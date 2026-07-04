@@ -24,6 +24,10 @@ varasto_nouto | verkkokauppa_toimitus | muu
 Severities and types are not overridden — retail inherits the core defaults
 (`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).
 
+Ingest channels (`sources`): `google_review | email | web_form | desk` — the
+`source` values `POST /feedback` accepts. `desk` is the human-in-the-loop console
+channel; the others are external feedback channels.
+
 The structuring model receives these values through the neutral core prompt
 (`prompts/structuring-v0.txt`), templated from the active domain at load time;
 the desk UI renders the labels from `/schema`. **No retail value is written into

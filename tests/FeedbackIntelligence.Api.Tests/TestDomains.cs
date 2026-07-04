@@ -9,6 +9,9 @@ internal static class TestDomains
     public static DomainDescriptor Retail() =>
         ActiveDomain.LoadDescriptor(Path.Combine(RepoRoot(), "domains", "retail", "domain.json"), "retail");
 
+    public static DomainDescriptor Game() =>
+        ActiveDomain.LoadDescriptor(Path.Combine(RepoRoot(), "domains", "game", "domain.json"), "game");
+
     /// <summary>A fully-loaded retail <see cref="IActiveDomain"/> for services that
     /// take the domain by interface (paths resolve to the committed module). Pass
     /// <paramref name="promptOverride"/> to point every prompt role at a test file.</summary>
