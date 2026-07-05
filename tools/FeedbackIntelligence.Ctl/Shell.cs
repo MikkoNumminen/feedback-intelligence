@@ -37,7 +37,15 @@ public static class Shell
                 try { p.Kill(entireProcessTree: true); } catch { /* best effort */ }
                 return new RunResult(124, "");
             }
-            return new RunResult(p.ExitCode, (stdout.Result ?? "") + (stderr.Result ?? ""));
+            // The process exited. Normally the stream reads complete immediately, but
+            // a DETACHED grandchild (the API launched via Start-Process) can inherit
+            // and hold the stdout pipe open — making ReadToEnd().Result block forever.
+            // Bound the post-exit wait and use whatever was captured; callers that need
+            // a detached child's pid read it from a file, not from this output.
+            Task.WhenAll(stdout, stderr).Wait(2000);
+            var output = (stdout.IsCompletedSuccessfully ? stdout.Result : "")
+                + (stderr.IsCompletedSuccessfully ? stderr.Result : "");
+            return new RunResult(p.ExitCode, output);
         }
         catch (System.ComponentModel.Win32Exception)
         {

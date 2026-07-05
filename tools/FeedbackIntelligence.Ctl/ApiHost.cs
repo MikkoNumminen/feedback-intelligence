@@ -48,22 +48,32 @@ public static class ApiHost
         }
     }
 
-    /// <summary>Builds the API, then starts it detached on the demo DB. Returns
-    /// the pid, or null on failure.</summary>
-    public static int? Start()
+    /// <summary>Builds (optionally) the API, then starts it detached on the demo
+    /// DB. Returns the pid, or null on failure. <paramref name="build"/> is false
+    /// for a data switch, which never changes API code: rebuilding there is wasted
+    /// work and can HANG if a stray API instance still holds the DLL.</summary>
+    public static int? Start(bool build = true)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Config.PidFile)!);
 
-        Console.WriteLine("  " + Term.C("◐", "33") + " building the API …");
-        var build = Shell.Run("dotnet", ["build", Config.Abs(Config.ApiProject), "--nologo", "-v", "quiet"], 300000);
-        if (build.Code != 0)
+        if (build)
         {
-            Console.WriteLine("  " + Term.C("○ build failed", "31"));
-            Console.WriteLine(build.Output);
-            return null;
+            Console.WriteLine("  " + Term.C("◐", "33") + " building the API …");
+            var buildResult = Shell.Run("dotnet", ["build", Config.Abs(Config.ApiProject), "--nologo", "-v", "quiet"], 300000);
+            if (buildResult.Code != 0)
+            {
+                Console.WriteLine("  " + Term.C("○ build failed", "31"));
+                Console.WriteLine(buildResult.Output);
+                return null;
+            }
         }
 
         var dll = Path.Combine(Config.Abs(Config.ApiProject), "bin", "Debug", "net8.0", "FeedbackIntelligence.Api.dll");
+        if (!File.Exists(dll))
+        {
+            Console.WriteLine("  " + Term.C("○ the API is not built — run `up` first.", "31"));
+            return null;
+        }
         var apiDir = Config.Abs(Config.ApiProject);
         var db = Config.Abs(Config.DemoDbPath);
         var snapDir = Config.Abs("data/snapshots");
@@ -82,23 +92,33 @@ public static class ApiHost
         var argList = string.Join(",",
             $"'{Ps(dll)}'", "'--urls'", $"'{Ps(Config.BaseUrl)}'",
             "'--Ingest:DbPath=" + Ps(db) + "'", "'--Report:SnapshotDir=" + Ps(snapDir) + "'");
+        // Launch detached and have the launcher WRITE the pid to a file. We do NOT
+        // read the pid from Shell.Run's stdout: the detached API can inherit and hold
+        // that stdout pipe open, which would make the read block (the root cause of
+        // `up`/`data` hangs). A file is the reliable channel; Shell.Run itself now
+        // bounds its post-exit stream wait so it always returns.
+        var launchPidFile = Config.Abs(Path.Combine(".feedctl", "api.launch.pid"));
+        try { File.Delete(launchPidFile); } catch { /* best effort */ }
         var script =
-            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Ps(apiDir)}' " +
-            $"-WindowStyle Hidden -RedirectStandardOutput '{Ps(LogFile)}' -RedirectStandardError '{Ps(LogFile)}.err' -PassThru).Id";
-        var res = Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
-        // Start-Process prints the pid to stdout; Shell.Run appends stderr AFTER
-        // it, so a stray Start-Process warning would shadow the pid if we took the
-        // last line (observed: API launched, pid lost, board showed "started
-        // outside feedctl"). The pid is the FIRST bare-integer line — stdout
-        // precedes stderr. A non-zero exit code with a captured pid still means
-        // the process launched, so it is not treated as failure on its own.
-        var pidText = res.Output
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .FirstOrDefault(l => int.TryParse(l, out _));
-        if (pidText is null || !int.TryParse(pidText, out var pid))
+            $"$proc = Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Ps(apiDir)}' " +
+            $"-WindowStyle Hidden -RedirectStandardOutput '{Ps(LogFile)}' -RedirectStandardError '{Ps(LogFile)}.err' -PassThru; " +
+            $"Set-Content -Path '{Ps(launchPidFile)}' -Value $proc.Id -Encoding ascii -NoNewline";
+        Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
+
+        var pid = 0;
+        for (var attempt = 0; attempt < 30 && pid == 0; attempt++)
+        {
+            try
+            {
+                if (File.Exists(launchPidFile) && int.TryParse(File.ReadAllText(launchPidFile).Trim(), out var parsed))
+                    pid = parsed;
+            }
+            catch { /* file may be mid-write — retry */ }
+            if (pid == 0) System.Threading.Thread.Sleep(100);
+        }
+        if (pid == 0)
         {
             Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
-            Console.WriteLine(res.Output);
             return null;
         }
         File.WriteAllText(Config.PidFile, pid.ToString());
