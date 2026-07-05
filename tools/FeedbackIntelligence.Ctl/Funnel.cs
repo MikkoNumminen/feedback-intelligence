@@ -18,7 +18,10 @@ public static class Funnel
         var res = Shell.Run("tailscale", ["funnel", "status"], 10000);
         if (res.Code != 0 || !res.Output.Contains("Funnel on", StringComparison.OrdinalIgnoreCase))
             return new State(false, null, null);
-        var portMatch = Regex.Match(res.Output, @"127\.0\.0\.1:(\d+)");
+        // Match the local target port however Tailscale spells the loopback host
+        // (127.0.0.1 for `funnel --bg`, but be robust to localhost / IPv6 [::1]),
+        // so the 443-collision warning never silently misses.
+        var portMatch = Regex.Match(res.Output, @"(?:127\.0\.0\.1|localhost|\[::1\]|::1):(\d+)");
         int? target = portMatch.Success && int.TryParse(portMatch.Groups[1].Value, out var p) ? p : null;
         var url = res.Output.Split('\n').Select(l => l.Trim())
             .FirstOrDefault(l => l.StartsWith("https://", StringComparison.Ordinal))
