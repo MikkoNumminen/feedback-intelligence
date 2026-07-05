@@ -1,0 +1,72 @@
+{
+  "seed": 42,
+  "anchorDate": "2026-07-01",
+  "nonEvidential": false,
+  "stories": [
+    {
+      "id": "dairy-freshness-worsening",
+      "kind": "recurring_signal",
+      "feedbackIds": [
+        "gen-42-0001",
+        "gen-42-0034",
+        "gen-42-0050",
+        "gen-42-0057",
+        "gen-42-0063"
+      ],
+      "expectedCategory": "maito_kylma",
+      "expectedThemeKeywords": [
+        "maito",
+        "vanhent",
+        "tuore",
+        "päivä"
+      ],
+      "windowFrom": "2026-06-18",
+      "windowTo": "2026-07-01",
+      "trend": "worsening",
+      "minGroundedIds": 4,
+      "expectAlert": false
+    },
+    {
+      "id": "safety-no-keyword",
+      "kind": "alert_by_understanding",
+      "feedbackIds": [
+        "gen-42-0021"
+      ],
+      "expectedCategory": "rakennustarvike",
+      "expectedThemeKeywords": [
+        "runko",
+        "lank",
+        "katki",
+        "turvallisuu"
+      ],
+      "windowFrom": "2026-06-25",
+      "windowTo": "2026-07-01",
+      "trend": "stable",
+      "minGroundedIds": 1,
+      "expectAlert": true
+    },
+    {
+      "id": "availability-slow-burn",
+      "kind": "recurring_signal",
+      "feedbackIds": [
+        "gen-42-0000",
+        "gen-42-0009",
+        "gen-42-0017",
+        "gen-42-0028",
+        "gen-42-0060"
+      ],
+      "expectedCategory": "leipa",
+      "expectedThemeKeywords": [
+        "leip",
+        "saatav",
+        "hylly",
+        "lop"
+      ],
+      "windowFrom": "2026-06-11",
+      "windowTo": "2026-07-01",
+      "trend": "worsening",
+      "minGroundedIds": 3,
+      "expectAlert": false
+    }
+  ]
+}
