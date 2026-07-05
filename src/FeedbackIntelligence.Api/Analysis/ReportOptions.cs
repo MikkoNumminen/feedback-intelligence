@@ -20,6 +20,14 @@ public sealed class ReportOptions
     /// aggregation itself is unbounded and deterministic).</summary>
     public int MaxItemsPerLlmCall { get; init; } = 60;
 
+    /// <summary>Cap on the per-item alert SCREEN — one strict yes/no LLM call per
+    /// keyword-less complaint. Poro floods when selecting alerts from a list but
+    /// discriminates reliably on one item, so every candidate is judged alone.
+    /// These calls are tiny (one-word answer) and sit on their OWN budget, so the
+    /// safety screen never starves narrative synthesis. Set high enough to cover
+    /// every keyword-less complaint in a window. See ADR-0015 ("Poro tuning").</summary>
+    public int MaxAlertVerifyCalls { get; init; } = 80;
+
     /// <summary>Excerpt length for alert rows and LLM item lists.</summary>
     public int ExcerptChars { get; init; } = 120;
 
@@ -50,6 +58,8 @@ public sealed class ReportOptionsValidator : IValidateOptions<ReportOptions>
             failures.Add($"Report:SynthesisMaxOutputTokens must be >= 0, got {options.SynthesisMaxOutputTokens}.");
         if (options.MaxItemsPerLlmCall < 1)
             failures.Add($"Report:MaxItemsPerLlmCall must be positive, got {options.MaxItemsPerLlmCall}.");
+        if (options.MaxAlertVerifyCalls < 0)
+            failures.Add($"Report:MaxAlertVerifyCalls must be >= 0 (0 = no verify pass), got {options.MaxAlertVerifyCalls}.");
         if (options.ExcerptChars < 20)
             failures.Add($"Report:ExcerptChars must be >= 20, got {options.ExcerptChars}.");
         if (options.DefaultWindowDays < 1 || options.MaxWindowDays < options.DefaultWindowDays)

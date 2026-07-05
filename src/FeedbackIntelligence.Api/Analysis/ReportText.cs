@@ -34,6 +34,14 @@ internal static class ReportText
             : $"{count} feedback item(s) in the window. Top themes: {topThemes}. Trend: {directionLabel}. " +
               "(Automated summary — the language-model narrative was unavailable.)";
 
+    /// <summary>Generic reason shown for an LLM-screened safety alert when the
+    /// nomination pass returns no specific one — the per-item yes/no screen has
+    /// already decided it IS an alert, so the alert still shows.</summary>
+    public static string PossibleSafetyAlert(string language) =>
+        language == "fi"
+            ? "Malli tunnisti mahdollisen turvallisuusriskin — tarkista palaute."
+            : "The model flagged this as a possible safety risk — review the item.";
+
     /// <summary>Row labels for the digest fed to the synthesis model (not shown to
     /// the user, but kept in the domain's language so the model's input is coherent).</summary>
     public static SynthesisLabels Synthesis(string language) => language == "fi" ? SynthFi : SynthEn;

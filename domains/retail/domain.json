@@ -23,6 +23,7 @@
   "sources": ["google_review", "email", "web_form", "desk"],
   "prompts": {
     "synthesis": "prompts/synthesis-v0.txt",
-    "alertNomination": "prompts/alert-nomination-v0.txt"
+    "alertNomination": "prompts/alert-nomination-v0.txt",
+    "alertVerify": "prompts/alert-verify-v0.txt"
   }
 }

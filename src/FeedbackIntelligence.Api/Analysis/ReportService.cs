@@ -43,6 +43,7 @@ public sealed class ReportService(
     private sealed class GenState
     {
         public int LlmCallsRemaining;
+        public int AlertVerifiesRemaining;
         public int DroppedClaims;
         public int LlmFallbacks;
     }
@@ -73,7 +74,11 @@ public sealed class ReportService(
     {
         var opts = options.Value;
         var items = await store.QueryAsync(fromIso, toIso, opts.MaxItemsPerWindow, ct);
-        var state = new GenState { LlmCallsRemaining = opts.MaxLlmCallsPerReport };
+        var state = new GenState
+        {
+            LlmCallsRemaining = opts.MaxLlmCallsPerReport,
+            AlertVerifiesRemaining = opts.MaxAlertVerifyCalls,
+        };
 
         // --- Layer 1: deterministic alerts, always present ---
         var alerts = items
@@ -82,34 +87,49 @@ public sealed class ReportService(
             .Select(i => new ReportAlert(i.Id, i.Source, i.Timestamp, Excerpt(i.Text), i.Alerts, null))
             .ToList();
 
-        // --- Layer 2a: LLM alert nominations over keyword-less items (may ADD, never removes) ---
-        if (opts.AlertNominationEnabled)
+        // --- Layer 2a: LLM alert screen over keyword-less items (may ADD, never removes) ---
+        // Poro-8B discriminates safety reliably on ONE item as a strict yes/no,
+        // but both floods AND misses when asked to select from a list — so the
+        // reliable path is to screen every keyword-less item INDIVIDUALLY (recall +
+        // precision in one deterministic pass). Praise is never a safety alert;
+        // everything else stays in scope — a real hazard can be typed
+        // complaint/question/suggestion/other, and an item the model failed to
+        // structure could still be a safety report. A zero LLM budget means
+        // deterministic-only mode — the screen is skipped too.
+        if (opts.AlertNominationEnabled && state.LlmCallsRemaining > 0)
         {
-            var candidates = items.Where(i => i.Alerts.Count == 0).ToList();
-            var batches = candidates.Chunk(opts.MaxItemsPerLlmCall).ToList();
-            foreach (var batch in batches)
+            var candidates = items
+                .Where(i => i.Alerts.Count == 0 && (i.Structure is null || i.Structure.Type != "praise"))
+                .ToList();
+            var confirmed = new List<StoredFeedback>();
+            foreach (var item in candidates)
             {
-                if (state.LlmCallsRemaining <= 0)
+                if (state.AlertVerifiesRemaining <= 0)
                 {
-                    // No silent caps: the skipped coverage is logged.
-                    logger.LogWarning(
-                        "LLM call budget exhausted; {Remaining} nomination batches skipped this report.",
-                        batches.Count - batches.IndexOf(batch));
+                    // No silent caps: the unscreened tail is logged — unless the
+                    // screen was deliberately disabled with MaxAlertVerifyCalls=0.
+                    if (opts.MaxAlertVerifyCalls > 0)
+                        logger.LogWarning("Alert-screen budget exhausted; {N} keyword-less item(s) not screened.",
+                            candidates.Count - candidates.IndexOf(item));
                     break;
                 }
-                var nominated = await NominateAlertsAsync(batch, state, ct);
-                foreach (var (id, reason) in nominated)
-                {
-                    var item = batch.FirstOrDefault(i => i.Id == id);
-                    if (item is null)
-                    {
-                        state.DroppedClaims++;
-                        logger.LogWarning("Dropped LLM alert nomination for unknown id '{Id}' — not in the provided batch.", id);
-                        continue;
-                    }
-                    alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), [], reason));
-                }
+                if (await VerifyAlertAsync(item, state, ct))
+                    confirmed.Add(item);
             }
+
+            // One nomination call over ONLY the confirmed items yields a grounded
+            // reason each; fall back to a LOCALIZED generic line if the model omits
+            // one (the yes/no screen already decided it IS an alert).
+            var reasons = confirmed.Count > 0 && state.LlmCallsRemaining > 0
+                ? (await NominateAlertsAsync(confirmed, state, ct))
+                    .GroupBy(n => n.Id, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.First().Reason, StringComparer.Ordinal)
+                : new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var item in confirmed)
+                alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), [],
+                    reasons.TryGetValue(item.Id, out var r) && !string.IsNullOrWhiteSpace(r)
+                        ? r
+                        : ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language)));
         }
 
         // --- Layer 1: deterministic theme groups; Layer 2b: cited narratives ---
@@ -193,9 +213,58 @@ public sealed class ReportService(
                     && e.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
                 .Select(e => (
                     e.GetProperty("id").GetString()!,
+                    // Empty (not a hardcoded Finnish string) when the model omits a
+                    // reason — the caller substitutes a LOCALIZED generic line, so a
+                    // non-fi domain never renders Finnish here.
                     e.TryGetProperty("reason", out var r) && r.ValueKind == JsonValueKind.String
-                        ? r.GetString()! : "vaatii huomiota"))
+                        ? r.GetString()! : ""))
                 .ToList();
+        }
+    }
+
+    private static readonly char[] AnswerSeparators =
+        { ' ', '\t', '\n', '\r', '.', ',', '!', '?', ':', ';', '"', '\'', '-', '—', '(', ')' };
+
+    /// <summary>The per-item safety screen: is THIS one item an immediate safety
+    /// alert? Poro answers a focused yes/no ("kyllä"/"ei") reliably even though it
+    /// floods AND misses when selecting from a list. Tiny output, on its own budget.
+    /// The reply is matched by WHOLE WORD in the domain's language (fi kyllä/ei, en
+    /// yes/no): an explicit negative token rejects, an explicit affirmative confirms,
+    /// anything else — empty, a hedge, the Finnish filler "no" (= "well") — is NOT an
+    /// alert. Whole-word matching avoids "no" reading as a negative and an empty reply
+    /// reading as a keep; the genuine safety case answers a clean affirmative, so this
+    /// costs no real recall. An UNREACHABLE model fails CLOSED (see the catch): a model
+    /// outage yields no LLM alerts rather than one on every item.</summary>
+    private async Task<bool> VerifyAlertAsync(StoredFeedback item, GenState state, CancellationToken ct)
+    {
+        state.AlertVerifiesRemaining--;
+        try
+        {
+            var template = await File.ReadAllTextAsync(
+                AppPathResolver.Resolve(activeDomain.PromptPath("alertVerify")), ct);
+            var prompt = template.Replace("{{text}}", item.Text, StringComparison.Ordinal);
+            var chatOptions = new ChatOptions { Temperature = 0, MaxOutputTokens = 12 };
+            var response = await llmGate.RunAsync(
+                innerCt => synthesisClient.GetResponseAsync(prompt, chatOptions, innerCt), ct);
+            // A natural yes/no reads Poro's judgment far better than structured output:
+            // asked for {"alert": …} JSON it defaulted even the real safety case to
+            // false, but asked "kyllä vai ei?" it is exact (see ADR-0015).
+            var (yes, no) = activeDomain.Descriptor.Language == "fi" ? ("kyllä", "ei") : ("yes", "no");
+            var tokens = response.Text.ToLowerInvariant().Split(AnswerSeparators, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Contains(no, StringComparer.Ordinal)) return false;   // explicit "ei"/"no" → not an alert
+            return tokens.Contains(yes, StringComparer.Ordinal);            // explicit "kyllä"/"yes" → alert; else no
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Fail CLOSED on an unreachable model: produce NO LLM alert (the
+            // deterministic keyword layer still carries safety — ADR-0009). Failing
+            // open here would turn a model outage into an alert on every complaint.
+            logger.LogWarning(ex, "Alert screen call failed for '{Id}'; no LLM alert from it this report.", item.Id);
+            return false;
         }
     }
 

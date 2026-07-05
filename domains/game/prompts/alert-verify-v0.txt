@@ -1,0 +1,15 @@
+Decide whether this ONE player-feedback item genuinely needs immediate attention.
+
+An alert means ONLY one of these:
+- lost player progress or purchases
+- account compromise or unauthorized access
+- a charge or billing dispute
+- a fully blocking bug that makes the game unplayable
+
+Be VERY strict. Ordinary complaints — difficulty, balance, matchmaking wait, price, cosmetics, general dissatisfaction — are NOT alerts, even from an angry player.
+
+Answer with ONE word only: yes or no.
+
+Feedback: "{{text}}"
+
+Answer:

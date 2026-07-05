@@ -75,7 +75,7 @@ _ = app.Services.GetRequiredService<AlertKeywordSet>();
 // guarantee only covers an unreachable LLM, never a misconfigured domain.
 var activeDomain = app.Services.GetRequiredService<IActiveDomain>();
 var requiredPromptRoles = reportOptions.AlertNominationEnabled
-    ? new[] { "synthesis", "alertNomination" }
+    ? new[] { "synthesis", "alertNomination", "alertVerify" }
     : new[] { "synthesis" };
 foreach (var role in requiredPromptRoles)
 {
@@ -84,6 +84,15 @@ foreach (var role in requiredPromptRoles)
         throw new InvalidOperationException(
             $"Domain '{activeDomain.Name}' declares a '{role}' prompt but the file is missing: {promptPath}");
 }
+
+// The report layer (the yes/no alert-screen parser and ReportText) speaks fi and
+// en only. A domain declaring another language would mis-parse the screen (its
+// "no" token) and render fallback text in the wrong language — fail the boot
+// rather than silently misbehave. Add the language to both places to support it.
+if (reportOptions.AlertNominationEnabled && activeDomain.Descriptor.Language is not ("fi" or "en"))
+    throw new InvalidOperationException(
+        $"Domain '{activeDomain.Name}' language '{activeDomain.Descriptor.Language}' is not supported by the report " +
+        "alert screen (supported: fi, en). Add it to the screen parser and ReportText before shipping the domain.");
 
 // The desk-entry UI is always served and posts source="desk"; require the active
 // domain to accept that channel, or every desk save would 400 despite a working
