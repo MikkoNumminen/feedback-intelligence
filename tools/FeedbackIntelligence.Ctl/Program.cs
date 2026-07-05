@@ -12,8 +12,8 @@ internal static class Program
     [
         ("status", "live status board (one-shot)"),
         ("watch", "live board, refreshing (Ctrl-C exits)"),
-        ("up [--load]", "bring the demo live — refuses if the shared RAG is up"),
-        ("down", "stop API + ollama (frees the GPU)"),
+        ("up [--load]", "ollama + API + public Funnel — refuses if the shared RAG is up"),
+        ("down", "stop Funnel + API + ollama (frees the GPU + port 443)"),
         ("data <mode>", "choose dataset: mock | demo | clean (wipes + loads)"),
         ("demo [--seed N]", "generate → load → report → verify (full run-through)"),
         ("interpret \"text\"", "live desk structuring of one sentence, timed"),

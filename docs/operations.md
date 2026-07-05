@@ -65,11 +65,13 @@ demo, modelled on the sibling RAG's `ragctl`. It orchestrates docker, the
 
 - **`status` / `watch`** — a colour-coded live board: docker · **shared-RAG
   guard** · isolated ollama · model loaded · GPU (nvidia-smi) · API process ·
-  `/health` · demo data count · snapshot. Headline verdict: "demo is LIVE".
+  `/health` · demo data count · **public link (Funnel)** · snapshot. Headline
+  verdict: "demo is LIVE".
 - **`up` / `down`** — bring the demo live (start ollama → start the API
-  detached with a tracked PID → warm Poro) / stop both and free the GPU. `up`
-  **refuses if the shared `mikkonumminendev` RAG is running** — the
-  announce-before-GPU hard rule, enforced by the tool.
+  detached with a tracked PID → warm Poro → **expose the public Tailscale
+  Funnel**) / take the Funnel down, stop both, free the GPU. `up` **refuses if
+  the shared `mikkonumminendev` RAG is running** — the announce-before-GPU hard
+  rule, enforced by the tool.
 - **`data <mock|demo|clean>`** — explicitly choose the DB's starting data:
   `mock` (AI-generated placeholder corpus, non-evidential), `demo` (the real
   seeded corpus), or `clean` (empty). Each wipes the DB and restarts the API on
@@ -95,10 +97,18 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
   publication is opt-in on purpose: a placeholder-derived snapshot must never be
   deployed (verify provenance against
   [mock-data-register.md](mock-data-register.md)).
-- **Backend → Tailscale Funnel.** The API's CORS allowlist
+- **Backend → Tailscale Funnel**, owned by feedctl (`up` exposes it on port 443
+  → the API's `:5088`, `down` frees 443). The API's CORS allowlist
   (`Ingest:AllowedCorsOrigins`, empty = same-origin only) must include the SWA
   origin (no trailing slash — it is validated at startup). ForwardedHeaders runs
   before the rate limiter so tunneled clients carry their real IP.
+- **Coexistence with the sibling RAG (`ragctl`).** Both projects are
+  single-tenant on TWO shared resources: the one GPU, and the Funnel's public
+  port 443 (ragctl funnels its `:8000` backend; feedctl funnels the API on
+  `:5088`). **Run one at a time.** The GPU is guarded (`up` refuses while the RAG
+  container is up); the Funnel is feedctl-owned (up exposes it, down frees 443)
+  and the board's `public link` row warns if 443 points at the RAG. To switch:
+  `feedctl down` (or `ragctl down`) first, then bring the other up.
 - Snapshot mode is verified with the backend deliberately stopped.
 
 ### Deploying the frontend to Azure ($0, one-time setup)

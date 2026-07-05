@@ -34,14 +34,15 @@ public static class Board
         var api = Task.Run(CheckApi);
         var health = CheckHealthAsync();
         var data = CheckDataAsync();
+        var funnel = Task.Run(CheckFunnel);
         var snapshot = Task.Run(CheckSnapshot);
 
-        await Task.WhenAll(rag, ollama, model, gpu, api, health, data, snapshot);
+        await Task.WhenAll(rag, ollama, model, gpu, api, health, data, funnel, snapshot);
         return
         [
             docker,
             rag.Result, ollama.Result, model.Result, gpu.Result,
-            api.Result, await health, await data, snapshot.Result,
+            api.Result, await health, await data, funnel.Result, snapshot.Result,
         ];
     }
 
@@ -168,4 +169,17 @@ public static class Board
         File.Exists(Config.Abs(Config.SnapshotJson))
             ? Row2("report snapshot", Term.State.Ok, "present (backend-down fallback ready)", false)
             : Row2("report snapshot", Term.State.Warn, "none yet — `report`", false);
+
+    /// <summary>The public Tailscale Funnel (the shared/Azure link's backend).
+    /// Warns if it is off, or if port 443 points at a DIFFERENT target than this
+    /// API — that means the sibling RAG holds it.</summary>
+    private static Row CheckFunnel()
+    {
+        var s = Funnel.Status();
+        if (!s.On)
+            return Row2("public link", Term.State.Warn, "off — `up` exposes it", false);
+        if (s.TargetPort is int t && t != Config.ApiPort)
+            return Row2("public link", Term.State.Warn, $"443 -> :{t} (NOT this API - the RAG?)", false);
+        return Row2("public link", Term.State.Ok, s.Url ?? "on", false);
+    }
 }
