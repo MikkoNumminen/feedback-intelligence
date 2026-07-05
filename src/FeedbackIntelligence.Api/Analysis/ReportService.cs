@@ -93,8 +93,9 @@ public sealed class ReportService(
         // reliable path is to screen every keyword-less COMPLAINT individually
         // (recall + precision in one deterministic pass). Praise, suggestions and
         // questions are never safety alerts; an item the model failed to structure
-        // is kept in scope (its raw text could be a safety report).
-        if (opts.AlertNominationEnabled)
+        // is kept in scope (its raw text could be a safety report). A zero LLM
+        // budget means deterministic-only mode — the screen is skipped too.
+        if (opts.AlertNominationEnabled && state.LlmCallsRemaining > 0)
         {
             var candidates = items
                 .Where(i => i.Alerts.Count == 0 && (i.Structure is null || i.Structure.Type == "complaint"))
@@ -213,12 +214,12 @@ public sealed class ReportService(
         }
     }
 
-    /// <summary>Stage-2 precision check: is THIS one item genuinely an immediate
-    /// safety alert? Poro answers a focused yes/no ("kyllä"/"ei") reliably even
-    /// though it floods when selecting from a list. Tiny output, its own budget.
-    /// Recall-biased: only a clear "ei" rejects; an error or ambiguous answer
-    /// KEEPS the nomination — a real safety alert must never be lost to an
-    /// infrastructure hiccup, only to an explicit "no".</summary>
+    /// <summary>The per-item safety screen: is THIS one item an immediate safety
+    /// alert? Poro answers a focused yes/no ("kyllä"/"ei") reliably even though it
+    /// floods AND misses when selecting from a list. Tiny output, on its own budget.
+    /// A SUCCESSFUL answer is recall-biased (only an explicit "ei"/"no" rejects; an
+    /// ambiguous one keeps); an UNREACHABLE model fails CLOSED (see the catch), so
+    /// a model outage yields no LLM alerts rather than one on every complaint.</summary>
     private async Task<bool> VerifyAlertAsync(StoredFeedback item, GenState state, CancellationToken ct)
     {
         state.AlertVerifiesRemaining--;
@@ -247,8 +248,11 @@ public sealed class ReportService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Alert verify failed for '{Id}'; keeping the nomination (fail-open).", item.Id);
-            return true;
+            // Fail CLOSED on an unreachable model: produce NO LLM alert (the
+            // deterministic keyword layer still carries safety — ADR-0009). Failing
+            // open here would turn a model outage into an alert on every complaint.
+            logger.LogWarning(ex, "Alert screen call failed for '{Id}'; no LLM alert from it this report.", item.Id);
+            return false;
         }
     }
 

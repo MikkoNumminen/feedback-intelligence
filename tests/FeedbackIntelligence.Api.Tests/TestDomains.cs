@@ -38,6 +38,7 @@ internal static class TestDomains
             {
                 ["synthesis"] = promptOverride ?? Path.Combine(dir, "prompts", "synthesis-v0.txt"),
                 ["alertNomination"] = promptOverride ?? Path.Combine(dir, "prompts", "alert-nomination-v0.txt"),
+                ["alertVerify"] = promptOverride ?? Path.Combine(dir, "prompts", "alert-verify-v0.txt"),
             };
         }
 

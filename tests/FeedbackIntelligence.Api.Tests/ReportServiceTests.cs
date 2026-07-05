@@ -126,11 +126,13 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task AlertNomination_UnknownIdDropped_KnownIdAdded()
+    public async Task AlertScreen_ConfirmedItem_BecomesAlert_WithGroundedReason()
     {
-        await SeedDairyAsync(1, 2);
+        await SeedDairyAsync(0, 1); // one keyword-less complaint: "late-0"
+        // Per-item screen answers "kyllä"; the reason call then supplies a grounded reason.
         var llm = new ScriptedChatClient(
-            """{"alerts": [{"id": "late-0", "reason": "rakenteellinen vika"}, {"id": "vieras-id", "reason": "x"}]}""",
+            "kyllä",
+            """{"alerts": [{"id": "late-0", "reason": "rakenteellinen vika"}]}""",
             "ei-jsonia"); // theme synthesis falls back
 
         var report = await CreateService(llm, nominations: true).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
@@ -138,7 +140,17 @@ public class ReportServiceTests : IDisposable
         var alert = Assert.Single(report.Alerts);
         Assert.Equal("late-0", alert.FeedbackId);
         Assert.Equal("rakenteellinen vika", alert.LlmReason);
-        Assert.True(report.DroppedClaimCount >= 1); // the unknown id was dropped and counted
+    }
+
+    [Fact]
+    public async Task AlertScreen_RejectedItem_ProducesNoLlmAlert()
+    {
+        await SeedDairyAsync(0, 1); // one keyword-less complaint
+        // The per-item screen answers "ei" — an ordinary complaint is not a safety alert.
+        var report = await CreateService(new ScriptedChatClient("ei"), nominations: true)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Empty(report.Alerts);
     }
 
     [Fact]
