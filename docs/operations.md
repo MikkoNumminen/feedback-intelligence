@@ -119,10 +119,12 @@ repo settings:
    az group create -n rg-feedback-intelligence -l westeurope
    az staticwebapp create -n feedback-intelligence -g rg-feedback-intelligence -l westeurope --sku Free
    ```
-2. **Deployment token → GitHub secret; Funnel URL → GitHub variable:**
+2. **Deployment token → GitHub secret; Funnel URL → GitHub variable.** Pipe the
+   token straight into `gh` so it never lands in shell history. Set **both** — the
+   workflow gates on the variable, but the deploy step needs the token too:
    ```bash
-   TOKEN=$(az staticwebapp secrets list -n feedback-intelligence -g rg-feedback-intelligence --query "properties.apiKey" -o tsv)
-   gh secret   set AZURE_STATIC_WEB_APPS_API_TOKEN -R <owner>/feedback-intelligence -b "$TOKEN"
+   az staticwebapp secrets list -n feedback-intelligence -g rg-feedback-intelligence --query "properties.apiKey" -o tsv \
+     | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN -R <owner>/feedback-intelligence --body-file -
    gh variable set FUNNEL_API_BASE -R <owner>/feedback-intelligence -b "https://<machine>.<tailnet>.ts.net"
    ```
 3. **CORS round-trip (LOCAL machine)** — the deploy succeeds but every API call is
