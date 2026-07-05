@@ -74,12 +74,17 @@ public static class ApiHost
         // does. (Repo-root CWD left the Llm config empty and crashed startup.)
         // domains/ and prompts/ resolve via the binary's own dir (copied at
         // build); DB + snapshot are absolute so they are CWD-independent.
+        // PowerShell single-quoted strings escape an apostrophe by doubling it;
+        // a path like C:\Users\O'Brien would otherwise close the string (parse
+        // error, or worse a command-injection surface). Escape every value
+        // interpolated into the single-quoted script below.
+        static string Ps(string s) => s.Replace("'", "''");
         var argList = string.Join(",",
-            $"'{dll}'", "'--urls'", $"'{Config.BaseUrl}'",
-            "'--Ingest:DbPath=" + db + "'", "'--Report:SnapshotDir=" + snapDir + "'");
+            $"'{Ps(dll)}'", "'--urls'", $"'{Ps(Config.BaseUrl)}'",
+            "'--Ingest:DbPath=" + Ps(db) + "'", "'--Report:SnapshotDir=" + Ps(snapDir) + "'");
         var script =
-            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{apiDir}' " +
-            $"-WindowStyle Hidden -RedirectStandardOutput '{LogFile}' -RedirectStandardError '{LogFile}.err' -PassThru).Id";
+            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Ps(apiDir)}' " +
+            $"-WindowStyle Hidden -RedirectStandardOutput '{Ps(LogFile)}' -RedirectStandardError '{Ps(LogFile)}.err' -PassThru).Id";
         var res = Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
         // Start-Process prints the pid to stdout; Shell.Run appends stderr AFTER
         // it, so a stray Start-Process warning would shadow the pid if we took the
