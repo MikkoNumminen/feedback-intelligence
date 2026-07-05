@@ -8,7 +8,7 @@ replacement.
 | artifact | created | what it is | replaced by |
 |---|---|---|---|
 | `data/eval/placeholder-inputs.jsonl` | 2026-07-03 | 9 session-generated Finnish texts for the Phase 0 pipeline eval | permanent pipeline fixture; never evidential |
-| `data/corpus/dev-placeholder-core.jsonl` | 2026-07-03 | 15 session-generated texts standing in for the hand-written core corpus | `data/corpus/core.jsonl` (TODO #1) |
+| `data/corpus/dev-placeholder-core.jsonl` | 2026-07-03 | 15 session-generated texts standing in for the hand-written core corpus | **SUPERSEDED 2026-07-05** by `data/corpus/core.jsonl` (Mikko's 27 hand-written texts); placeholder retained only for generator machinery/byte-identity tests |
 | `data/corpus/dev-placeholder-variants.jsonl` | 2026-07-03 | 39 session-authored rewordings substituting for a real `variants` LLM run | `data/corpus/variants.jsonl` from the announced run after TODO #1 |
 | `data/corpus/generated-placeholder-*.jsonl`, `ground-truth-placeholder-*` | 2026-07-03 | deterministic compositions from the dev pool (gitignored, regenerable) | `generated-42.jsonl` + `ground-truth-42.json` from the real pool |
 | `data/demo-placeholder.db` | 2026-07-03 | run-through database (gitignored): 32 placeholder corpus items pushed through POST /feedback + 3 mock desk entries (`desk-runthrough-*`, texts marked MOCK) | wiped; real corpus ingested live in the announced GPU window (TODO #12) |
