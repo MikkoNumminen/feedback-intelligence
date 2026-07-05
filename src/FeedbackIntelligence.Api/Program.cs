@@ -75,7 +75,7 @@ _ = app.Services.GetRequiredService<AlertKeywordSet>();
 // guarantee only covers an unreachable LLM, never a misconfigured domain.
 var activeDomain = app.Services.GetRequiredService<IActiveDomain>();
 var requiredPromptRoles = reportOptions.AlertNominationEnabled
-    ? new[] { "synthesis", "alertNomination" }
+    ? new[] { "synthesis", "alertNomination", "alertVerify" }
     : new[] { "synthesis" };
 foreach (var role in requiredPromptRoles)
 {

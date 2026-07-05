@@ -19,7 +19,12 @@ Concretely, two layers, in this order:
 2. **LLM layer — behind it.** Only two jobs: structuring messy input into the
    schema, and writing grounded Finnish synthesis over the structured items. The
    LLM may **add** (e.g. nominate an alert the keywords missed); it can never
-   **remove** a deterministic result.
+   **remove** a deterministic result. The LLM (Poro-2-8B) is used to its
+   strengths, measured on the real corpus: structuring gets each category as
+   `"key" (Finnish label)` (not a bare key), and the LLM alert layer screens
+   each keyword-less complaint **individually** as a strict yes/no (Poro floods
+   *and* misses when selecting from a list, but discriminates flawlessly on one
+   item). See [ADR-0015](decisions/0015-poro-real-corpus-tuning.md) for the knobs.
 
 ## Ingest pipeline — one endpoint, source-valued channels
 

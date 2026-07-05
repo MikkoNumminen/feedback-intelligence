@@ -43,6 +43,7 @@ public sealed class ReportService(
     private sealed class GenState
     {
         public int LlmCallsRemaining;
+        public int AlertVerifiesRemaining;
         public int DroppedClaims;
         public int LlmFallbacks;
     }
@@ -73,7 +74,11 @@ public sealed class ReportService(
     {
         var opts = options.Value;
         var items = await store.QueryAsync(fromIso, toIso, opts.MaxItemsPerWindow, ct);
-        var state = new GenState { LlmCallsRemaining = opts.MaxLlmCallsPerReport };
+        var state = new GenState
+        {
+            LlmCallsRemaining = opts.MaxLlmCallsPerReport,
+            AlertVerifiesRemaining = opts.MaxAlertVerifyCalls,
+        };
 
         // --- Layer 1: deterministic alerts, always present ---
         var alerts = items
@@ -82,34 +87,43 @@ public sealed class ReportService(
             .Select(i => new ReportAlert(i.Id, i.Source, i.Timestamp, Excerpt(i.Text), i.Alerts, null))
             .ToList();
 
-        // --- Layer 2a: LLM alert nominations over keyword-less items (may ADD, never removes) ---
+        // --- Layer 2a: LLM alert screen over keyword-less items (may ADD, never removes) ---
+        // Poro-8B discriminates safety reliably on ONE item as a strict yes/no,
+        // but both floods AND misses when asked to select from a list — so the
+        // reliable path is to screen every keyword-less COMPLAINT individually
+        // (recall + precision in one deterministic pass). Praise, suggestions and
+        // questions are never safety alerts; an item the model failed to structure
+        // is kept in scope (its raw text could be a safety report).
         if (opts.AlertNominationEnabled)
         {
-            var candidates = items.Where(i => i.Alerts.Count == 0).ToList();
-            var batches = candidates.Chunk(opts.MaxItemsPerLlmCall).ToList();
-            foreach (var batch in batches)
+            var candidates = items
+                .Where(i => i.Alerts.Count == 0 && (i.Structure is null || i.Structure.Type == "complaint"))
+                .ToList();
+            var confirmed = new List<StoredFeedback>();
+            foreach (var item in candidates)
             {
-                if (state.LlmCallsRemaining <= 0)
+                if (state.AlertVerifiesRemaining <= 0)
                 {
-                    // No silent caps: the skipped coverage is logged.
-                    logger.LogWarning(
-                        "LLM call budget exhausted; {Remaining} nomination batches skipped this report.",
-                        batches.Count - batches.IndexOf(batch));
+                    // No silent caps: the unscreened tail is logged.
+                    logger.LogWarning("Alert-screen budget exhausted; {N} keyword-less complaint(s) not screened.",
+                        candidates.Count - candidates.IndexOf(item));
                     break;
                 }
-                var nominated = await NominateAlertsAsync(batch, state, ct);
-                foreach (var (id, reason) in nominated)
-                {
-                    var item = batch.FirstOrDefault(i => i.Id == id);
-                    if (item is null)
-                    {
-                        state.DroppedClaims++;
-                        logger.LogWarning("Dropped LLM alert nomination for unknown id '{Id}' — not in the provided batch.", id);
-                        continue;
-                    }
-                    alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), [], reason));
-                }
+                if (await VerifyAlertAsync(item, state, ct))
+                    confirmed.Add(item);
             }
+
+            // One nomination call over ONLY the confirmed items yields a grounded
+            // Finnish reason each; fall back to a localized generic line if the
+            // model omits one (the yes/no screen already decided it IS an alert).
+            var reasons = confirmed.Count > 0 && state.LlmCallsRemaining > 0
+                ? (await NominateAlertsAsync(confirmed, state, ct))
+                    .GroupBy(n => n.Id, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.First().Reason, StringComparer.Ordinal)
+                : new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var item in confirmed)
+                alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), [],
+                    reasons.TryGetValue(item.Id, out var r) ? r : ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language)));
         }
 
         // --- Layer 1: deterministic theme groups; Layer 2b: cited narratives ---
@@ -196,6 +210,45 @@ public sealed class ReportService(
                     e.TryGetProperty("reason", out var r) && r.ValueKind == JsonValueKind.String
                         ? r.GetString()! : "vaatii huomiota"))
                 .ToList();
+        }
+    }
+
+    /// <summary>Stage-2 precision check: is THIS one item genuinely an immediate
+    /// safety alert? Poro answers a focused yes/no ("kyllä"/"ei") reliably even
+    /// though it floods when selecting from a list. Tiny output, its own budget.
+    /// Recall-biased: only a clear "ei" rejects; an error or ambiguous answer
+    /// KEEPS the nomination — a real safety alert must never be lost to an
+    /// infrastructure hiccup, only to an explicit "no".</summary>
+    private async Task<bool> VerifyAlertAsync(StoredFeedback item, GenState state, CancellationToken ct)
+    {
+        state.AlertVerifiesRemaining--;
+        try
+        {
+            var template = await File.ReadAllTextAsync(
+                AppPathResolver.Resolve(activeDomain.PromptPath("alertVerify")), ct);
+            var prompt = template.Replace("{{text}}", item.Text, StringComparison.Ordinal);
+            var chatOptions = new ChatOptions { Temperature = 0, MaxOutputTokens = 12 };
+            var response = await llmGate.RunAsync(
+                innerCt => synthesisClient.GetResponseAsync(prompt, chatOptions, innerCt), ct);
+            // A natural yes/no reads Poro's judgment far better than structured
+            // output: asked for {"alert": …} JSON it defaulted even the real safety
+            // case to false, but asked "kyllä vai ei?" it is exact (see ADR-0015).
+            // Recall-biased across the supported languages (fi "ei", en "no"): only
+            // an explicit negative rejects; anything else keeps the nomination
+            // (fail-open), so a genuine safety alert is never lost to a phrasing quirk.
+            var answer = response.Text.TrimStart().ToLowerInvariant();
+            var isNo = answer.StartsWith("ei", StringComparison.Ordinal)
+                || answer.StartsWith("no", StringComparison.Ordinal);
+            return !isNo;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Alert verify failed for '{Id}'; keeping the nomination (fail-open).", item.Id);
+            return true;
         }
     }
 
