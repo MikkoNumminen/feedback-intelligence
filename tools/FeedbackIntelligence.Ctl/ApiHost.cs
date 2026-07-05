@@ -64,17 +64,21 @@ public static class ApiHost
         }
 
         var dll = Path.Combine(Config.Abs(Config.ApiProject), "bin", "Debug", "net8.0", "FeedbackIntelligence.Api.dll");
+        var apiDir = Config.Abs(Config.ApiProject);
         var db = Config.Abs(Config.DemoDbPath);
         var snapDir = Config.Abs("data/snapshots");
         // Start-Process detaches, redirects logs to a file, and -PassThru gives
-        // us the PID to track. Working dir = repo root so the API resolves
-        // config/prompts relative to it; DB + snapshot dir are absolute so they
-        // are CWD-independent and match where feedctl looks for them.
+        // us the PID to track. Working dir = the API PROJECT dir (NOT the repo
+        // root): ASP.NET's ContentRoot defaults to the CWD, so it must be where
+        // appsettings.json and wwwroot live — exactly what `dotnet run --project`
+        // does. (Repo-root CWD left the Llm config empty and crashed startup.)
+        // domains/ and prompts/ resolve via the binary's own dir (copied at
+        // build); DB + snapshot are absolute so they are CWD-independent.
         var argList = string.Join(",",
             $"'{dll}'", "'--urls'", $"'{Config.BaseUrl}'",
             "'--Ingest:DbPath=" + db + "'", "'--Report:SnapshotDir=" + snapDir + "'");
         var script =
-            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Config.RepoRoot}' " +
+            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{apiDir}' " +
             $"-WindowStyle Hidden -RedirectStandardOutput '{LogFile}' -RedirectStandardError '{LogFile}.err' -PassThru).Id";
         var res = Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
         var pidText = res.Output.Trim().Split('\n').LastOrDefault()?.Trim();
