@@ -64,21 +64,38 @@ public static class ApiHost
         }
 
         var dll = Path.Combine(Config.Abs(Config.ApiProject), "bin", "Debug", "net8.0", "FeedbackIntelligence.Api.dll");
+        var apiDir = Config.Abs(Config.ApiProject);
         var db = Config.Abs(Config.DemoDbPath);
         var snapDir = Config.Abs("data/snapshots");
         // Start-Process detaches, redirects logs to a file, and -PassThru gives
-        // us the PID to track. Working dir = repo root so the API resolves
-        // config/prompts relative to it; DB + snapshot dir are absolute so they
-        // are CWD-independent and match where feedctl looks for them.
+        // us the PID to track. Working dir = the API PROJECT dir (NOT the repo
+        // root): ASP.NET's ContentRoot defaults to the CWD, so it must be where
+        // appsettings.json and wwwroot live — exactly what `dotnet run --project`
+        // does. (Repo-root CWD left the Llm config empty and crashed startup.)
+        // domains/ and prompts/ resolve via the binary's own dir (copied at
+        // build); DB + snapshot are absolute so they are CWD-independent.
+        // PowerShell single-quoted strings escape an apostrophe by doubling it;
+        // a path like C:\Users\O'Brien would otherwise close the string (parse
+        // error, or worse a command-injection surface). Escape every value
+        // interpolated into the single-quoted script below.
+        static string Ps(string s) => s.Replace("'", "''");
         var argList = string.Join(",",
-            $"'{dll}'", "'--urls'", $"'{Config.BaseUrl}'",
-            "'--Ingest:DbPath=" + db + "'", "'--Report:SnapshotDir=" + snapDir + "'");
+            $"'{Ps(dll)}'", "'--urls'", $"'{Ps(Config.BaseUrl)}'",
+            "'--Ingest:DbPath=" + Ps(db) + "'", "'--Report:SnapshotDir=" + Ps(snapDir) + "'");
         var script =
-            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Config.RepoRoot}' " +
-            $"-WindowStyle Hidden -RedirectStandardOutput '{LogFile}' -RedirectStandardError '{LogFile}.err' -PassThru).Id";
+            $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Ps(apiDir)}' " +
+            $"-WindowStyle Hidden -RedirectStandardOutput '{Ps(LogFile)}' -RedirectStandardError '{Ps(LogFile)}.err' -PassThru).Id";
         var res = Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
-        var pidText = res.Output.Trim().Split('\n').LastOrDefault()?.Trim();
-        if (res.Code != 0 || !int.TryParse(pidText, out var pid))
+        // Start-Process prints the pid to stdout; Shell.Run appends stderr AFTER
+        // it, so a stray Start-Process warning would shadow the pid if we took the
+        // last line (observed: API launched, pid lost, board showed "started
+        // outside feedctl"). The pid is the FIRST bare-integer line — stdout
+        // precedes stderr. A non-zero exit code with a captured pid still means
+        // the process launched, so it is not treated as failure on its own.
+        var pidText = res.Output
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault(l => int.TryParse(l, out _));
+        if (pidText is null || !int.TryParse(pidText, out var pid))
         {
             Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
             Console.WriteLine(res.Output);

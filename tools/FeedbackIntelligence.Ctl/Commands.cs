@@ -59,11 +59,20 @@ public static class Commands
         else Console.WriteLine("  " + Term.C("●", "32") + " API already running");
 
         Console.WriteLine("  " + Term.C("◐", "33") + " warming Poro (first /health loads the model) …");
-        await WaitAsync(async () =>
+        var healthy = await WaitAsync(async () =>
         {
             var b = await Shell.GetJsonAsync("/health", 15);
             return b is not null && b.Value.TryGetProperty("status", out var s) && s.GetString() == "ok";
         }, 120);
+        if (!healthy)
+        {
+            // The API launched (Start() got a pid) but /health never went ok in
+            // 120s — most likely it died on startup or the model won't load.
+            // Report it honestly instead of exiting 0 on a demo that isn't live.
+            Console.WriteLine("  " + Term.C("○ /health never reported ok (120s) — API may have died on startup; check `logs` or the board", "31"));
+            Console.WriteLine(Board.Render(await Board.GatherAsync()));
+            return 1;
+        }
 
         if (load) await LoadAsync(null);
         Console.WriteLine(Board.Render(await Board.GatherAsync()));
