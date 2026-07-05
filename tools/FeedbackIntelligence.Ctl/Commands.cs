@@ -142,6 +142,18 @@ public static class Commands
             return 1;
         }
 
+        // The DB delete above is best-effort — a stray API instance holding the file
+        // could keep it alive. If the restarted API still sees rows, the wipe FAILED;
+        // abort rather than load a new corpus on top of the old and mislabel the mix
+        // (that would silently break the evidential/non-evidential separation).
+        var existing = await Shell.GetJsonAsync("/feedback?limit=1", 10);
+        if (existing is { ValueKind: JsonValueKind.Array } && existing.Value.GetArrayLength() > 0)
+        {
+            Console.WriteLine("  " + Term.C("○ database not empty after wipe — a stray API may hold the file. " +
+                "Aborting to avoid mixing datasets; run `down`, then retry.", "31"));
+            return 1;
+        }
+
         if (corpus is null)
         {
             WriteDataset("clean");
