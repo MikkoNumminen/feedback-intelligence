@@ -81,8 +81,16 @@ public static class ApiHost
             $"(Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{apiDir}' " +
             $"-WindowStyle Hidden -RedirectStandardOutput '{LogFile}' -RedirectStandardError '{LogFile}.err' -PassThru).Id";
         var res = Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
-        var pidText = res.Output.Trim().Split('\n').LastOrDefault()?.Trim();
-        if (res.Code != 0 || !int.TryParse(pidText, out var pid))
+        // Start-Process prints the pid to stdout; Shell.Run appends stderr AFTER
+        // it, so a stray Start-Process warning would shadow the pid if we took the
+        // last line (observed: API launched, pid lost, board showed "started
+        // outside feedctl"). The pid is the FIRST bare-integer line — stdout
+        // precedes stderr. A non-zero exit code with a captured pid still means
+        // the process launched, so it is not treated as failure on its own.
+        var pidText = res.Output
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault(l => int.TryParse(l, out _));
+        if (pidText is null || !int.TryParse(pidText, out var pid))
         {
             Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
             Console.WriteLine(res.Output);
