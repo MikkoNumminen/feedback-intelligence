@@ -100,3 +100,46 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
   origin (no trailing slash — it is validated at startup). ForwardedHeaders runs
   before the rate limiter so tunneled clients carry their real IP.
 - Snapshot mode is verified with the backend deliberately stopped.
+
+### Deploying the frontend to Azure ($0, one-time setup)
+
+**Cost model:** one Static Web App on the **Free** SKU, static-only — no managed
+API, no Functions, no App Service. $0 with no time limit. Guardrails and the
+"why not Readlog's App Service" reconciliation are in
+[ADR-0016](decisions/0016-zero-cost-static-web-apps-deploy.md).
+
+CI does the deploy: `.github/workflows/azure-static-web-apps.yml` builds `dist/`
+via `publish-frontend.ps1` and uploads it to SWA Free on every frontend change to
+`master` (or `workflow_dispatch`). It needs a one-time Azure resource plus two
+repo settings:
+
+1. **Create the Free SWA** — bring-your-own-CI, so do NOT link the repo in the
+   portal (that would inject a competing workflow / a billable managed API):
+   ```bash
+   az group create -n rg-feedback-intelligence -l westeurope
+   az staticwebapp create -n feedback-intelligence -g rg-feedback-intelligence -l westeurope --sku Free
+   ```
+2. **Deployment token → GitHub secret; Funnel URL → GitHub variable:**
+   ```bash
+   TOKEN=$(az staticwebapp secrets list -n feedback-intelligence -g rg-feedback-intelligence --query "properties.apiKey" -o tsv)
+   gh secret   set AZURE_STATIC_WEB_APPS_API_TOKEN -R <owner>/feedback-intelligence -b "$TOKEN"
+   gh variable set FUNNEL_API_BASE -R <owner>/feedback-intelligence -b "https://<machine>.<tailnet>.ts.net"
+   ```
+3. **CORS round-trip (LOCAL machine)** — the deploy succeeds but every API call is
+   blocked until this is done. Get the SWA host, add it to the API, restart:
+   ```bash
+   az staticwebapp show -n feedback-intelligence -g rg-feedback-intelligence --query defaultHostname -o tsv
+   ```
+   Set `Ingest:AllowedCorsOrigins` to `["https://<that-host>"]` (absolute https,
+   no trailing slash — startup validation rejects otherwise) and restart the API.
+4. **Deploy + verify $0:**
+   ```bash
+   gh workflow run azure-static-web-apps.yml -R <owner>/feedback-intelligence
+   az staticwebapp show -n feedback-intelligence -g rg-feedback-intelligence --query sku -o json   # -> { "name": "Free", ... }
+   ```
+   Confirm $0 in Cost Management (scope: `rg-feedback-intelligence`). Optional
+   tripwire: a $1 budget alert on the group.
+
+Publishing the snapshot is opt-in — `gh workflow run azure-static-web-apps.yml -f
+publish_snapshot=true` — and only after verifying provenance against
+[mock-data-register.md](mock-data-register.md).
