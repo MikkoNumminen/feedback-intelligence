@@ -139,11 +139,29 @@ public static class Board
     {
         var body = await Shell.GetJsonAsync("/feedback?limit=1000", 10);
         if (body is null || body.Value.ValueKind != JsonValueKind.Array)
-            return Row2("demo data", Term.State.Warn, "none — `load` or `demo`", false);
+            return Row2("demo data", Term.State.Warn, "none — `data mock|demo` or `load`", false);
         var n = body.Value.GetArrayLength();
-        return n > 0
-            ? Row2("demo data", Term.State.Ok, $"{n} feedback item(s) ingested", false)
-            : Row2("demo data", Term.State.Warn, "empty — `load` or `demo`", false);
+        if (n == 0)
+            return Row2("demo data", Term.State.Warn, "empty — `data mock|demo` or `load`", false);
+        var tag = DatasetTag();
+        return Row2("demo data", Term.State.Ok, tag is null ? $"{n} item(s)" : $"{n} item(s) · {tag}", false);
+    }
+
+    /// <summary>Provenance of the loaded dataset, recorded by `data <mode>`; null
+    /// when unknown (a direct `load` clears it, so the board shows a bare count).</summary>
+    private static string? DatasetTag()
+    {
+        try
+        {
+            if (!File.Exists(Config.DatasetFile)) return null;
+            return File.ReadAllText(Config.DatasetFile).Trim().ToLowerInvariant() switch
+            {
+                "mock" => "mock (AI placeholder · non-evidential)",
+                "demo" => "demo (real seeded corpus)",
+                _ => null,
+            };
+        }
+        catch { return null; }
     }
 
     private static Row CheckSnapshot() =>
