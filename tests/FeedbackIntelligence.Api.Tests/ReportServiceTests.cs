@@ -154,6 +154,37 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task AlertScreen_MultipleCandidates_OnlyConfirmedBecomeAlerts_NoFlood()
+    {
+        await SeedDairyAsync(0, 3); // three keyword-less complaints
+        // Per-item screen: yes, no, no — exactly one becomes an alert (never a list-flood).
+        // The reason call returns no specific reason → the localized fallback is used.
+        var llm = new ScriptedChatClient("kyllä", "ei", "ei", """{"alerts": []}""", "ei-jsonia");
+
+        var report = await CreateService(llm, nominations: true).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var alert = Assert.Single(report.Alerts);
+        Assert.Contains("mahdollisen turvallisuusriskin", alert.LlmReason); // localized fallback, fi domain
+    }
+
+    [Fact]
+    public async Task AlertScreen_PraiseItem_IsExcluded_NeverScreened()
+    {
+        // A praise item is filtered out BEFORE the screen: even though the scripted
+        // reply is "kyllä", the praise item is never screened, so no alert appears.
+        await _store.InsertAsync(new StoredFeedback(
+            "praise-0", "desk", "loistavaa palvelua",
+            "2026-06-29T10:00:00.0000000+00:00", "2026-06-29T10:00:00.0000000+00:00",
+            new FeedbackStructure("kassa_palvelu", "palvelu", "low", "praise", "fi"),
+            false, false, [], [], null), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("kyllä"), nominations: true)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Empty(report.Alerts);
+    }
+
+    [Fact]
     public async Task NewThemeWithEmptyFirstHalf_IsGrowing_NeverWorsening()
     {
         // All items in the late half, all low severity: a theme that just

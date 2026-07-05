@@ -49,15 +49,20 @@ ever changes.
    `domain.json`), not the bare key. Domain-neutral: labels come from the active
    domain. Structuring stays deterministic (`temperature 0`).
 
-2. **Alerts — screen every keyword-less complaint individually.** The LLM alert
-   layer judges each candidate **alone** as a strict `kyllä`/`ei` (`alertVerify`
-   prompt); a "kyllä" becomes an alert. Candidates are keyword-less items that
-   are `complaint`-typed (or unstructured) — praise, suggestions and questions
-   are never safety alerts. The judgment is **temperature 0** (deterministic).
-   For the confirmed few, one `alertNomination` call over *only* those items
-   supplies a grounded Finnish reason (falling back to a localized generic line
-   if the model omits one). Recall-biased and fail-open: only an explicit
-   negative (`ei` / `no`) rejects; an error or ambiguous answer keeps the alert.
+2. **Alerts — screen every keyword-less item individually.** The LLM alert layer
+   judges each candidate **alone** as a strict `kyllä`/`ei` (`alertVerify` prompt);
+   a "kyllä" becomes an alert. Candidates are all keyword-less items **except
+   praise** (a hazard can be typed complaint/question/suggestion/other, and an
+   unstructured item could still be a safety report — only praise never is). The
+   judgment is **temperature 0** (deterministic). For the confirmed few, one
+   `alertNomination` call over *only* those items supplies a grounded reason
+   (localized generic fallback if the model omits one). The reply is matched by
+   **whole word** in the domain's language (fi `kyllä`/`ei`, en `yes`/`no`): an
+   explicit affirmative confirms; an explicit negative — or anything ambiguous
+   (empty, a hedge, the Finnish filler "no" = "well") — is not an alert; and an
+   **unreachable model fails CLOSED**, so an outage yields no LLM alerts rather
+   than one on every item. Whole-word matching (not prefix) is why "no" can't be
+   read as a negative and an empty reply can't be read as a keep.
 
    **Two designs were tried and rejected before this one:**
    - A **list-selection** nomination (ask Poro to pick alerts out of a batch)
