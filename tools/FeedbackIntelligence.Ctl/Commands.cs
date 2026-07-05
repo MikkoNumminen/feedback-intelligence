@@ -75,6 +75,10 @@ public static class Commands
         }
 
         if (load) await LoadAsync(null);
+        // feedctl owns the public Funnel: bring it up so the shared (Azure) link
+        // reaches this API. Symmetric with `down`, which takes it off.
+        Console.WriteLine("  " + Term.C("◐", "33") + " exposing the public Funnel (the shared/Azure link) …");
+        Funnel.Ensure();
         Console.WriteLine(Board.Render(await Board.GatherAsync()));
         Console.WriteLine("  open " + Term.C(Config.BaseUrl + "/", "36") + " (management view) · " +
             Term.C(Config.BaseUrl + "/desk.html", "36") + " (desk entry)");
@@ -84,6 +88,8 @@ public static class Commands
     public static Task<int> DownAsync()
     {
         Console.WriteLine(Term.Bold("\n  taking the demo down …"));
+        Console.WriteLine("  " + Term.C("◐", "33") + " taking the public Funnel down (frees port 443 for the RAG) …");
+        Funnel.Stop();
         Console.WriteLine("  " + Term.C("◐", "33") + " stopping API …");
         ApiHost.Stop();
         Console.WriteLine("  " + Term.C("◐", "33") + " stopping ollama (frees the GPU for the shared RAG) …");
@@ -153,6 +159,10 @@ public static class Commands
                 "Aborting to avoid mixing datasets; run `down`, then retry.", "31"));
             return 1;
         }
+
+        // Keep the public link live across the data switch (idempotent — the API
+        // port is unchanged; this just re-asserts the Funnel if it was off).
+        Funnel.Ensure();
 
         if (corpus is null)
         {
