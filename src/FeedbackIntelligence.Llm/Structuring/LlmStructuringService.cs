@@ -91,7 +91,7 @@ public sealed class LlmStructuringService(
         // prompt names no categories itself; the active domain supplies them.
         var d = activeDomain.Descriptor;
         template = template
-            .Replace("{{categories}}", RenderJsonArray(d.CategoryLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{categories}}", RenderLabelledKeys(d.CategoryLabels), StringComparison.Ordinal)
             .Replace("{{severities}}", RenderJsonArray(d.SeverityLabels.Keys), StringComparison.Ordinal)
             .Replace("{{types}}", RenderJsonArray(d.TypeLabels.Keys), StringComparison.Ordinal);
 
@@ -100,4 +100,14 @@ public sealed class LlmStructuringService(
 
     private static string RenderJsonArray(IEnumerable<string> values) =>
         "[" + string.Join(", ", values.Select(v => JsonSerializer.Serialize(v))) + "]";
+
+    /// <summary>Render each category as <c>"key" (Label)</c> — one per line — so
+    /// the model has the human meaning of every department, not just an opaque
+    /// enum key. Bare keys made Poro misread "runkopuu/lankku" as liha_kala; the
+    /// Finnish label ("Rakennustarvikkeet") is the disambiguating signal. The
+    /// quoted key is still the exact value to return; the parenthetical is a hint.
+    /// Domain-neutral: labels come from the active domain, so a new domain (e.g.
+    /// game) supplies its own without touching this code.</summary>
+    private static string RenderLabelledKeys(IReadOnlyDictionary<string, string> labels) =>
+        string.Join("\n  ", labels.Select(kv => $"{JsonSerializer.Serialize(kv.Key)} ({kv.Value})"));
 }
