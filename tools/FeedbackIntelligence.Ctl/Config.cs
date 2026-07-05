@@ -23,7 +23,17 @@ public static class Config
     public const string DemoDbPath = "data/demo.db";
     public const string SnapshotJson = "data/snapshots/report-latest.json";
 
+    /// <summary>The real, evidential seeded corpus (`data` demo mode).</summary>
+    public const string RealCorpus = "data/corpus/generated-42.jsonl";
+
+    /// <summary>The AI-generated placeholder corpus (`data` mock mode) — NON-EVIDENTIAL.</summary>
+    public const string MockCorpus = "data/corpus/generated-placeholder-42.jsonl";
+
     public static string PidFile => Path.Combine(RepoRoot, ".feedctl", "api.pid");
+
+    /// <summary>Records which dataset feedctl last loaded (mock/demo/clean) so the
+    /// board can show provenance. Best-effort: a direct `load` clears it.</summary>
+    public static string DatasetFile => Path.Combine(RepoRoot, ".feedctl", "dataset");
 
     public static string Abs(string relative) => Path.GetFullPath(Path.Combine(RepoRoot, relative));
 

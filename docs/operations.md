@@ -70,6 +70,11 @@ demo, modelled on the sibling RAG's `ragctl`. It orchestrates docker, the
   detached with a tracked PID → warm Poro) / stop both and free the GPU. `up`
   **refuses if the shared `mikkonumminendev` RAG is running** — the
   announce-before-GPU hard rule, enforced by the tool.
+- **`data <mock|demo|clean>`** — explicitly choose the DB's starting data:
+  `mock` (AI-generated placeholder corpus, non-evidential), `demo` (the real
+  seeded corpus), or `clean` (empty). Each wipes the DB and restarts the API on
+  it (ollama stays up); the board then shows the loaded dataset's provenance. A
+  direct `load` clears that provenance marker (bare count on the board).
 - **`demo [--seed N]`** — the full run-through: `generate → up → load →
   report → verify` in one command.
 - **`interpret "…"`** (live desk structuring, timed) · **`load` / `report` /

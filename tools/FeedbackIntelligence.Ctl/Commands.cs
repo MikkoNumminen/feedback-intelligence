@@ -92,6 +92,80 @@ public static class Commands
         return Task.FromResult(0);
     }
 
+    // --- data source selection: mock (AI placeholder) / demo (real) / clean ---
+
+    /// <summary>Explicitly choose the DB's starting data: `mock` (AI-generated
+    /// placeholder, non-evidential), `demo` (the real seeded corpus) or `clean`
+    /// (empty). Each wipes the DB and restarts the API on it; ollama stays up.</summary>
+    public static async Task<int> DataAsync(string? modeArg)
+    {
+        var mode = (modeArg ?? "").Trim().ToLowerInvariant();
+        string? corpus = mode switch
+        {
+            "clean" => null,
+            "mock" => Config.MockCorpus,
+            "demo" => Config.RealCorpus,
+            _ => "?",
+        };
+        if (corpus == "?")
+        {
+            Console.WriteLine(Term.C("  usage: data <mock|demo|clean>", "33"));
+            Console.WriteLine("    " + Term.C("mock", "36") + "  — AI-generated placeholder corpus (non-evidential)");
+            Console.WriteLine("    " + Term.C("demo", "36") + "  — the real seeded corpus (generated-42)");
+            Console.WriteLine("    " + Term.C("clean", "36") + " — empty database, start fresh");
+            return 1;
+        }
+        if (corpus is not null && !File.Exists(Config.Abs(corpus)))
+        {
+            Console.WriteLine(Term.C($"  ○ corpus not found: {corpus}", "31"));
+            if (mode == "demo")
+                Console.WriteLine("    (the real corpus lands on master when the real-corpus PR merges)");
+            return 1;
+        }
+
+        Console.WriteLine(Term.Bold($"\n  switching dataset → {mode} …\n"));
+        Console.WriteLine("  " + Term.C("◐", "33") + " wiping the database (ollama stays up) …");
+        ApiHost.Stop();
+        foreach (var suffix in new[] { "", "-wal", "-shm" })
+            try { File.Delete(Config.Abs(Config.DemoDbPath) + suffix); } catch { /* best effort */ }
+
+        Console.WriteLine("  " + Term.C("◐", "33") + " restarting the API on the empty DB …");
+        if (ApiHost.Start(build: false) is null) return 1;   // no rebuild — a data switch never changes API code
+        var healthy = await WaitAsync(async () =>
+        {
+            var b = await Shell.GetJsonAsync("/health", 15);
+            return b is not null && b.Value.TryGetProperty("status", out var s) && s.GetString() == "ok";
+        }, 120);
+        if (!healthy)
+        {
+            Console.WriteLine("  " + Term.C("○ the API did not report healthy after the wipe — check `logs`/board", "31"));
+            return 1;
+        }
+
+        if (corpus is null)
+        {
+            WriteDataset("clean");
+            Console.WriteLine("  " + Term.C("●", "32") + " clean — empty database. Add entries at the desk or `load`.");
+            Console.WriteLine(Board.Render(await Board.GatherAsync()));
+            return 0;
+        }
+
+        var loaded = await LoadAsync(corpus);   // LoadAsync clears the marker; set the real one after
+        WriteDataset(mode);
+        Console.WriteLine(Board.Render(await Board.GatherAsync()));
+        return loaded;
+    }
+
+    private static void WriteDataset(string mode)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Config.DatasetFile)!);
+            File.WriteAllText(Config.DatasetFile, mode);
+        }
+        catch { /* best effort — the board falls back to a bare item count */ }
+    }
+
     // --- the one-shot run-through ---
 
     public static async Task<int> DemoAsync(int seed)
@@ -153,6 +227,9 @@ public static class Commands
 
     public static async Task<int> LoadAsync(string? corpus)
     {
+        // A direct load makes the board's dataset marker stale; clear it so the
+        // board falls back to a bare count. `data <mode>` re-writes it afterwards.
+        try { File.Delete(Config.DatasetFile); } catch { /* best effort */ }
         corpus ??= File.Exists(Config.Abs("data/corpus/generated-placeholder-42.jsonl"))
             ? "data/corpus/generated-placeholder-42.jsonl" : "data/corpus/dev-placeholder-variants.jsonl";
         var path = Config.Abs(corpus);
