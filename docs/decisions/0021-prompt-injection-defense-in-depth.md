@@ -1,6 +1,6 @@
 # ADR-0021 — Prompt-injection defense-in-depth at the LLM boundary
 
-- **Status:** Accepted (2026-07-06); A1 implemented, A2–A4 staged
+- **Status:** Accepted (2026-07-06); A1–A2 implemented, A3–A4 staged
 - **Deciders:** Mikko
 - **Follows:** [ADR-0009](0009-grounding-is-structural.md) (deterministic trust
   anchor + grounded LLM layer), [ADR-0004](0004-salvage-layer-mandatory.md)
@@ -61,11 +61,29 @@ through before any prompt splice:
   a model *could* echo one into the free-text `theme`; that value is neutralized
   again at the synthesis splice, so the effect is at most cosmetic, never a breakout.
 
-**A2 — salvage extension (staged).** Flag injection symptoms (imperative-to-model
-patterns, embedded fake JSON/role markers) and **high/critical severity with no
-corroborating signal** as a new `needs_review` status: re-prompt once, then store
-with raw text preserved — lose nothing, and no manipulated item silently shapes
-output. Logged to correction telemetry.
+**A2 — needs_review flag (implemented).** A deterministic Core detector,
+`FeedbackIntelligence.Core.Security.InjectionSignals`, scans the raw text for
+injection SYMPTOMS — imperative-to-model phrases (Finnish + English), role/system
+overrides, field-injection ("set severity"), and format forges (```json`,
+`"role"`, `vastaus: kyllä`) — the same cheap, never-hallucinates substring
+contract as the deterministic alert layer. When a symptom co-occurs with a
+model-assigned **severe** rating (`high`/`critical`) it adds the higher-risk
+"talked-into-critical" flag. The ingest layer stores the result as a first-class
+`needs_review` status **without dropping or altering the item**: structure is kept
+best-effort, raw text preserved, and the flag surfaces on `FeedbackResponse` and as
+an all-source `needsReviewAllSources` count in the correction telemetry (a rising
+count = more injection-shaped input arriving). So a manipulated item can never
+*silently* shape output — it is flagged and visible.
+
+- **No re-prompt** (correcting the earlier plan): the A1 fence already governs the
+  structuring call, so re-prompting the *same* fenced text is deterministic and adds
+  nothing. The honest lever is the flag + preservation + a human's glance, not a
+  retry.
+- **Tuning is measured, not asserted:** the detector fires on the red-team phrases
+  yet returns **zero** flags across all 343 committed corpus items (real + variants +
+  placeholder) — a false positive costs only a human glance, but the demo corpus
+  stays clean. The severe-set is `{high, critical}`; a domain with other severity
+  names simply never adds the co-occurrence flag (safe degradation).
 
 **A3 — bound synthesis authority (staged).** The narrative may only be a
 **descriptive observation of the cited items** — the prompt forbids

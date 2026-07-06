@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using FeedbackIntelligence.Api.Alerts;
 using FeedbackIntelligence.Api.Storage;
 using FeedbackIntelligence.Core.Alerts;
+using FeedbackIntelligence.Core.Security;
 using FeedbackIntelligence.Core.Structuring;
 using FeedbackIntelligence.Llm.Structuring;
 
@@ -78,6 +79,22 @@ public sealed class IngestService(
             }
         }
 
+        // Injection hardening (ADR-0021 A2): a deterministic scan of the raw text for
+        // prompt-injection symptoms. It never drops or alters the item — it raises a
+        // needs_review flag so a manipulated item cannot SILENTLY shape output. Runs
+        // on every source (independent of the LLM), and adds a higher-risk flag when a
+        // symptom co-occurs with a model-assigned severe rating (the "talked-into-
+        // critical" case). The A1 fence governs the structuring call; this catches the
+        // residual A1 cannot: an in-band imperative that stays inside the data block.
+        var reviewFlags = new List<string>(InjectionSignals.Detect(request.Text));
+        if (reviewFlags.Count > 0
+            && structure is not null
+            && InjectionSignals.SevereSeverities.Contains(structure.Severity))
+            reviewFlags.Add(InjectionSignals.SevereRatingFlag);
+        if (reviewFlags.Count > 0)
+            logger.LogWarning("Feedback flagged needs_review (injection symptoms): {Flags}",
+                string.Join(", ", reviewFlags));
+
         var stored = new StoredFeedback(
             Id: string.IsNullOrWhiteSpace(request.Id) ? Guid.NewGuid().ToString("N") : request.Id!,
             Source: request.Source,
@@ -89,7 +106,9 @@ public sealed class IngestService(
             ModelFailed: request.ModelInterpretationFailed == true,
             SalvageNotes: notes,
             Alerts: alerts,
-            Corrections: request.Corrections);
+            Corrections: request.Corrections,
+            NeedsReview: reviewFlags.Count > 0,
+            ReviewFlags: reviewFlags);
 
         await store.InsertAsync(stored, ct);
         // The live-view centerpiece: a fresh desk entry must appear on the very

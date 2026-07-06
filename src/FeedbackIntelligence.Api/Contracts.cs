@@ -28,4 +28,8 @@ public sealed record FeedbackResponse(
     FeedbackStructure? Structure,
     bool StructureFailed,
     IReadOnlyList<string> SalvageNotes,
-    IReadOnlyList<FeedbackIntelligence.Core.Alerts.AlertHit> Alerts);
+    IReadOnlyList<FeedbackIntelligence.Core.Alerts.AlertHit> Alerts,
+    // Injection hardening (ADR-0021 A2): surfaced so a caller/UI sees the item was
+    // flagged for human review, and why (empty when clean).
+    bool NeedsReview = false,
+    IReadOnlyList<string>? ReviewFlags = null);

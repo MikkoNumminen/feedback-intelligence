@@ -20,7 +20,13 @@ public sealed record StoredFeedback(
     bool ModelFailed,
     IReadOnlyList<string> SalvageNotes,
     IReadOnlyList<AlertHit> Alerts,
-    IReadOnlyList<FieldCorrection>? Corrections);
+    IReadOnlyList<FieldCorrection>? Corrections,
+    // Injection hardening (ADR-0021 A2): the raw text showed prompt-injection
+    // symptoms (and/or a model-assigned severe rating under those symptoms), so a
+    // human should validate the structure. The item is never dropped — flagged and
+    // preserved. Trailing/optional so no other construction site had to change.
+    bool NeedsReview = false,
+    IReadOnlyList<string>? ReviewFlags = null);
 
 public sealed class DuplicateFeedbackIdException(string id)
     : Exception($"Feedback id '{id}' already exists.")
@@ -57,11 +63,31 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
                 model_failed INTEGER NOT NULL DEFAULT 0,
                 salvage_notes_json TEXT NOT NULL DEFAULT '[]',
                 alerts_json TEXT NOT NULL DEFAULT '[]',
-                corrections_json TEXT NULL
+                corrections_json TEXT NULL,
+                needs_review INTEGER NOT NULL DEFAULT 0,
+                review_flags_json TEXT NOT NULL DEFAULT '[]'
             );
             CREATE INDEX IF NOT EXISTS ix_feedback_timestamp ON feedback(timestamp);
             """;
         command.ExecuteNonQuery();
+
+        // Additive migration for DBs created before A2: CREATE TABLE IF NOT EXISTS
+        // won't add columns to an existing table, so add them idempotently. SQLite
+        // has no ADD COLUMN IF NOT EXISTS, so probe first.
+        EnsureColumn(connection, "needs_review", "INTEGER NOT NULL DEFAULT 0");
+        EnsureColumn(connection, "review_flags_json", "TEXT NOT NULL DEFAULT '[]'");
+    }
+
+    private static void EnsureColumn(SqliteConnection connection, string column, string definition)
+    {
+        using var check = connection.CreateCommand();
+        check.CommandText = "SELECT COUNT(*) FROM pragma_table_info('feedback') WHERE name = $name";
+        check.Parameters.AddWithValue("$name", column);
+        if (Convert.ToInt64(check.ExecuteScalar()) > 0)
+            return;
+        using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE feedback ADD COLUMN {column} {definition}";
+        alter.ExecuteNonQuery();
     }
 
     public async Task InsertAsync(StoredFeedback item, CancellationToken ct)
@@ -72,8 +98,10 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         command.CommandText = """
             INSERT INTO feedback
                 (id, source, text, timestamp, created_at, structure_json, structure_failed,
-                 model_failed, salvage_notes_json, alerts_json, corrections_json)
-            VALUES ($id, $source, $text, $timestamp, $createdAt, $structure, $failed, $modelFailed, $notes, $alerts, $corrections)
+                 model_failed, salvage_notes_json, alerts_json, corrections_json,
+                 needs_review, review_flags_json)
+            VALUES ($id, $source, $text, $timestamp, $createdAt, $structure, $failed, $modelFailed, $notes, $alerts, $corrections,
+                 $needsReview, $reviewFlags)
             """;
         command.Parameters.AddWithValue("$id", item.Id);
         command.Parameters.AddWithValue("$source", item.Source);
@@ -88,6 +116,8 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         command.Parameters.AddWithValue("$alerts", JsonSerializer.Serialize(item.Alerts, Json));
         command.Parameters.AddWithValue("$corrections",
             item.Corrections is null ? DBNull.Value : JsonSerializer.Serialize(item.Corrections, Json));
+        command.Parameters.AddWithValue("$needsReview", item.NeedsReview ? 1 : 0);
+        command.Parameters.AddWithValue("$reviewFlags", JsonSerializer.Serialize(item.ReviewFlags ?? [], Json));
         try
         {
             await command.ExecuteNonQueryAsync(ct);
@@ -136,6 +166,25 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         return items;
     }
 
+    /// <summary>Accurate count of needs_review items in the window across ALL
+    /// sources (not the desk-only correction population) — a COUNT so the query cap
+    /// can't undercount it. Backed by the timestamp index.</summary>
+    public async Task<int> CountNeedsReviewAsync(string? fromIso, string? toIso, CancellationToken ct)
+    {
+        await using var connection = new SqliteConnection(ConnectionString);
+        await connection.OpenAsync(ct);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*) FROM feedback
+            WHERE needs_review = 1
+              AND ($from IS NULL OR timestamp >= $from)
+              AND ($to IS NULL OR timestamp <= $to)
+            """;
+        command.Parameters.AddWithValue("$from", (object?)fromIso ?? DBNull.Value);
+        command.Parameters.AddWithValue("$to", (object?)toIso ?? DBNull.Value);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(ct));
+    }
+
     private static StoredFeedback Map(SqliteDataReader reader)
     {
         string? Read(string column) =>
@@ -152,6 +201,8 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
             (long)reader["model_failed"] != 0,
             JsonSerializer.Deserialize<List<string>>((string)reader["salvage_notes_json"], Json) ?? [],
             JsonSerializer.Deserialize<List<AlertHit>>((string)reader["alerts_json"], Json) ?? [],
-            Read("corrections_json") is { } c ? JsonSerializer.Deserialize<List<FieldCorrection>>(c, Json) : null);
+            Read("corrections_json") is { } c ? JsonSerializer.Deserialize<List<FieldCorrection>>(c, Json) : null,
+            (long)reader["needs_review"] != 0,
+            JsonSerializer.Deserialize<List<string>>((string)reader["review_flags_json"], Json) ?? []);
     }
 }
