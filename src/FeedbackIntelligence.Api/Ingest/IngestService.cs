@@ -81,16 +81,25 @@ public sealed class IngestService(
 
         // Injection hardening (ADR-0021 A2): a deterministic scan of the raw text for
         // prompt-injection symptoms. It never drops or alters the item — it raises a
-        // needs_review flag so a manipulated item cannot SILENTLY shape output. Runs
-        // on every source (independent of the LLM), and adds a higher-risk flag when a
-        // symptom co-occurs with a model-assigned severe rating (the "talked-into-
-        // critical" case). The A1 fence governs the structuring call; this catches the
-        // residual A1 cannot: an in-band imperative that stays inside the data block.
-        var reviewFlags = new List<string>(InjectionSignals.Detect(request.Text));
-        if (reviewFlags.Count > 0
-            && structure is not null
-            && InjectionSignals.SevereSeverities.Contains(structure.Severity))
-            reviewFlags.Add(InjectionSignals.SevereRatingFlag);
+        // needs_review flag so a manipulated item cannot SILENTLY shape output, and
+        // adds a higher-risk flag when a symptom co-occurs with a model-assigned severe
+        // rating (the "talked-into-critical" case). The A1 fence governs the
+        // structuring call; this catches the residual A1 cannot: an in-band imperative
+        // that stays inside the data block.
+        //
+        // Skipped on the desk AcceptedStructure path: a human already saw the
+        // interpretation at /interpret and accepted/corrected it, so needs_review ("a
+        // human should validate") is already met — and the co-occurrence flag's
+        // "model-assigned severe rating" meaning doesn't hold for a human-chosen one.
+        var reviewFlags = new List<string>();
+        if (request.AcceptedStructure is null)
+        {
+            reviewFlags.AddRange(InjectionSignals.Detect(request.Text));
+            if (reviewFlags.Count > 0
+                && structure is not null
+                && InjectionSignals.SevereSeverities.Contains(structure.Severity))
+                reviewFlags.Add(InjectionSignals.SevereRatingFlag);
+        }
         if (reviewFlags.Count > 0)
             logger.LogWarning("Feedback flagged needs_review (injection symptoms): {Flags}",
                 string.Join(", ", reviewFlags));

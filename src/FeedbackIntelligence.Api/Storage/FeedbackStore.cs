@@ -87,7 +87,17 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
             return;
         using var alter = connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE feedback ADD COLUMN {column} {definition}";
-        alter.ExecuteNonQuery();
+        try
+        {
+            alter.ExecuteNonQuery();
+        }
+        catch (SqliteException ex) when (ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase))
+        {
+            // Probe-then-ALTER isn't atomic: if a second process added the column
+            // between our probe and here, ADD COLUMN throws "duplicate column name".
+            // The column exists either way, which is all Initialize needs — swallow
+            // it (same spirit as the InsertAsync duplicate-key catch).
+        }
     }
 
     public async Task InsertAsync(StoredFeedback item, CancellationToken ct)

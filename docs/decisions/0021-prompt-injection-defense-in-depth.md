@@ -82,8 +82,29 @@ count = more injection-shaped input arriving). So a manipulated item can never
 - **Tuning is measured, not asserted:** the detector fires on the red-team phrases
   yet returns **zero** flags across all 343 committed corpus items (real + variants +
   placeholder) — a false positive costs only a human glance, but the demo corpus
-  stays clean. The severe-set is `{high, critical}`; a domain with other severity
-  names simply never adds the co-occurrence flag (safe degradation).
+  stays clean. The PR-#24 review caught FP-prone phrases that would trip on the
+  *multi-domain* future (a bug report's bare `severity:` field, "new software",
+  "developer mode", a quoted "you are now offline" popup, a "shop assistant:"
+  mini-review); the pattern list was tightened to anchored/specific forms and pinned
+  by regression tests. The severe-set is `{high, critical}`; a domain with other
+  severity names simply never adds the co-occurrence flag (safe degradation).
+- **Visible where it lands, not excluded.** A flagged item is **not** removed from
+  its theme group, count, or the deterministic trend — excluding it would be
+  *exploitable* (append injection phrases to a genuine `critical` to get it dropped
+  and suppress real signal). Instead the influence is made visible at the output:
+  the report carries a per-theme `FlaggedCount` and a per-source `NeedsReview`, and
+  the management view warns "⚠ N tarkistettavana" on the theme and tags the flagged
+  message. So "not silently" holds at the report surface, not only in telemetry.
+- **Desk path is exempt.** The `AcceptedStructure` (desk) flow already had a human
+  in the loop at `/interpret`, so `needs_review` is already satisfied and the
+  co-occurrence flag's "model-assigned severe" meaning doesn't fit a human-chosen
+  severity — the scan runs only on the automated sources.
+- **Residual (convention):** the FI+EN phrases live in the domain-neutral Core (like
+  the fence markers, a security invariant) rather than as domain config. Deliberate
+  defense-in-depth — injection arrives in English against a Finnish deployment — but
+  if a third language/domain lands, the natural evolution is to keep the
+  language-agnostic markers (```json`, `<|`, `[inst]`, `"role":`) in Core and move
+  imperative phrases to domain-contributed lists, as the alert keywords already are.
 
 **A3 — bound synthesis authority (staged).** The narrative may only be a
 **descriptive observation of the cited items** — the prompt forbids

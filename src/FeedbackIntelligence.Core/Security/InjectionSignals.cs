@@ -20,52 +20,58 @@ public static class InjectionSignals
 {
     // (symptom category, lowercase phrase). Category is what surfaces in review and
     // telemetry, so several phrases fold into one category. Phrases are deliberately
-    // specific to avoid firing on ordinary words ("contact", "the system broke").
+    // specific/anchored to avoid firing on ordinary multi-domain feedback — a bug
+    // report's "severity:" field, "uusi ohjelmisto"/"new software", a game's
+    // "developer mode", a quoted "you are now offline" popup, a "shop assistant:"
+    // mini-review (all real false positives the PR-#24 review caught). EVERY phrase
+    // MUST be lowercase: only the input is lowercased, so an uppercase char in a
+    // phrase would make it dead code.
     private static readonly (string Category, string Phrase)[] Patterns =
     {
-        // Override / ignore-the-system
+        // Override / ignore-the-system — the strongest, lowest-FP signal; both the
+        // stilted and the natural "…the/all…" phrasings a human actually types.
         ("override", "ignore previous"),
-        ("override", "ignore above"),
+        ("override", "ignore the above"),
         ("override", "ignore all previous"),
+        ("override", "ignore your instructions"),
         ("override", "disregard previous"),
         ("override", "disregard the above"),
         ("override", "forget previous instructions"),
+        ("override", "forget all previous"),
         ("override", "ohita edelliset"),
         ("override", "ohita aiemmat ohjeet"),
         ("override", "unohda edelliset"),
         ("override", "unohda aiemmat ohjeet"),
         ("override", "älä välitä ohjeista"),
-        // New task / real instructions
-        ("new-instructions", "new instructions"),
+        // New task / real instructions — colon-anchored so "new software" and "uudet
+        // ohjeet palautukseen" (benign) don't trip it.
+        ("new-instructions", "new instructions:"),
         ("new-instructions", "your real task"),
-        ("new-instructions", "uusi ohje"),
-        ("new-instructions", "uudet ohjeet"),
-        ("new-instructions", "todellinen tehtäväsi"),
-        // Role / system override
+        ("new-instructions", "your new task"),
+        ("new-instructions", "uudet ohjeet:"),
+        // Role / system override — specific AI-role phrasing only, NOT bare
+        // "assistant:" / "developer mode" / "you are now" (domain false positives).
         ("role-override", "system prompt"),
-        ("role-override", "you are now"),
-        ("role-override", "assistant:"),
-        ("role-override", "developer mode"),
+        ("role-override", "you are now an ai"),
+        ("role-override", "you are an ai assistant"),
+        ("role-override", "act as an ai"),
         ("role-override", "olet nyt tekoäly"),
         ("role-override", "järjestelmäkehote"),
-        // Field / classification injection
+        // Field / classification injection — imperatives that ADDRESS the classifier,
+        // NOT a bug report's bare "severity:" / "vakavuus:" field label (which also
+        // wrongly triggered the severe-rating escalation on legit game bugs).
         ("field-injection", "set severity"),
-        ("field-injection", "severity:"),
-        ("field-injection", "severity ="),
-        ("field-injection", "mark as critical"),
-        ("field-injection", "classify this as"),
         ("field-injection", "aseta severity"),
-        ("field-injection", "vakavuus:"),
-        ("field-injection", "merkitse kriittiseksi"),
+        ("field-injection", "classify this as"),
         ("field-injection", "luokittele tämä"),
-        // Forced answer / format forge
+        ("field-injection", "merkitse kriittiseksi"),
+        // Forced answer / format forge — anchored JSON key, not a bare quoted "role".
         ("format-forge", "```json"),
-        ("format-forge", "\"role\""),
+        ("format-forge", "\"role\":"),
         ("format-forge", "[inst]"),
         ("format-forge", "<|"),
         ("format-forge", "vastaus: kyllä"),
         ("format-forge", "vastaus:kyllä"),
-        ("format-forge", "output only"),
     };
 
     /// <summary>Flag added by the ingest layer when a symptom co-occurs with a
