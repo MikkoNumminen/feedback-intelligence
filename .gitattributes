@@ -1,0 +1,5 @@
+# Data fixtures are read byte-for-byte by tests and evals; keep them LF on every
+# platform so a Windows checkout (core.autocrlf=true) can't rewrite line endings.
+# This repo is line-ending sensitive (ADR-0018: a CRLF prompt copy once flipped a
+# Poro judgment); the .jsonl fixtures feed the injection red-team + eval loaders.
+*.jsonl text eol=lf

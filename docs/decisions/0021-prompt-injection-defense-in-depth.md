@@ -1,6 +1,6 @@
 # ADR-0021 — Prompt-injection defense-in-depth at the LLM boundary
 
-- **Status:** Accepted (2026-07-06); A1–A3 implemented, A4 staged
+- **Status:** Accepted (2026-07-06); A1–A4 implemented
 - **Deciders:** Mikko
 - **Follows:** [ADR-0009](0009-grounding-is-structural.md) (deterministic trust
   anchor + grounded LLM layer), [ADR-0004](0004-salvage-layer-mandatory.md)
@@ -146,11 +146,29 @@ manager as the model's directive. Backstop to the prompt, not a wall.
   config; the same "move imperative phrases to domain-contributed lists if a third
   language/domain lands" evolution applies.
 
-**A4 — red-team fixture + coverage test (staged).** ~12 injected items (incl. a
-Finnish variant, row breakout, fake `Vastaus: kyllä`, suppression, defamation,
-homoglyph evasion + benign controls); a coverage test asserts each is
-neutralized-or-flagged and does not change other items or the surrounding
-synthesis. Two tiers: deterministic unit (CI, no GPU) + announced live (Poro).
+**A4 — red-team fixture + coverage test (implemented).** A committed fixture,
+`data/eval/redteam-injection.jsonl` (~12 payloads + benign controls: FI+EN override,
+role-override, field-injection, forged `Vastaus: kyllä`, forged `json {"role":…}`,
+row breakout via ASCII newline AND a U+2028 separator, fence-marker reassembly,
+suppression, an A3 directive, a homoglyph marker, plus the dialect and no-keyword
+safety-story controls). Each line declares the deterministic outcome it must
+produce; `RedTeamCoverageTests` asserts it, plus an isolation invariant (a malicious
+item never changes how a benign neighbor is judged) and a coverage-completeness check
+(the fixture cannot silently shrink). This is the **durability** layer: a prompt or
+model swap, or a "tidy" of a marker list, that reopens a closed hole makes a RED CI
+test — so "switch to Azure OpenAI = config change + re-run the eval" now includes
+re-running A4.
+- **The homoglyph is pinned as a residual, not hidden:** the fixture asserts the
+  Cyrillic-marker item is NOT caught (and its marker tail survives neutralization), so
+  the one hole A1–A3 do not close is visible and regression-guarded in the honest
+  direction.
+- **Live tier (real Poro, throwaway DB, 2026-07-06):** all 12 ingested; 5 flagged
+  `needs_review`; the report produced 4 alerts **all grounded to real ingested ids —
+  zero manufactured fake-id alerts** from the forged rows, and the grounding gate
+  **dropped one narrative that cited a forged id**; `actionDroppedCount=0`. The A3
+  attributed-relay residual was observed exactly as documented (a customer demand
+  surfaced as a grounded observation, not the model's directive). Recorded in
+  `data/eval/README.md`; not a CI test (needs a GPU).
 
 ## Consequences
 
