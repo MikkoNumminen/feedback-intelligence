@@ -48,10 +48,13 @@ if ($PublishSnapshot) {
     # (deploy/snapshot - the ONLY one present in CI, so a push deploy always bundles a
     # snapshot and never leaves the SWA with a 404 fallback), or a locally generated
     # runtime snapshot (Report:SnapshotDir is relative to the API's working dir).
-    $candidates = @("deploy/snapshot", "data/snapshots", "src/FeedbackIntelligence.Api/data/snapshots") |
+    # Outer @() forces an array: with a SINGLE match (as in CI, where only the
+    # committed deploy/snapshot exists) a bare pipeline returns a scalar string, and
+    # $candidates[0] would then be its first CHARACTER, not the path.
+    $candidates = @(@("deploy/snapshot", "data/snapshots", "src/FeedbackIntelligence.Api/data/snapshots") |
         ForEach-Object { Join-Path $repoRoot "$_/report-latest.json" } |
         Where-Object { Test-Path $_ } |
-        Sort-Object { (Get-Item $_).LastWriteTime } -Descending
+        Sort-Object { (Get-Item $_).LastWriteTime } -Descending)
     if ($candidates.Count -gt 0) {
         $snapshot = $candidates[0]
         Copy-Item $snapshot $OutDir/
