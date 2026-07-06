@@ -143,6 +143,21 @@ public class IngestServiceTests : IDisposable
         Assert.Equal("maito oli vanhaa", roundTrip!.Text);
     }
 
+    [Fact]
+    public async Task LlmBusy_Sheds503_StoresNothing_ClientRetries()
+    {
+        // A BUSY GPU (gate shed) is not the same failure as LLM-DOWN: it must
+        // throw (→ 503) and store NOTHING, so the client retries the whole item —
+        // whereas LLM-down stores structure_failed to never lose the feedback.
+        var structuring = new SheddingStructuring();
+        var request = new FeedbackRequest("f-004", "email", "maito oli vanhaa", "2026-07-01T10:00:00+03:00", null, null);
+
+        await Assert.ThrowsAsync<LlmBusyException>(() =>
+            CreateService2(structuring).IngestAsync(request, CancellationToken.None));
+
+        Assert.Null(await _store.GetAsync("f-004", CancellationToken.None)); // shed ≠ stored
+    }
+
     private IngestService CreateService2(IStructuringService structuring) => new(
         _store,
         structuring,
@@ -158,6 +173,13 @@ public class IngestServiceTests : IDisposable
     {
         public Task<StructuringResult> StructureAsync(string feedbackText, CancellationToken ct = default) =>
             throw new HttpRequestException("connection refused");
+    }
+
+    // Simulates the LlmGate shedding under a busy GPU (acquire timeout).
+    private sealed class SheddingStructuring : IStructuringService
+    {
+        public Task<StructuringResult> StructureAsync(string feedbackText, CancellationToken ct = default) =>
+            throw new LlmBusyException();
     }
 
     private static StructuringResult Success(bool salvaged = false, IReadOnlyList<string>? notes = null) =>
