@@ -178,6 +178,24 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeskInvalidationDuringGeneration_IsNotClobbered_ByStaleCacheSet()
+    {
+        // dotnet-audit HIGH regression guard at the ReportService WIRING level: the
+        // epoch must be captured BEFORE generation and the CAPTURED value passed to
+        // Set. A desk ingest that invalidates DURING the (here, LLM-call) generation
+        // must not have its invalidation clobbered by the trailing Set — otherwise the
+        // next refresh serves a stale report missing the just-saved entry. (A regression
+        // re-reading cache.Epoch at Set time instead of the captured local would pass
+        // the ReportCache unit tests but fail HERE.)
+        await SeedDairyAsync(2, 3);
+        var svc = CreateService(new InvalidatingChatClient(_cache), cacheSeconds: 300);
+
+        await svc.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.False(_cache.TryGet(WindowFrom + "|" + WindowTo, out _)); // stale report not cached
+    }
+
+    [Fact]
     public async Task LlmCompletelyDown_ReportStillGenerates_WithDeterministicLayer()
     {
         await SeedDairyAsync(2, 3);
@@ -336,14 +354,21 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Snapshot_IsPersisted_AndReadable()
+    public async Task Snapshot_PersistedOnlyOnOptIn_NotOnEphemeralView()
     {
+        // dotnet-audit finding #3: an ephemeral frontend view (persistSnapshot: false,
+        // the default) must NOT overwrite the offline fallback; only the operator's
+        // opt-in generation (persistSnapshot: true, what `ctl report` sends) does.
         await SeedDairyAsync(1, 2);
         var service = CreateService(new ScriptedChatClient("ei-jsonia"));
+        var jsonPath = Path.Combine(_snapshotDir, "report-latest.json");
 
-        await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+        await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);   // ephemeral view
+        Assert.False(File.Exists(jsonPath));                                          // no clobber
+        Assert.Null(await service.ReadLatestSnapshotJsonAsync(CancellationToken.None));
 
-        Assert.True(File.Exists(Path.Combine(_snapshotDir, "report-latest.json")));
+        await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, persistSnapshot: true);
+        Assert.True(File.Exists(jsonPath));                                           // opt-in persists
         Assert.True(File.Exists(Path.Combine(_snapshotDir, "report-latest.html")));
         var json = await service.ReadLatestSnapshotJsonAsync(CancellationToken.None);
         Assert.NotNull(json);
@@ -359,6 +384,31 @@ public class ReportServiceTests : IDisposable
         {
             var text = responses[Math.Min(_next++, responses.Length - 1)];
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, text)));
+        }
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    // Simulates a desk POST /feedback landing DURING generation: it invalidates the
+    // cache on its first (synthesis) call, so the trailing Set must no-op.
+    private sealed class InvalidatingChatClient(ReportCache cache) : IChatClient
+    {
+        private int _calls;
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (System.Threading.Interlocked.Increment(ref _calls) == 1)
+                cache.Invalidate();
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "ei-jsonia")));
         }
 
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(

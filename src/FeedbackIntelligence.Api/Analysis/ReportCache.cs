@@ -10,6 +10,17 @@ public sealed class ReportCache
 {
     private readonly object _lock = new();
     private (string Key, DateTimeOffset Expires, ManagementReport Report)? _entry;
+    private long _epoch;
+
+    /// <summary>The invalidation epoch. Capture it BEFORE reading the items a report
+    /// is built from, then pass it to <see cref="Set"/>: if an ingest invalidated the
+    /// cache while the (~20 s) generation ran, the epoch changed and the stale report
+    /// is NOT cached — so "a fresh desk entry appears on the very next refresh" holds
+    /// even when the entry is saved mid-generation (lost-invalidation TOCTOU).</summary>
+    public long Epoch
+    {
+        get { lock (_lock) return _epoch; }
+    }
 
     public bool TryGet(string key, out ManagementReport report)
     {
@@ -25,11 +36,17 @@ public sealed class ReportCache
         return false;
     }
 
-    public void Set(string key, ManagementReport report, TimeSpan ttl)
+    /// <summary>Cache the report only if the epoch is unchanged since
+    /// <paramref name="expectedEpoch"/> was captured — a compare-and-set that drops
+    /// the write when an ingest invalidated during generation. Returns whether it cached.</summary>
+    public bool Set(string key, ManagementReport report, TimeSpan ttl, long expectedEpoch)
     {
         lock (_lock)
         {
+            if (_epoch != expectedEpoch)
+                return false;
             _entry = (key, DateTimeOffset.UtcNow + ttl, report);
+            return true;
         }
     }
 
@@ -37,6 +54,7 @@ public sealed class ReportCache
     {
         lock (_lock)
         {
+            _epoch++;
             _entry = null;
         }
     }
