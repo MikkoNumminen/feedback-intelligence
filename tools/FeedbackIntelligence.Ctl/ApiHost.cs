@@ -77,52 +77,52 @@ public static class ApiHost
         var apiDir = Config.Abs(Config.ApiProject);
         var db = Config.Abs(Config.DemoDbPath);
         var snapDir = Config.Abs("data/snapshots");
-        // Start-Process detaches, redirects logs to a file, and -PassThru gives
-        // us the PID to track. Working dir = the API PROJECT dir (NOT the repo
-        // root): ASP.NET's ContentRoot defaults to the CWD, so it must be where
-        // appsettings.json and wwwroot live — exactly what `dotnet run --project`
-        // does. (Repo-root CWD left the Llm config empty and crashed startup.)
-        // domains/ and prompts/ resolve via the binary's own dir (copied at
-        // build); DB + snapshot are absolute so they are CWD-independent.
-        // PowerShell single-quoted strings escape an apostrophe by doubling it;
-        // a path like C:\Users\O'Brien would otherwise close the string (parse
-        // error, or worse a command-injection surface). Escape every value
-        // interpolated into the single-quoted script below.
-        static string Ps(string s) => s.Replace("'", "''");
-        var argList = string.Join(",",
-            $"'{Ps(dll)}'", "'--urls'", $"'{Ps(Config.BaseUrl)}'",
-            "'--Ingest:DbPath=" + Ps(db) + "'", "'--Report:SnapshotDir=" + Ps(snapDir) + "'");
-        // Launch detached and have the launcher WRITE the pid to a file. We do NOT
-        // read the pid from Shell.Run's stdout: the detached API can inherit and hold
-        // that stdout pipe open, which would make the read block (the root cause of
-        // `up`/`data` hangs). A file is the reliable channel; Shell.Run itself now
-        // bounds its post-exit stream wait so it always returns.
-        var launchPidFile = Config.Abs(Path.Combine(".feedctl", "api.launch.pid"));
-        try { File.Delete(launchPidFile); } catch { /* best effort */ }
-        var script =
-            $"$proc = Start-Process dotnet -ArgumentList {argList} -WorkingDirectory '{Ps(apiDir)}' " +
-            $"-WindowStyle Hidden -RedirectStandardOutput '{Ps(LogFile)}' -RedirectStandardError '{Ps(LogFile)}.err' -PassThru; " +
-            $"Set-Content -Path '{Ps(launchPidFile)}' -Value $proc.Id -Encoding ascii -NoNewline";
-        Shell.Run("powershell", ["-NoProfile", "-Command", script], 120000);
+        // Launch the API FULLY DETACHED via a batch wrapper started with
+        // UseShellExecute=true (ShellExecuteEx). This is the load-bearing detail:
+        // Start-Process -RedirectStandard* — and Process.Start with redirected
+        // streams — force CreateProcess(bInheritHandles=TRUE), so the long-lived
+        // API inherited a copy of whatever stdout pipe launched feedctl. That
+        // handle never closed, so the launching shell never saw EOF and looked
+        // like it was "still running" forever (and the pid read could block, the
+        // old `up`/`data` hang). ShellExecuteEx inherits NO handles, so `up`
+        // returns clinically and the API is truly independent. The batch does the
+        // file redirection (keeping .feedctl/api.log); the working dir is the API
+        // PROJECT dir so ASP.NET's ContentRoot finds appsettings.json + wwwroot
+        // (DB + snapshot are absolute, CWD-independent). Paths are wrapped in cmd
+        // double-quotes (doubled to escape) and any '%' is doubled so cmd does not
+        // treat a path as an environment variable.
+        static string Q(string s) => "\"" + s.Replace("\"", "\"\"").Replace("%", "%%") + "\"";
+        var batch = Config.Abs(Path.Combine(".feedctl", "launch-api.cmd"));
+        File.WriteAllText(batch,
+            "@echo off\r\n" +
+            "dotnet " + Q(dll) + " --urls " + Config.BaseUrl + " " +
+            Q("--Ingest:DbPath=" + db) + " " + Q("--Report:SnapshotDir=" + snapDir) +
+            " 1>" + Q(LogFile) + " 2>" + Q(LogFile + ".err") + "\r\n");
 
-        var pid = 0;
-        for (var attempt = 0; attempt < 30 && pid == 0; attempt++)
+        try
         {
-            try
+            var proc = Process.Start(new ProcessStartInfo
             {
-                if (File.Exists(launchPidFile) && int.TryParse(File.ReadAllText(launchPidFile).Trim(), out var parsed))
-                    pid = parsed;
+                FileName = batch,
+                WorkingDirectory = apiDir,
+                UseShellExecute = true,              // ShellExecuteEx: inherits NO handles => clean detach
+                WindowStyle = ProcessWindowStyle.Hidden,
+            });
+            if (proc is null)
+            {
+                Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
+                return null;
             }
-            catch { /* file may be mid-write — retry */ }
-            if (pid == 0) System.Threading.Thread.Sleep(100);
+            // proc is the cmd host running the batch; it stays alive as the API's
+            // parent, so its pid tracks the API's lifetime and taskkill /T reaps both.
+            File.WriteAllText(Config.PidFile, proc.Id.ToString());
+            return proc.Id;
         }
-        if (pid == 0)
+        catch (Exception ex)
         {
-            Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
+            Console.WriteLine("  " + Term.C("○ could not start the API process: " + ex.Message, "31"));
             return null;
         }
-        File.WriteAllText(Config.PidFile, pid.ToString());
-        return pid;
     }
 
     public static void Stop()
