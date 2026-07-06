@@ -22,9 +22,11 @@ public static class NarrativeGuard
     // the DIRECTIVE shapes an injection produces, not soft descriptive modals.
     private static readonly string[] ActionMarkers =
     {
-        // Finnish — recommendation / proposal / demand
-        "suosittelen", "suosittelemme", "suosittelisi", "ehdotan", "ehdotamme",
-        "vaadin", "vaadimme", "vaadittava",
+        // Finnish — recommendation / proposal / demand. First-person forms only:
+        // the directive is the MODEL advising, whereas 3rd-person "asiakas suosittelisi
+        // kauppaa" is descriptive praise, not an instruction.
+        "suosittelen", "suosittelemme", "suosittelisin", "ehdotan", "ehdotamme",
+        "vaadin", "vaadimme",
         // Finnish — personnel / closure / compensation directives (incl. imperatives)
         "on erotettava", "tulee erottaa", "erota ", "erottakaa", "irtisano",
         "irtisanokaa", "palkatkaa", "sulkekaa", "sulje osasto", "suljettava",

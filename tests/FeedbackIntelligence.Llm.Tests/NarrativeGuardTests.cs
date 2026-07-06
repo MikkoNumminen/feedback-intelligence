@@ -26,6 +26,8 @@ public class NarrativeGuardTests
     // Reports a soft customer opinion — descriptive, must NOT be dropped.
     [InlineData("Asiakkaiden mielestä hyllysaatavuutta pitäisi parantaa osastolla 4.")]
     [InlineData("Customers feel the checkout service should be faster.")]
+    // 3rd-person praise ("customer would recommend") is a description, not a directive.
+    [InlineData("Moni asiakas suosittelisi kauppaa ystävilleen hyvän palvelun takia.")]
     public void LooksActionBearing_LeavesDescriptiveNarrativesClean(string narrative) =>
         Assert.False(NarrativeGuard.LooksActionBearing(narrative));
 
