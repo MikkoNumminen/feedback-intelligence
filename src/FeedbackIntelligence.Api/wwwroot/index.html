@@ -167,15 +167,24 @@ function windowRange() {
   return { from: new Date(to.getTime() - Number(choice) * 24 * 3600 * 1000), to };
 }
 
+let shownReportOnce = false;
 async function loadReport() {
   const range = windowRange();
   if (!range) { setStatus(L.pickBothDates); return; }
-  setStatus(L.compiling);
   el("refresh").disabled = true;
+  // Static demo corpus: on the FIRST load, paint the pre-generated snapshot instantly
+  // so the page is never blank during the tens-of-seconds live synthesis, then upgrade
+  // to live below. On later loads / manual Refresh we go straight to live for freshness.
+  if (!shownReportOnce) {
+    const pre = await tryFetchJson("./report-latest.json") ?? await tryFetchJson(`${API}/report/snapshot`);
+    if (pre) { render(pre, false); setStatus(L.snapShown); }
+  }
+  setStatus(L.compiling);
   try {
     const res = await fetch(`${API}/report?from=${range.from.toISOString()}&to=${range.to.toISOString()}`);
     if (!res.ok) throw new Error("report " + res.status);
     render(await res.json(), true);
+    shownReportOnce = true;
     setStatus("");
   } catch {
     // Fallback chain: backend snapshot endpoint, then the static copy published
