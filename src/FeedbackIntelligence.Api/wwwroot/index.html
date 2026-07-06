@@ -21,10 +21,18 @@
   .card { background:var(--card); border:1px solid var(--line); border-radius:.7rem; padding:.9rem; margin:.6rem 0; }
   .card.alert { border-left:4px solid var(--err); }
   .muted { color:var(--mut); font-size:.85rem; }
-  .idchip { display:inline-block; margin:.15rem .2rem 0 0; padding:.1rem .45rem; font-size:.75rem;
-            background:#eef2f6; border:1px solid var(--line); border-radius:.4rem; cursor:pointer; }
-  .idchip:hover { background:#dfe7ee; }
-  dialog { border:1px solid var(--line); border-radius:.7rem; max-width:32rem; width:92vw; padding:1rem; }
+  .showmsgs { margin-top:.7rem; background:#eef2f6; border:1px solid var(--line); color:var(--acc);
+              font-weight:600; font-size:.9rem; cursor:pointer; padding:.45rem .8rem; border-radius:.5rem; }
+  .showmsgs:hover { background:#dfe7ee; }
+  .msg-title { margin:.1rem 0; font-size:1.05rem; }
+  .msglist { max-height:64vh; overflow:auto; margin-top:.7rem; }
+  .msgrow { padding:.7rem 0; border-top:1px solid var(--line); }
+  .msgrow:first-child { border-top:0; }
+  .msgmeta { display:flex; align-items:center; gap:.45rem; font-size:.8rem; color:var(--mut); }
+  .msgtext { margin:.35rem 0 0; white-space:pre-wrap; }
+  .sevdot { width:.7rem; height:.7rem; border-radius:50%; display:inline-block; flex:none; background:#8a94a0; }
+  .sev-medium { background:#c99a3b; } .sev-high { background:#b3541e; } .sev-critical { background:#b3261e; }
+  dialog { border:1px solid var(--line); border-radius:.7rem; max-width:42rem; width:92vw; padding:1rem; }
   dialog::backdrop { background:rgba(20,25,30,.45); }
   #status { min-height:1.2rem; font-size:.9rem; color:var(--mut); }
   .foot { margin-top:2rem; font-size:.8rem; color:var(--mut); }
@@ -72,8 +80,10 @@ const STR = {
   fi: {
     htmlLang: "fi", locale: "fi-FI", pageTitle: "Palautetilanne", h1: "Palautetilanne",
     today: "Tänään", d7: "7 päivää", d30: "30 päivää", custom: "Oma aikaväli…", refresh: "Päivitä",
-    footBefore: "Jokainen väite on jäljitettävissä: tunnisteet avaavat alkuperäisen palautteen. Kirjaa uusi palaute: ",
+    footBefore: "Jokainen väite on jäljitettävissä: avaa teeman takaa löytyvät viestit. Kirjaa uusi palaute: ",
     footLink: "tiskikirjaus", close: "Sulje", live: "Live", snap: "Tilannekuva",
+    showMessages: "Näytä", messagesWord: "viestiä",
+    sev: { low: "matala", medium: "kohtalainen", high: "korkea", critical: "kriittinen", unknown: "–" },
     pickBothDates: "Valitse oman aikavälin molemmat päivät.",
     compiling: "Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)",
     window: "Aikaväli", items: "palautetta", noStructure: "ilman rakennetta",
@@ -88,8 +98,10 @@ const STR = {
   en: {
     htmlLang: "en", locale: "en-GB", pageTitle: "Feedback situation", h1: "Feedback situation",
     today: "Today", d7: "7 days", d30: "30 days", custom: "Custom range…", refresh: "Refresh",
-    footBefore: "Every claim is traceable: the IDs open the source feedback. Log new feedback: ",
+    footBefore: "Every claim is traceable: open the messages behind each theme. Log new feedback: ",
     footLink: "desk entry", close: "Close", live: "Live", snap: "Snapshot",
+    showMessages: "Show", messagesWord: "messages",
+    sev: { low: "low", medium: "medium", high: "high", critical: "critical", unknown: "–" },
     pickBothDates: "Pick both dates for the custom range.",
     compiling: "Compiling the report… (the model writes the summaries)",
     window: "Window", items: "items", noStructure: "without structure",
@@ -209,54 +221,51 @@ function render(report, live) {
     root.appendChild(node("div", "card alert", [
       node("strong", null, [alert.textExcerpt]),
       node("div", "muted", [`${alert.source} · ${short(alert.timestamp)} · ${origin}`]),
-      idChip(alert.feedbackId),
     ]));
   }
 
   root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
   for (const theme of report.themes) {
-    const chips = node("div", null, []);
-    for (const id of theme.feedbackIds) chips.appendChild(idChip(id));
-    root.appendChild(node("div", "card", [
+    const card = node("div", "card", [
       node("strong", null, [theme.title]),
       node("div", "muted", [`${catLabel(theme.category)} · ${theme.count} ${L.items} · ${L.trend}: ${theme.directionLabel ?? theme.direction}` +
         (theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
       node("p", null, [theme.narrative]),
-      chips,
-    ]));
-  }
-}
-
-function idChip(id) {
-  const chip = node("span", "idchip", [id]);
-  chip.addEventListener("click", () => openItem(id));
-  return chip;
-}
-
-async function openItem(id) {
-  try {
-    const res = await fetch(`${API}/feedback/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error();
-    const item = await res.json();
-    const body = el("item-body");
-    body.innerHTML = "";
-    body.appendChild(node("p", null, [item.text]));
-    body.appendChild(node("p", "muted", [`${item.source} · ${short(item.timestamp)}`]));
-    if (item.structure) {
-      const cf = (schema && schema.categoryField) || "category";
-      body.appendChild(node("p", "muted", [
-        `${cf}: ${catLabel(item.structure.category)} · ${L.theme}: ${item.structure.theme} · ` +
-        `${L.severity}: ${labelOf(schema && schema.severityLabels, item.structure.severity)} · ` +
-        `${L.type}: ${labelOf(schema && schema.typeLabels, item.structure.type)}`,
-      ]));
+    ]);
+    const sources = theme.sources || [];
+    if (sources.length) {
+      const btn = node("button", "showmsgs", [`${L.showMessages} ${sources.length} ${L.messagesWord} →`]);
+      btn.addEventListener("click", () => openMessages(theme));
+      card.appendChild(btn);
     }
-    if (item.corrections?.length)
-      body.appendChild(node("p", "muted", [L.correctedAtDesk +
-        item.corrections.map(c => `${c.field}: ${c.modelValue} → ${c.humanValue}`).join("; ")]));
-    el("item-dialog").showModal();
-  } catch {
-    setStatus(L.itemError);
+    root.appendChild(card);
   }
+}
+
+function severityMeta(sev) {
+  const label = (schema && schema.severityLabels && schema.severityLabels[sev]) || (L.sev && L.sev[sev]) || sev;
+  const cls = ["medium", "high", "critical"].includes(sev) ? "sev-" + sev : "";
+  return { label, cls };
+}
+
+// One click on a theme opens ALL its source messages. The messages are embedded
+// in the report, so this works live AND from a snapshot (no per-item fetch).
+function openMessages(theme) {
+  const body = el("item-body");
+  body.innerHTML = "";
+  body.appendChild(node("h3", "msg-title", [theme.title]));
+  body.appendChild(node("div", "muted", [`${catLabel(theme.category)} · ${theme.sources.length} ${L.messagesWord}`]));
+  const list = node("div", "msglist", []);
+  for (const s of theme.sources) {
+    const sm = severityMeta(s.severity);
+    const meta = node("div", "msgmeta", [
+      node("span", ("sevdot " + sm.cls).trim(), []),
+      node("span", null, [`${s.source} · ${short(s.timestamp)} · ${sm.label}`]),
+    ]);
+    list.appendChild(node("div", "msgrow", [meta, node("p", "msgtext", [s.text])]));
+  }
+  body.appendChild(list);
+  el("item-dialog").showModal();
 }
 
 function short(iso) {

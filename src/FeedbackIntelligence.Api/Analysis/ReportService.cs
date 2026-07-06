@@ -145,10 +145,11 @@ public sealed class ReportService(
             var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
             var directionLabel = ReportText.DirectionLabel(direction, lang);
             var ids = groupItems.Select(i => i.Id).ToList();
+            var sources = BuildSources(groupItems);
 
             var narrative = await SynthesizeThemeAsync(group.Key, groupItems, directionLabel, state, ct);
             themes.Add(narrative is { } ok
-                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, directionLabel, ids, true)
+                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, directionLabel, ids, true, sources)
                 : new ReportTheme(
                     group.Key,
                     FallbackTitle(group.Key, groupItems),
@@ -157,7 +158,8 @@ public sealed class ReportService(
                     direction,
                     directionLabel,
                     ids,
-                    false));
+                    false,
+                    sources));
         }
 
         var report = new ManagementReport(
@@ -432,6 +434,23 @@ public sealed class ReportService(
             "low" => 1, "medium" => 2, "high" => 3, "critical" => 4, _ => 2,
         });
     }
+
+    /// <summary>The group's messages, embedded in the report so the view shows the
+    /// evidence in one click (live OR from a snapshot, no per-item fetch). Ordered
+    /// most-severe-then-most-recent first so the serious voices lead; Text is the
+    /// full stored message (length-capped at ingest).</summary>
+    private static List<ReportSourceItem> BuildSources(IReadOnlyList<StoredFeedback> items) =>
+        items
+            .OrderByDescending(i => SeverityRank(i.Structure?.Severity))
+            .ThenByDescending(i => i.Timestamp, StringComparer.Ordinal)
+            .Select(i => new ReportSourceItem(
+                i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown"))
+            .ToList();
+
+    private static int SeverityRank(string? severity) => severity switch
+    {
+        "critical" => 4, "high" => 3, "medium" => 2, "low" => 1, _ => 0,
+    };
 
     private static string FallbackTitle(string category, IReadOnlyList<StoredFeedback> groupItems)
     {

@@ -96,6 +96,23 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Theme_EmbedsSourceMessages_SeverityFirst_FullText()
+    {
+        // The view lists a theme's messages from data embedded in the report (so it
+        // works live AND from a snapshot). They must be present, most-severe-first,
+        // and carry the FULL text — not a truncated excerpt.
+        await SeedDairyAsync(earlyCount: 2, lateCount: 1, lateSeverity: "critical"); // 2 low + 1 critical
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.Equal(theme.Count, theme.Sources.Count);
+        Assert.Equal("critical", theme.Sources[0].Severity);            // serious voice leads
+        Assert.Contains(theme.Sources, s => s.Severity == "low");
+        Assert.All(theme.Sources, s => Assert.StartsWith("maito vanhaa", s.Text)); // full message, not an excerpt
+    }
+
+    [Fact]
     public async Task GroundedNarrative_IsUsed()
     {
         await SeedDairyAsync(2, 3);
