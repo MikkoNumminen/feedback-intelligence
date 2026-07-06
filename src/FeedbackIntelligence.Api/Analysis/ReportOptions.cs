@@ -45,6 +45,20 @@ public sealed class ReportOptions
     public int DefaultWindowDays { get; init; } = 7;
     public int MaxWindowDays { get; init; } = 92;
     public int MaxItemsPerWindow { get; init; } = 2000;
+
+    /// <summary>Minimum items in a category group before ANY non-stable trend is
+    /// reported. Below this a first/second-half split is noise, not signal — the
+    /// report says "stable" (vakaa) rather than invent a direction.</summary>
+    public int MinItemsForTrend { get; init; } = 6;
+
+    /// <summary>Significance threshold, in standard deviations, that the
+    /// first/second-half VOLUME split must clear before a trend is reported. Under
+    /// uniform-in-time arrivals the second-half count is ~Binomial(n, 0.5), so the
+    /// (second − first) gap has sd √n; a trend needs |second − first| ≥ z·√n.
+    /// Higher = stricter: fewer hallucinated trends on organic noise, at the cost
+    /// of weak real trends reading as "stable" (the safe, honest failure). Measured
+    /// against organic noise and canonical story shapes — see ADR-0017.</summary>
+    public double TrendSignificanceZ { get; init; } = 1.6;
 }
 
 public sealed class ReportOptionsValidator : IValidateOptions<ReportOptions>
@@ -66,6 +80,10 @@ public sealed class ReportOptionsValidator : IValidateOptions<ReportOptions>
             failures.Add($"Report window days must satisfy 1 <= default <= max, got {options.DefaultWindowDays}/{options.MaxWindowDays}.");
         if (options.MaxItemsPerWindow < 1)
             failures.Add($"Report:MaxItemsPerWindow must be positive, got {options.MaxItemsPerWindow}.");
+        if (options.MinItemsForTrend < 3)
+            failures.Add($"Report:MinItemsForTrend must be >= 3 (a half-split needs a few items), got {options.MinItemsForTrend}.");
+        if (options.TrendSignificanceZ < 0)
+            failures.Add($"Report:TrendSignificanceZ must be >= 0, got {options.TrendSignificanceZ}.");
         if (options.MaxLlmCallsPerReport < 0)
             failures.Add($"Report:MaxLlmCallsPerReport must be >= 0 (0 = deterministic only), got {options.MaxLlmCallsPerReport}.");
         if (options.ReportCacheSeconds < 0)

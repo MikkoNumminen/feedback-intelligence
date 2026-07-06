@@ -142,7 +142,7 @@ public sealed class ReportService(
                      .ThenBy(g => g.Key, StringComparer.Ordinal))
         {
             var groupItems = group.ToList();
-            var direction = ComputeDirection(groupItems, fromIso, toIso);
+            var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
             var directionLabel = ReportText.DirectionLabel(direction, lang);
             var ids = groupItems.Select(i => i.Id).ToList();
 
@@ -368,15 +368,19 @@ public sealed class ReportService(
         }
     }
 
-    /// <summary>First vs second half of the window by volume. "worsening" needs
-    /// BOTH growth and a severity shift measured against a non-empty early half
-    /// — a theme that only just appeared can be "growing", never "worsening".</summary>
+    /// <summary>First vs second half of the window. Splits the group at the window
+    /// midpoint and defers the actual decision to <see cref="TrendDirection"/>,
+    /// which only reports a trend when the volume shift is statistically
+    /// significant — the guard that stops organic noise from being labelled a
+    /// trend (measured 86% false-trend rate under the old 1.25x rule; see
+    /// ADR-0017).</summary>
     // Neutral direction KEYS (stable/growing/declining/worsening); the localized
     // label is applied at presentation time via ReportText so the verify gate and
     // JSON stay language-independent.
-    private static string ComputeDirection(IReadOnlyList<StoredFeedback> groupItems, string fromIso, string toIso)
+    private static string ComputeDirection(
+        IReadOnlyList<StoredFeedback> groupItems, string fromIso, string toIso, int minItems, double z)
     {
-        if (groupItems.Count < 3
+        if (groupItems.Count < minItems
             || !DateTimeOffset.TryParse(fromIso, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var from)
             || !DateTimeOffset.TryParse(toIso, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var to))
             return "stable";
@@ -391,11 +395,31 @@ public sealed class ReportService(
             (ts < midpoint ? first : second).Add(item);
         }
 
-        if (second.Count > first.Count * 1.25)
-            return first.Count > 0 && AverageSeverityRank(second) > AverageSeverityRank(first)
-                ? "worsening"
-                : "growing";
-        if (first.Count > second.Count * 1.25)
+        return TrendDirection(
+            first.Count, second.Count, AverageSeverityRank(first), AverageSeverityRank(second), minItems, z);
+    }
+
+    /// <summary>Pure trend decision over a first/second-half split. A volume shift
+    /// is only a trend when it clears <paramref name="z"/> standard deviations of
+    /// what uniform-in-time arrivals would produce: under H0 the second-half count
+    /// is ~Binomial(n, 0.5), so the (second − first) gap has sd √n and a trend needs
+    /// |second − first| ≥ z·√n. Groups below <paramref name="minItems"/> are always
+    /// "stable" (too few to tell signal from noise). "worsening" additionally needs
+    /// a rising average severity over a NON-EMPTY early half — a theme that only
+    /// just appeared can grow, never worsen. Neutral keys; localized at
+    /// presentation. Internal for direct measurement in tests.</summary>
+    internal static string TrendDirection(
+        int first, int second, double firstSeverity, double secondSeverity, int minItems, double z)
+    {
+        var n = first + second;
+        if (n < minItems)
+            return "stable";
+
+        var margin = z * Math.Sqrt(n);
+        var delta = second - first;
+        if (delta >= margin)
+            return first > 0 && secondSeverity > firstSeverity ? "worsening" : "growing";
+        if (-delta >= margin)
             return "declining";
         return "stable";
     }
