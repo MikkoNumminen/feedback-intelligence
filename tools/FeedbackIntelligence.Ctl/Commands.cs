@@ -34,7 +34,7 @@ public static class Commands
 
     // --- lifecycle ---
 
-    public static async Task<int> UpAsync(bool load)
+    public static async Task<int> UpAsync(bool load, bool supervise = false)
     {
         Console.WriteLine(Term.Bold("\n  bringing the demo up …\n"));
         if (Board.SharedRagUp())
@@ -82,6 +82,66 @@ public static class Commands
         Console.WriteLine(Board.Render(await Board.GatherAsync()));
         Console.WriteLine("  open " + Term.C(Config.BaseUrl + "/", "36") + " (management view) · " +
             Term.C(Config.BaseUrl + "/desk.html", "36") + " (desk entry)");
+        if (supervise) return await SuperviseAsync();
+        return 0;
+    }
+
+    /// <summary>Keep the API process alive for a demo session (opt-in `up --supervise`).
+    /// This is NOT boot-autostart — the isolation invariant forbids auto-grabbing the
+    /// shared GPU/Funnel, so supervision is operator-invoked and self-limiting: each tick
+    /// it re-checks the shared-RAG guard and STOPS the moment the RAG comes up (the GPU is
+    /// theirs), and if the API port goes dark it restarts the process (no rebuild) and
+    /// re-warms. Ctrl-C stops watching but leaves the demo up.</summary>
+    private static async Task<int> SuperviseAsync()
+    {
+        Console.WriteLine("  " + Term.C("●", "32") +
+            " supervising — the API restarts if it dies (Ctrl-C stops watching; the demo stays up).");
+        using var cts = new CancellationTokenSource();
+        ConsoleCancelEventHandler onCancel = (_, e) => { e.Cancel = true; cts.Cancel(); };
+        Console.CancelKeyPress += onCancel;
+        var restarts = 0;
+        var consecutiveFailures = 0;
+        try
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                try { await Task.Delay(5000, cts.Token); }
+                catch (OperationCanceledException) { break; }
+
+                // Never contend for the shared GPU: if the RAG came up, back off entirely.
+                if (Board.SharedRagUp())
+                {
+                    Console.WriteLine("  " + Term.C(
+                        "▲ shared RAG came up — stopping supervision (the GPU is theirs). Re-run `feedctl up` when it's down.",
+                        "33"));
+                    break;
+                }
+
+                if (ApiHost.PortListening()) { consecutiveFailures = 0; continue; }
+
+                restarts++;
+                Console.WriteLine("  " + Term.C($"▲ API went down — restarting (#{restarts}) …", "33"));
+                ApiHost.Start(build: false); // no rebuild: supervision never changes API code
+                var healthy = await WaitAsync(async () =>
+                {
+                    var b = await Shell.GetJsonAsync("/health", 15);
+                    return b is not null && b.Value.TryGetProperty("status", out var s) && s.GetString() == "ok";
+                }, 120);
+                if (healthy)
+                {
+                    consecutiveFailures = 0;
+                    Console.WriteLine("  " + Term.C("● API back up.", "32"));
+                }
+                else if (++consecutiveFailures >= 3)
+                {
+                    Console.WriteLine("  " + Term.C(
+                        "○ API failed to come back 3× — stopping supervision; check `logs`/board.", "31"));
+                    break;
+                }
+            }
+        }
+        finally { Console.CancelKeyPress -= onCancel; }
+        Console.WriteLine("  stopped supervising (demo left up).");
         return 0;
     }
 
