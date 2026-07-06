@@ -27,8 +27,10 @@ was purely in *deploy shape* and a browser security boundary ADR-0016 predated.
 
 1. **Commit a real, provenance-verified seed-42 snapshot** at
    `deploy/snapshot/report-latest.{json,html}` and **always bundle it** in CI.
-   `publish-frontend.ps1` takes `deploy/snapshot/` as the highest-priority
-   snapshot source; the workflow hardcodes `-PublishSnapshot`. This **supersedes
+   `publish-frontend.ps1` bundles the newest `report-latest.json` among its
+   candidate dirs, and in a fresh CI checkout the committed `deploy/snapshot/` is
+   the only candidate, so it is always the one shipped; the workflow hardcodes
+   `-PublishSnapshot`. This **supersedes
    ADR-0016's "snapshot bundling stays opt-in"**: the `-PublishSnapshot` switch
    now governs only a *locally generated runtime* snapshot; the committed demo
    snapshot ships on **every** deploy so the link is never a 404. The placeholder

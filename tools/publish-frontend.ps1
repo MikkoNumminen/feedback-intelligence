@@ -6,8 +6,9 @@ config. With -PublishSnapshot it also bundles the latest report snapshot so a
 shared link renders a situational view even with the backend completely down.
 
 CI ALWAYS bundles the committed, provenance-verified seed-42 snapshot
-(deploy/snapshot/), which this script takes as the highest-priority source, so a
-push deploy is never a 404. -PublishSnapshot is OPT-IN only for a LOCALLY
+(deploy/snapshot/): in a fresh CI checkout it is the only report-latest.json
+present, so this script (which bundles the NEWEST candidate) always picks it and
+a push deploy is never a 404. -PublishSnapshot is OPT-IN only for a LOCALLY
 generated runtime snapshot: the script cannot tell real from placeholder data,
 and the hard rule bans placeholder-derived data in any demo, so verify against
 docs/mock-data-register.md before passing it for a runtime snapshot. See

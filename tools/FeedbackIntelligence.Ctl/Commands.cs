@@ -20,14 +20,22 @@ public static class Commands
     {
         Console.WriteLine(Term.C("  watching — Ctrl-C to stop\n", "2"));
         using var cts = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
-        while (!cts.IsCancellationRequested)
+        // Store the handler and remove it in finally: an unremoved handler over a disposed
+        // CTS throws ObjectDisposedException on the cancel thread on a later Ctrl-C (e.g.
+        // watch → Ctrl-C → up --supervise → Ctrl-C in the REPL).
+        ConsoleCancelEventHandler onCancel = (_, e) => { e.Cancel = true; cts.Cancel(); };
+        Console.CancelKeyPress += onCancel;
+        try
         {
-            var rows = await Board.GatherAsync();
-            Console.Write(Term.Clear);
-            Console.WriteLine(Board.Render(rows));
-            try { await Task.Delay(2000, cts.Token); } catch (TaskCanceledException) { break; }
+            while (!cts.IsCancellationRequested)
+            {
+                var rows = await Board.GatherAsync();
+                Console.Write(Term.Clear);
+                Console.WriteLine(Board.Render(rows));
+                try { await Task.Delay(2000, cts.Token); } catch (TaskCanceledException) { break; }
+            }
         }
+        finally { Console.CancelKeyPress -= onCancel; }
         Console.WriteLine("  stopped watching (nothing changed).");
         return 0;
     }
@@ -87,11 +95,16 @@ public static class Commands
     }
 
     /// <summary>Keep the API process alive for a demo session (opt-in `up --supervise`).
-    /// This is NOT boot-autostart — the isolation invariant forbids auto-grabbing the
-    /// shared GPU/Funnel, so supervision is operator-invoked and self-limiting: each tick
-    /// it re-checks the shared-RAG guard and STOPS the moment the RAG comes up (the GPU is
-    /// theirs), and if the API port goes dark it restarts the process (no rebuild) and
-    /// re-warms. Ctrl-C stops watching but leaves the demo up.</summary>
+    /// NOT boot-autostart — the isolation invariant forbids auto-grabbing the shared
+    /// GPU/Funnel, so supervision is operator-invoked and self-limiting: each 5 s tick it
+    /// re-checks the shared-RAG guard and STOPS the moment the RAG comes up (the GPU is
+    /// theirs); if the API port goes dark it reaps any dead/wedged process and restarts
+    /// (no rebuild), confirming with /health. A rolling-window flap guard stops it rather
+    /// than respawn a crash-looping API forever. Steady-state liveness is the cheap port
+    /// bind, NOT a /health poll — polling would run a Poro completion every tick, and a
+    /// health shed under real report load would look like an outage and force a wrong
+    /// restart; a wedged-but-still-bound API is out of scope by design. Ctrl-C stops
+    /// watching but leaves the demo up.</summary>
     private static async Task<int> SuperviseAsync()
     {
         Console.WriteLine("  " + Term.C("●", "32") +
@@ -99,8 +112,12 @@ public static class Commands
         using var cts = new CancellationTokenSource();
         ConsoleCancelEventHandler onCancel = (_, e) => { e.Cancel = true; cts.Cancel(); };
         Console.CancelKeyPress += onCancel;
-        var restarts = 0;
-        var consecutiveFailures = 0;
+        // Flap guard: more than a few restarts in a short window means it is crash-looping,
+        // not recovering — stop rather than respawn (and leak processes) forever. Rolling,
+        // so an occasional restart across a long demo never trips it.
+        var restarts = new Queue<DateTime>();
+        const int maxRestartsPerWindow = 5;
+        var window = TimeSpan.FromMinutes(3);
         try
         {
             while (!cts.IsCancellationRequested)
@@ -117,27 +134,36 @@ public static class Commands
                     break;
                 }
 
-                if (ApiHost.PortListening()) { consecutiveFailures = 0; continue; }
+                if (ApiHost.PortListening()) continue; // up (steady-state = port bind, see summary)
 
-                restarts++;
-                Console.WriteLine("  " + Term.C($"▲ API went down — restarting (#{restarts}) …", "33"));
-                ApiHost.Start(build: false); // no rebuild: supervision never changes API code
-                var healthy = await WaitAsync(async () =>
-                {
-                    var b = await Shell.GetJsonAsync("/health", 15);
-                    return b is not null && b.Value.TryGetProperty("status", out var s) && s.GetString() == "ok";
-                }, 120);
-                if (healthy)
-                {
-                    consecutiveFailures = 0;
-                    Console.WriteLine("  " + Term.C("● API back up.", "32"));
-                }
-                else if (++consecutiveFailures >= 3)
+                // Flapping? Prune the rolling window, then decide before spawning again.
+                var now = DateTime.UtcNow;
+                while (restarts.Count > 0 && now - restarts.Peek() > window) restarts.Dequeue();
+                if (restarts.Count >= maxRestartsPerWindow)
                 {
                     Console.WriteLine("  " + Term.C(
-                        "○ API failed to come back 3× — stopping supervision; check `logs`/board.", "31"));
+                        $"○ API restarted {restarts.Count}× in {window.TotalMinutes:0} min — it is crash-looping. " +
+                        "Stopping supervision; check `logs`/board.", "31"));
                     break;
                 }
+                restarts.Enqueue(now);
+
+                Console.WriteLine("  " + Term.C($"▲ API not listening — restarting (#{restarts.Count} this window) …", "33"));
+                ApiHost.Stop();                 // reap a dead/wedged tracked process (+ any port owner) first
+                if (ApiHost.Start(build: false) is null)
+                {
+                    Console.WriteLine("  " + Term.C("○ could not start the API — will retry next tick.", "31"));
+                    continue;
+                }
+                var healthy = await WaitAsync(async () =>
+                {
+                    var b = await Shell.GetJsonAsync("/health", 15, cts.Token);
+                    return b is not null && b.Value.TryGetProperty("status", out var s) && s.GetString() == "ok";
+                }, 120, cts.Token);
+                if (!cts.IsCancellationRequested)
+                    Console.WriteLine(healthy
+                        ? "  " + Term.C("● API back up.", "32")
+                        : "  " + Term.C("▲ API restarted but /health not ok yet — will re-check next tick.", "33"));
             }
         }
         finally { Console.CancelKeyPress -= onCancel; }
@@ -453,13 +479,13 @@ public static class Commands
         return 0;
     }
 
-    private static async Task<bool> WaitAsync(Func<Task<bool>> ready, int timeoutSeconds)
+    private static async Task<bool> WaitAsync(Func<Task<bool>> ready, int timeoutSeconds, CancellationToken ct = default)
     {
         var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
-        while (DateTime.UtcNow < deadline)
+        while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
             if (await ready()) return true;
-            await Task.Delay(1500);
+            try { await Task.Delay(1500, ct); } catch (OperationCanceledException) { break; }
         }
         return false;
     }
