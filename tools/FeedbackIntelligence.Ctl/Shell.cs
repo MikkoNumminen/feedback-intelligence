@@ -38,10 +38,10 @@ public static class Shell
                 return new RunResult(124, "");
             }
             // The process exited. Normally the stream reads complete immediately, but
-            // a DETACHED grandchild (the API launched via Start-Process) can inherit
-            // and hold the stdout pipe open — making ReadToEnd().Result block forever.
-            // Bound the post-exit wait and use whatever was captured; callers that need
-            // a detached child's pid read it from a file, not from this output.
+            // a detached grandchild that inherited this stdout pipe could hold it open —
+            // making ReadToEnd().Result block forever. Bound the post-exit wait and use
+            // whatever was captured. (The API itself is now launched via ShellExecuteEx,
+            // which inherits no handles, so it never triggers this; this is a general guard.)
             Task.WhenAll(stdout, stderr).Wait(2000);
             var output = (stdout.IsCompletedSuccessfully ? stdout.Result : "")
                 + (stderr.IsCompletedSuccessfully ? stderr.Result : "");
