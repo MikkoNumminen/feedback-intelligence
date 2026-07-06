@@ -68,4 +68,8 @@ public sealed record ManagementReport(
     int LlmFallbackCount,
     // The active domain's language ("fi"/"en") so the snapshot page renders in the
     // right language even when the backend (and /schema) is unreachable.
-    string Language);
+    string Language,
+    // Injection hardening (ADR-0021 A3): narratives dropped to the deterministic
+    // fallback because they turned directive (recommend/act/verdict) instead of
+    // describing — distinct from DroppedClaimCount (ungrounded citations).
+    int ActionDroppedCount = 0);

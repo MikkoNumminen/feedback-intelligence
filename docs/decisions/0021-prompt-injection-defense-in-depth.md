@@ -1,6 +1,6 @@
 # ADR-0021 — Prompt-injection defense-in-depth at the LLM boundary
 
-- **Status:** Accepted (2026-07-06); A1–A2 implemented, A3–A4 staged
+- **Status:** Accepted (2026-07-06); A1–A3 implemented, A4 staged
 - **Deciders:** Mikko
 - **Follows:** [ADR-0009](0009-grounding-is-structural.md) (deterministic trust
   anchor + grounded LLM layer), [ADR-0004](0004-salvage-layer-mandatory.md)
@@ -106,11 +106,45 @@ count = more injection-shaped input arriving). So a manipulated item can never
   language-agnostic markers (```json`, `<|`, `[inst]`, `"role":`) in Core and move
   imperative phrases to domain-contributed lists, as the alert keywords already are.
 
-**A3 — bound synthesis authority (staged).** The narrative may only be a
-**descriptive observation of the cited items** — the prompt forbids
-recommendations/actions/judgments, and a post-check drops action-bearing
-narratives to the deterministic fallback. An injected instruction to recommend
-something then has no output slot to live in.
+**A3 — bound synthesis authority (implemented).** The narrative may only be a
+**grounded description** of the cited items, never a recommendation, directive, or
+verdict. Two layers:
+- The synthesis prompt (retail + game) instructs the model to DESCRIBE only — no
+  recommendations, action items, blame, or personnel/shutdown decisions; if the
+  feedback calls for action, report it as the customers' observation, not the
+  model's instruction.
+- A deterministic post-check, `FeedbackIntelligence.Core.Security.NarrativeGuard`,
+  runs AFTER the grounding gate: if the narrative turns directive (Finnish + English
+  markers — `suosittelen`, `erota`/`irtisano`/`sulkekaa`, `we recommend`, `should
+  refund`, …) it is dropped to the deterministic fallback and counted as
+  `ActionDroppedCount` (distinct from the ungrounded-citation `DroppedClaimCount`).
+So an injected "erota osastopäällikkö" / "recommend firing the manager" that
+survives into the model's own prose has no output slot — it never reaches the
+manager as the model's directive. Backstop to the prompt, not a wall.
+
+- **Every model-authored, manager-facing slot is guarded, not just the narrative:**
+  the check also runs on the theme `title` (a prominent ≤8-word slot) and the LLM
+  alert `reason`; a directive in either drops to the deterministic fallback. Without
+  this the "no output slot" claim would be false (PR-#25 review found both gaps).
+- **First-person / imperative anchoring keeps false positives near zero:** the guard
+  catches the MODEL advising or commanding ("suosittelen", "we should", "sulkekaa"),
+  not a 3rd-person DESCRIPTION of what customers demanded. Finnish `erottaa` (also
+  "to separate/differ") and `irtisanoa` (also "cancel a subscription"), and English
+  bare `should fire`/`should close`/`should refund` (weapon-fire, a game timer, a
+  prompt-compliant relayed demand) are ambiguous by substring and were deliberately
+  excluded. Measured like A2: a live seed-42 report through real Poro dropped
+  **0 of 14** narratives (0 action-drops, 0 ungrounded) — invisible on legitimate
+  descriptive output.
+- **Named residual:** the prompt itself instructs "report a demand as the customers'
+  observation," and the guard is *built to allow* that attributed 3rd-person form —
+  so an injected demand relayed as "asiakkaat vaativat…" still reaches the manager as
+  a description of what was said. That is intended (it is what customers said) and is
+  why this is a backstop, not a wall. A determined paraphrase evades substring
+  matching regardless.
+- **Convention (mirrors the A2 residual):** the FI+EN markers live in the
+  domain-neutral Core as a security invariant (like the fence markers), not domain
+  config; the same "move imperative phrases to domain-contributed lists if a third
+  language/domain lands" evolution applies.
 
 **A4 — red-team fixture + coverage test (staged).** ~12 injected items (incl. a
 Finnish variant, row breakout, fake `Vastaus: kyllä`, suppression, defamation,

@@ -89,7 +89,7 @@ const STR = {
     pickBothDates: "Valitse oman aikavälin molemmat päivät.",
     compiling: "Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)",
     window: "Aikaväli", items: "palautetta", noStructure: "ilman rakennetta",
-    dropped: "perustelematonta väitettä hylätty", fallbacks: "koostetta ilman kielimallia",
+    dropped: "perustelematonta väitettä hylätty", actionDropped: "ohjaileva kooste hylätty", fallbacks: "koostetta ilman kielimallia",
     alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
     flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa", flaggedItem: "tarkistettava",
@@ -106,7 +106,7 @@ const STR = {
     pickBothDates: "Pick both dates for the custom range.",
     compiling: "Compiling the report… (the model writes the summaries)",
     window: "Window", items: "items", noStructure: "without structure",
-    dropped: "ungrounded claim(s) dropped", fallbacks: "summary(ies) without the model",
+    dropped: "ungrounded claim(s) dropped", actionDropped: "directive summary(ies) dropped", fallbacks: "summary(ies) without the model",
     alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
     flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted", flaggedItem: "review",
@@ -207,6 +207,7 @@ function render(report, live) {
     `${L.window} ${short(report.windowFrom)} – ${short(report.windowTo)} · ${report.totalItems} ${L.items}` +
     (report.structureFailedCount ? ` · ${report.structureFailedCount} ${L.noStructure}` : "") +
     (report.droppedClaimCount ? ` · ${report.droppedClaimCount} ${L.dropped}` : "") +
+    (report.actionDroppedCount ? ` · ${report.actionDroppedCount} ${L.actionDropped}` : "") +
     (report.llmFallbackCount ? ` · ${report.llmFallbackCount} ${L.fallbacks}` : ""),
   ]));
 

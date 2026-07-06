@@ -60,17 +60,22 @@ internal static class ReportText
         string HtmlLang, string PageTitle, string SavedBadge, string Heading,
         string Window, string Items, string Generated,
         string AlertsHeading, string NoAlerts, string KeywordOrigin, string ModelOrigin,
-        string ThemesHeading, string ItemsWord, string TrendWord);
+        string ThemesHeading, string ItemsWord, string TrendWord,
+        // A2 report-surface visibility on the snapshot (shared-link fallback):
+        // Flagged = per-theme warning, FlaggedItem = per-message tag.
+        string Flagged, string FlaggedItem);
 
     private static readonly SnapshotLabels SnapFi = new(
         "fi", "Palautetilanne — tallennettu tilannekuva", "Tallennettu tilannekuva", "Palautetilanne",
         "Aikaväli", "palautetta", "koostettu",
         "Hälytykset", "Ei hälytyksiä aikavälillä.", "sanahaku", "kielimalli",
-        "Teemat ja trendit", "palautetta", "suunta");
+        "Teemat ja trendit", "palautetta", "suunta",
+        "tarkistettavana (mahdollinen manipulointi — mukana laskennassa)", "tarkistettava");
 
     private static readonly SnapshotLabels SnapEn = new(
         "en", "Feedback situation — saved snapshot", "Saved snapshot", "Feedback situation",
         "Window", "items", "generated",
         "Alerts", "No alerts in the window.", "keyword", "model",
-        "Themes & trends", "items", "trend");
+        "Themes & trends", "items", "trend",
+        "to review (possible manipulation — still counted)", "review");
 }
