@@ -67,17 +67,32 @@ public class ReportServiceTests : IDisposable
         false, false, [], alerts ?? [], null);
 
     [Fact]
-    public async Task Direction_GrowingAndWorsening_IsWorsening()
+    public async Task Direction_SignificantGrowthAndWorsening_IsWorsening()
     {
-        await SeedDairyAsync(earlyCount: 2, lateCount: 6, lateSeverity: "high");
+        // A concentrated late cluster with rising severity — significant at the
+        // default z=1.6 (n=12, second-first=6 >= 1.6*sqrt(12)=5.5). A weaker split
+        // (e.g. 2 vs 6) is deliberately "stable" now; see OrganicNoiseTests + ADR-0017.
+        await SeedDairyAsync(earlyCount: 3, lateCount: 9, lateSeverity: "high");
 
         var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
 
         var theme = Assert.Single(report.Themes);
         Assert.Equal("worsening", theme.Direction);
         Assert.Equal("paheneva", theme.DirectionLabel); // retail test descriptor is fi
-        Assert.Equal(8, theme.Count);
-        Assert.Equal(8, theme.FeedbackIds.Count);
+        Assert.Equal(12, theme.Count);
+        Assert.Equal(12, theme.FeedbackIds.Count);
+    }
+
+    [Fact]
+    public async Task WeakSplit_BelowSignificance_IsStable_NotAnInventedTrend()
+    {
+        // 2 early / 6 late used to read "worsening" under the old 1.25x rule; a
+        // split this weak is indistinguishable from noise, so it is now "stable".
+        await SeedDairyAsync(earlyCount: 2, lateCount: 6, lateSeverity: "high");
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Equal("stable", Assert.Single(report.Themes).Direction);
     }
 
     [Fact]
@@ -188,8 +203,9 @@ public class ReportServiceTests : IDisposable
     public async Task NewThemeWithEmptyFirstHalf_IsGrowing_NeverWorsening()
     {
         // All items in the late half, all low severity: a theme that just
-        // appeared has no baseline to "worsen" against.
-        await SeedDairyAsync(earlyCount: 0, lateCount: 4, lateSeverity: "low");
+        // appeared has no baseline to "worsen" against. Six items clears the
+        // minimum-volume gate so a direction is reported at all.
+        await SeedDairyAsync(earlyCount: 0, lateCount: 6, lateSeverity: "low");
 
         var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
 

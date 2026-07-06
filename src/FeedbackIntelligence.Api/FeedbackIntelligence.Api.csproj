@@ -21,4 +21,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="FeedbackIntelligence.Api.Tests" />
+  </ItemGroup>
+
 </Project>
