@@ -44,9 +44,11 @@ Copy-Item (Join-Path $repoRoot "deploy/staticwebapp.config.json") $OutDir/
     "window.API_BASE = `"$($ApiBase.TrimEnd('/'))`";`n")
 
 if ($PublishSnapshot) {
-    # Report:SnapshotDir is relative to the API's working directory; check both
-    # plausible locations and take the NEWEST, never first-match.
-    $candidates = @("data/snapshots", "src/FeedbackIntelligence.Api/data/snapshots") |
+    # Take the NEWEST report-latest.json from: the committed demo snapshot
+    # (deploy/snapshot - the ONLY one present in CI, so a push deploy always bundles a
+    # snapshot and never leaves the SWA with a 404 fallback), or a locally generated
+    # runtime snapshot (Report:SnapshotDir is relative to the API's working dir).
+    $candidates = @("deploy/snapshot", "data/snapshots", "src/FeedbackIntelligence.Api/data/snapshots") |
         ForEach-Object { Join-Path $repoRoot "$_/report-latest.json" } |
         Where-Object { Test-Path $_ } |
         Sort-Object { (Get-Item $_).LastWriteTime } -Descending

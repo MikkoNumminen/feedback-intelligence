@@ -110,6 +110,20 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
 });
+// Chrome Private Network Access: when the SWA (a PUBLIC origin) fetches this backend
+// at a PRIVATE address — which happens when the operator opens the demo on a machine
+// whose MagicDNS resolves the Funnel to a tailnet 100.x IP — Chrome sends an extra
+// preflight and blocks the request ("Permission was denied") unless the target grants
+// private-network access. Answer that preflight; the CORS allowlist below still gates
+// which origins may actually read the response.
+app.Use(async (ctx, next) =>
+{
+    if (HttpMethods.IsOptions(ctx.Request.Method) &&
+        ctx.Request.Headers.ContainsKey("Access-Control-Request-Private-Network"))
+        ctx.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+    await next();
+});
+
 // The static-host frontend (Azure SWA) is a different origin than the Funnel
 // backend; the allowlist is config — empty means same-origin only.
 if (ingestConfig.AllowedCorsOrigins.Count > 0)
