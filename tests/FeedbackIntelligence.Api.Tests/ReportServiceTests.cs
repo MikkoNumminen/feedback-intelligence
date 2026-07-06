@@ -178,22 +178,21 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Snapshot_PersistedOnlyForCanonicalWindow()
+    public async Task DeskInvalidationDuringGeneration_IsNotClobbered_ByStaleCacheSet()
     {
-        // dotnet-audit: a GET /report for an arbitrary/custom window must not clobber
-        // the single offline fallback (report-latest.*). Only the canonical default
-        // view (persistSnapshot: true) owns it.
-        await SeedDairyAsync(1, 2);
-        var svc = CreateService(new ScriptedChatClient("ei-jsonia"));
-        var jsonPath = Path.Combine(_snapshotDir, "report-latest.json");
+        // dotnet-audit HIGH regression guard at the ReportService WIRING level: the
+        // epoch must be captured BEFORE generation and the CAPTURED value passed to
+        // Set. A desk ingest that invalidates DURING the (here, LLM-call) generation
+        // must not have its invalidation clobbered by the trailing Set — otherwise the
+        // next refresh serves a stale report missing the just-saved entry. (A regression
+        // re-reading cache.Epoch at Set time instead of the captured local would pass
+        // the ReportCache unit tests but fail HERE.)
+        await SeedDairyAsync(2, 3);
+        var svc = CreateService(new InvalidatingChatClient(_cache), cacheSeconds: 300);
 
-        await svc.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, persistSnapshot: false);
-        Assert.False(File.Exists(jsonPath));                                  // custom window: no clobber
-        Assert.Null(await svc.ReadLatestSnapshotJsonAsync(CancellationToken.None)); // reader tolerates absence
+        await svc.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
 
-        await svc.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, persistSnapshot: true);
-        Assert.True(File.Exists(jsonPath));                                   // canonical view: written
-        Assert.NotNull(await svc.ReadLatestSnapshotJsonAsync(CancellationToken.None));
+        Assert.False(_cache.TryGet(WindowFrom + "|" + WindowTo, out _)); // stale report not cached
     }
 
     [Fact]
@@ -378,6 +377,31 @@ public class ReportServiceTests : IDisposable
         {
             var text = responses[Math.Min(_next++, responses.Length - 1)];
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, text)));
+        }
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    // Simulates a desk POST /feedback landing DURING generation: it invalidates the
+    // cache on its first (synthesis) call, so the trailing Set must no-op.
+    private sealed class InvalidatingChatClient(ReportCache cache) : IChatClient
+    {
+        private int _calls;
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (System.Threading.Interlocked.Increment(ref _calls) == 1)
+                cache.Invalidate();
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "ei-jsonia")));
         }
 
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(

@@ -242,10 +242,7 @@ app.MapGet("/report", async (
     if (fromInstant >= toInstant || (toInstant - fromInstant).TotalDays > reportOptions.Value.MaxWindowDays)
         return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
 
-    // Only the canonical default view (no explicit window) refreshes the offline
-    // fallback snapshot; a custom window must not overwrite the shared link's page.
-    return Results.Ok(await reports.GenerateAsync(
-        fromNormalized, toNormalized, ct, persistSnapshot: from is null && to is null));
+    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct));
 });
 
 // The ongoing quality measure that replaced the cancelled model eval: per-field

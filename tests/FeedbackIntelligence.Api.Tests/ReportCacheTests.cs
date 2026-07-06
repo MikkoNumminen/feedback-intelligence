@@ -10,7 +10,7 @@ namespace FeedbackIntelligence.Api.Tests;
 /// </summary>
 public class ReportCacheTests
 {
-    private static ManagementReport Report(string tag) =>
+    private static ManagementReport Report() =>
         new("2026-06-01", "2026-06-08", "2026-06-08T00:00:00Z", 0, 0, [], [], 0, 0, "fi");
 
     [Fact]
@@ -19,7 +19,7 @@ public class ReportCacheTests
         var cache = new ReportCache();
         var epoch = cache.Epoch;
 
-        Assert.True(cache.Set("k", Report("a"), TimeSpan.FromMinutes(1), epoch));
+        Assert.True(cache.Set("k", Report(), TimeSpan.FromMinutes(1), epoch));
         Assert.True(cache.TryGet("k", out _));
     }
 
@@ -34,7 +34,7 @@ public class ReportCacheTests
 
         cache.Invalidate(); // a desk POST /feedback lands mid-generation
 
-        Assert.False(cache.Set("k", Report("stale"), TimeSpan.FromMinutes(1), epochAtGenerationStart));
+        Assert.False(cache.Set("k", Report(), TimeSpan.FromMinutes(1), epochAtGenerationStart));
         Assert.False(cache.TryGet("k", out _)); // stale report was NOT cached
     }
 
@@ -42,7 +42,7 @@ public class ReportCacheTests
     public void Invalidate_ClearsAnExistingEntry()
     {
         var cache = new ReportCache();
-        cache.Set("k", Report("a"), TimeSpan.FromMinutes(1), cache.Epoch);
+        cache.Set("k", Report(), TimeSpan.FromMinutes(1), cache.Epoch);
         Assert.True(cache.TryGet("k", out _));
 
         cache.Invalidate();
