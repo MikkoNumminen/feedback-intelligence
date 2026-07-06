@@ -38,13 +38,20 @@ domain defines its own alert semantics.
 
 ## Consequences
 
-- **Tuned, not asserted.** Over the seed-42 corpus the broadened prompt flags 3
-  of 71 (temperature 0): the no-keyword safety item, the deterministic
-  legal-threat item (already alerting via keyword — redundant, harmless), and a
-  *"sain vatsanväänteitä teidän maidosta"* item — a product that already caused
-  symptoms, a genuine health-risk signal the narrower prompt missed. No flooding.
-  Synthetic keyword-less escalation-intent probes flag; ordinary anger /
-  store-switching does not.
+- **Tuned, not asserted (temperature 0, seed-42 + synthetic probes).** The LLM
+  screen reliably flags the no-keyword safety item; keyword-less escalation-intent
+  probes flag, while ordinary anger, store-switching, and plain **service** refund
+  / hyvitys demands do not. The escalation exemplars name explicit venues
+  (`kuluttajariitalautakunta`, `käräjäoikeus`, `lakimies`, `terveystarkastaja`) —
+  deliberately NOT "korvausvaatimus", so a routine compensation demand is not read
+  as escalation (review finding). The deterministic legal-threat item
+  (`viranomais`) alerts via **layer 1** and never reaches the screen (candidate
+  filter `Alerts.Count == 0`, `ReportService.cs`), so the screen adds no false
+  volume — the report-time SCREEN output is the keyword-less items only.
+- **Named residual:** borderline consumable-health items (e.g. a spoiled-product
+  complaint that already caused symptoms) are gray-area 8B judgments and may flag
+  or not run-to-run — a real signal when caught, never a flood. The clear cases
+  (structural safety, explicit escalation intent) are stable.
 - **Residual, named honestly:** this is an 8B model's judgment on implicit intent
   — it will miss some phrasings and could over/under-flag on adversarial input.
   The deterministic legal-threat keywords remain the reliable backstop; the screen
