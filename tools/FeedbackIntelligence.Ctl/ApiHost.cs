@@ -5,14 +5,13 @@ namespace FeedbackIntelligence.Ctl;
 /// <summary>
 /// Lifecycle of the .NET API process. Unlike ragctl's dockerized backend, our
 /// API is a plain `dotnet` process, so feedctl tracks it by PID file and starts
-/// it detached (logs to .feedctl/api.log) so it outlives the feedctl invocation.
-/// Launch goes through PowerShell Start-Process — the reliable way to detach +
-/// redirect on this Windows host.
+/// it detached via ShellExecuteEx (Process.Start with UseShellExecute=true),
+/// which inherits NO handles — so the long-lived API never holds a copy of the
+/// stdout pipe that launched feedctl (that inheritance made the launching shell
+/// hang open). The process outlives the feedctl invocation.
 /// </summary>
 public static class ApiHost
 {
-    public static string LogFile => Path.Combine(Config.RepoRoot, ".feedctl", "api.log");
-
     public static int? RunningPid()
     {
         try
@@ -77,49 +76,58 @@ public static class ApiHost
         var apiDir = Config.Abs(Config.ApiProject);
         var db = Config.Abs(Config.DemoDbPath);
         var snapDir = Config.Abs("data/snapshots");
-        // Launch the API FULLY DETACHED via a batch wrapper started with
-        // UseShellExecute=true (ShellExecuteEx). This is the load-bearing detail:
-        // Start-Process -RedirectStandard* — and Process.Start with redirected
-        // streams — force CreateProcess(bInheritHandles=TRUE), so the long-lived
-        // API inherited a copy of whatever stdout pipe launched feedctl. That
-        // handle never closed, so the launching shell never saw EOF and looked
-        // like it was "still running" forever (and the pid read could block, the
-        // old `up`/`data` hang). ShellExecuteEx inherits NO handles, so `up`
-        // returns clinically and the API is truly independent. The batch does the
-        // file redirection (keeping .feedctl/api.log); the working dir is the API
-        // PROJECT dir so ASP.NET's ContentRoot finds appsettings.json + wwwroot
-        // (DB + snapshot are absolute, CWD-independent). Paths are wrapped in cmd
-        // double-quotes (doubled to escape) and any '%' is doubled so cmd does not
-        // treat a path as an environment variable.
-        static string Q(string s) => "\"" + s.Replace("\"", "\"\"").Replace("%", "%%") + "\"";
-        var batch = Config.Abs(Path.Combine(".feedctl", "launch-api.cmd"));
-        File.WriteAllText(batch,
-            "@echo off\r\n" +
-            "dotnet " + Q(dll) + " --urls " + Config.BaseUrl + " " +
-            Q("--Ingest:DbPath=" + db) + " " + Q("--Report:SnapshotDir=" + snapDir) +
-            " 1>" + Q(LogFile) + " 2>" + Q(LogFile + ".err") + "\r\n");
-
+        // Launch the API FULLY DETACHED and independent. Process.Start with
+        // UseShellExecute=true routes through ShellExecuteEx, which inherits NO
+        // handles — so the long-lived API never holds a copy of the stdout pipe
+        // that launched feedctl. (The old Start-Process -RedirectStandard* forced
+        // CreateProcess(bInheritHandles=TRUE) and leaked that pipe, so the
+        // launching shell never saw EOF and hung open forever, and the pid read
+        // could block.) ArgumentList quotes each value itself (no manual shell
+        // escaping), and proc.Id is the REAL dotnet / :5088-owner pid. Working dir
+        // = the API PROJECT dir so ASP.NET's ContentRoot finds appsettings.json +
+        // wwwroot; DB + snapshot are absolute and CWD-independent. Trade-off:
+        // ShellExecuteEx cannot redirect stdout, so a failed start is diagnosed by
+        // running the API directly rather than from a captured log.
         try
         {
-            var proc = Process.Start(new ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
-                FileName = batch,
+                FileName = "dotnet",
                 WorkingDirectory = apiDir,
                 UseShellExecute = true,              // ShellExecuteEx: inherits NO handles => clean detach
                 WindowStyle = ProcessWindowStyle.Hidden,
-            });
+            };
+            psi.ArgumentList.Add(dll);
+            psi.ArgumentList.Add("--urls");
+            psi.ArgumentList.Add(Config.BaseUrl);
+            psi.ArgumentList.Add("--Ingest:DbPath=" + db);
+            psi.ArgumentList.Add("--Report:SnapshotDir=" + snapDir);
+
+            var proc = Process.Start(psi);
             if (proc is null)
             {
                 Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
                 return null;
             }
-            // proc is the cmd host running the batch; it stays alive as the API's
-            // parent, so its pid tracks the API's lifetime and taskkill /T reaps both.
+            // A non-null proc is not proof it stayed up: a broken dotnet host or DLL
+            // exits at once. Treat an instant exit as a fast, honest failure instead
+            // of making the caller wait out the 120 s /health poll. On success dotnet
+            // stays alive, so WaitForExit(500) is false. (If exit info is unavailable
+            // for a shell-executed process, fall through — the /health wait backstops.)
+            bool exitedFast;
+            try { exitedFast = proc.WaitForExit(500); }
+            catch { exitedFast = false; }
+            if (exitedFast)
+            {
+                Console.WriteLine("  " + Term.C("○ the API process exited immediately — check the DLL / dotnet host", "31"));
+                return null;
+            }
             File.WriteAllText(Config.PidFile, proc.Id.ToString());
             return proc.Id;
         }
         catch (Exception ex)
         {
+            // e.g. dotnet not on PATH -> ShellExecuteEx throws Win32Exception; fast, honest fail.
             Console.WriteLine("  " + Term.C("○ could not start the API process: " + ex.Message, "31"));
             return null;
         }
