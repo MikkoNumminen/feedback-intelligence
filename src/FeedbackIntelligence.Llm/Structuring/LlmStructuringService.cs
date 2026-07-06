@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using FeedbackIntelligence.Core.Domain;
+using FeedbackIntelligence.Core.Security;
 using FeedbackIntelligence.Core.Structuring;
 
 namespace FeedbackIntelligence.Llm.Structuring;
@@ -19,7 +20,10 @@ public sealed class LlmStructuringService(
     public async Task<StructuringResult> StructureAsync(string feedbackText, CancellationToken ct = default)
     {
         var template = await LoadTemplateAsync(ct);
-        var prompt = template.Replace("{{text}}", feedbackText, StringComparison.Ordinal);
+        // Untrusted: the feedback is attacker-controlled free text. Fence it as a
+        // delimited data block so an in-band imperative can't read as instructions,
+        // and so it can't forge the delimiter (ADR-0021). Not a proof — a layer.
+        var prompt = template.Replace("{{text}}", UntrustedText.Fence(feedbackText), StringComparison.Ordinal);
         var chatOptions = new ChatOptions
         {
             Temperature = options.Value.Temperature,
