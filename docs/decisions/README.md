@@ -29,3 +29,4 @@ these ADRs relocate that reasoning into durable records.
 | [0016](0016-zero-cost-static-web-apps-deploy.md) | Zero-cost Azure Static Web Apps (Free SKU) deploy | Accepted |
 | [0017](0017-trend-significance-gate.md) | Trend direction requires statistical significance (no hallucinated trends) | Accepted |
 | [0018](0018-llm-call-determinism.md) | LLM calls must be deterministic + prompt-byte-stable (CRLF flipped the safety alert) | Accepted |
+| [0019](0019-story-variants-originals-only.md) | Story items ship as originals only (the ×2 variant fallback, taken) | Accepted |
