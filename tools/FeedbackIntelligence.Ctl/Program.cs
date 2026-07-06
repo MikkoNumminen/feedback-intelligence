@@ -12,7 +12,7 @@ internal static class Program
     [
         ("status", "live status board (one-shot)"),
         ("watch", "live board, refreshing (Ctrl-C exits)"),
-        ("up [--load]", "ollama + API + public Funnel — refuses if the shared RAG is up"),
+        ("up [--load] [--supervise]", "ollama + API + Funnel — refuses if the RAG is up (--supervise: restart the API if it dies)"),
         ("down", "stop Funnel + API + ollama (frees the GPU + port 443)"),
         ("data <mode>", "choose dataset: mock | demo | clean (wipes + loads)"),
         ("demo [--seed N]", "generate → load → report → verify (full run-through)"),
@@ -49,7 +49,7 @@ internal static class Program
             {
                 "status" => await Commands.StatusAsync(),
                 "watch" => await Commands.WatchAsync(),
-                "up" => await Commands.UpAsync(load: HasFlag(rest, "--load")),
+                "up" => await Commands.UpAsync(load: HasFlag(rest, "--load"), supervise: HasFlag(rest, "--supervise")),
                 "down" => await Commands.DownAsync(),
                 "data" => await Commands.DataAsync(rest.FirstOrDefault()),
                 "demo" => await Commands.DemoAsync(IntOpt(rest, "--seed", 42)),

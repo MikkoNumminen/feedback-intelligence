@@ -5,10 +5,14 @@ pages, a config.js pointing at the Tailscale Funnel backend, and the SWA
 config. With -PublishSnapshot it also bundles the latest report snapshot so a
 shared link renders a situational view even with the backend completely down.
 
-Snapshot publication is OPT-IN on purpose: the script cannot know whether the
-latest snapshot was generated from real or placeholder data, and the hard rule
-says nothing placeholder-derived may appear in any demo. Check
-docs/mock-data-register.md before passing -PublishSnapshot.
+CI ALWAYS bundles the committed, provenance-verified seed-42 snapshot
+(deploy/snapshot/): in a fresh CI checkout it is the only report-latest.json
+present, so this script (which bundles the NEWEST candidate) always picks it and
+a push deploy is never a 404. -PublishSnapshot is OPT-IN only for a LOCALLY
+generated runtime snapshot: the script cannot tell real from placeholder data,
+and the hard rule bans placeholder-derived data in any demo, so verify against
+docs/mock-data-register.md before passing it for a runtime snapshot. See
+docs/decisions/0023-deploy-hardening-snapshot-and-pna.md.
 
 NOTE: keep this file ASCII-only. PowerShell 5.1 reads BOM-less scripts as
 ANSI, and e.g. an em dash decodes into a CP1252 smart quote that PS parses as
