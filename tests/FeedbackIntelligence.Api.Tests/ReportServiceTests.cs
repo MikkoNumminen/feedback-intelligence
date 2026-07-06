@@ -178,6 +178,25 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Snapshot_PersistedOnlyForCanonicalWindow()
+    {
+        // dotnet-audit: a GET /report for an arbitrary/custom window must not clobber
+        // the single offline fallback (report-latest.*). Only the canonical default
+        // view (persistSnapshot: true) owns it.
+        await SeedDairyAsync(1, 2);
+        var svc = CreateService(new ScriptedChatClient("ei-jsonia"));
+        var jsonPath = Path.Combine(_snapshotDir, "report-latest.json");
+
+        await svc.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, persistSnapshot: false);
+        Assert.False(File.Exists(jsonPath));                                  // custom window: no clobber
+        Assert.Null(await svc.ReadLatestSnapshotJsonAsync(CancellationToken.None)); // reader tolerates absence
+
+        await svc.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, persistSnapshot: true);
+        Assert.True(File.Exists(jsonPath));                                   // canonical view: written
+        Assert.NotNull(await svc.ReadLatestSnapshotJsonAsync(CancellationToken.None));
+    }
+
+    [Fact]
     public async Task LlmCompletelyDown_ReportStillGenerates_WithDeterministicLayer()
     {
         await SeedDairyAsync(2, 3);

@@ -53,7 +53,12 @@ public sealed class ReportService(
         public int ActionDropped;
     }
 
-    public async Task<ManagementReport> GenerateAsync(string fromIso, string toIso, CancellationToken ct)
+    /// <summary><paramref name="persistSnapshot"/> gates whether this generation
+    /// overwrites the single canonical offline fallback (report-latest.*). Only the
+    /// DEFAULT window (no from/to) should — otherwise an arbitrary caller's custom or
+    /// near-empty window clobbers the shared-link fallback with a misleading view.</summary>
+    public async Task<ManagementReport> GenerateAsync(
+        string fromIso, string toIso, CancellationToken ct, bool persistSnapshot = true)
     {
         var key = fromIso + "|" + toIso;
         if (cache.TryGet(key, out var cached))
@@ -64,9 +69,13 @@ public sealed class ReportService(
         {
             if (cache.TryGet(key, out cached))
                 return cached;
-            var report = await GenerateCoreAsync(fromIso, toIso, ct);
+            // Capture the invalidation epoch BEFORE reading items: if a desk ingest
+            // invalidates the cache during the ~20 s generation, Set no-ops and the
+            // stale report is not cached — the live-desk-entry moment stays correct.
+            var epoch = cache.Epoch;
+            var report = await GenerateCoreAsync(fromIso, toIso, persistSnapshot, ct);
             if (options.Value.ReportCacheSeconds > 0)
-                cache.Set(key, report, TimeSpan.FromSeconds(options.Value.ReportCacheSeconds));
+                cache.Set(key, report, TimeSpan.FromSeconds(options.Value.ReportCacheSeconds), epoch);
             return report;
         }
         finally
@@ -75,7 +84,8 @@ public sealed class ReportService(
         }
     }
 
-    private async Task<ManagementReport> GenerateCoreAsync(string fromIso, string toIso, CancellationToken ct)
+    private async Task<ManagementReport> GenerateCoreAsync(
+        string fromIso, string toIso, bool persistSnapshot, CancellationToken ct)
     {
         var opts = options.Value;
         var items = await store.QueryAsync(fromIso, toIso, opts.MaxItemsPerWindow, ct);
@@ -191,20 +201,38 @@ public sealed class ReportService(
             lang,
             state.ActionDropped);
 
-        await PersistSnapshotAsync(report, ct);
+        // Only the canonical (default-window) view owns the offline fallback snapshot;
+        // a custom/near-empty window must not clobber the shared link's last-good page.
+        if (persistSnapshot)
+            await PersistSnapshotAsync(report, ct);
         return report;
     }
 
-    public async Task<string?> ReadLatestSnapshotJsonAsync(CancellationToken ct)
-    {
-        var path = Path.Combine(options.Value.SnapshotDir, "report-latest.json");
-        return File.Exists(path) ? await File.ReadAllTextAsync(path, ct) : null;
-    }
+    public Task<string?> ReadLatestSnapshotJsonAsync(CancellationToken ct) =>
+        ReadSharedAsync(Path.Combine(options.Value.SnapshotDir, "report-latest.json"), ct);
 
-    public string? LatestSnapshotHtmlPath()
+    public Task<string?> ReadLatestSnapshotHtmlAsync(CancellationToken ct) =>
+        ReadSharedAsync(Path.Combine(options.Value.SnapshotDir, "report-latest.html"), ct);
+
+    /// <summary>Read a snapshot file tolerant of a concurrent atomic replace: open with
+    /// FileShare.ReadWrite|Delete so the writer's File.Replace is never blocked, and
+    /// treat a transient sharing violation as "no snapshot yet" rather than a 500 on the
+    /// degraded-mode fallback endpoint.</summary>
+    private static async Task<string?> ReadSharedAsync(string path, CancellationToken ct)
     {
-        var path = Path.Combine(options.Value.SnapshotDir, "report-latest.html");
-        return File.Exists(path) ? Path.GetFullPath(path) : null;
+        try
+        {
+            if (!File.Exists(path))
+                return null;
+            await using var fs = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(fs);
+            return await reader.ReadToEndAsync(ct);
+        }
+        catch (IOException)
+        {
+            return null; // mid-replace: fall back to "no snapshot", never surface a 500
+        }
     }
 
     private async Task<List<(string Id, string Reason)>> NominateAlertsAsync(
@@ -536,6 +564,27 @@ public sealed class ReportService(
     {
         var temp = path + ".tmp";
         await File.WriteAllTextAsync(temp, content, ct);
-        File.Move(temp, path, overwrite: true);
+
+        // Windows: File.Move(overwrite) is MoveFileEx(REPLACE_EXISTING) — it unlinks the
+        // destination and throws a sharing violation if a reader has it open (readers
+        // here open with FileShare.Read, not Delete). File.Replace is NTFS's
+        // replace-while-open primitive and keeps an in-flight reader's handle valid; a
+        // bounded retry rides out a transient violation so the snapshot is never
+        // silently left stale. On a first write (no destination yet) fall back to Move.
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                if (File.Exists(path))
+                    File.Replace(temp, path, destinationBackupFileName: null);
+                else
+                    File.Move(temp, path);
+                return;
+            }
+            catch (IOException) when (attempt < 5)
+            {
+                await Task.Delay(40, ct);
+            }
+        }
     }
 }
