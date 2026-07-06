@@ -1,4 +1,4 @@
-# ADR-0018 — LLM calls must be deterministic and prompt-byte-stable (the safety alert was never reliable)
+# ADR-0018 — Prompt files are LLM input bytes: normalize line endings (CRLF flipped the safety alert)
 
 - **Status:** Accepted (2026-07-06)
 - **Deciders:** Mikko
@@ -8,64 +8,69 @@
 
 ## Context
 
-The demo's centerpiece is the **no-keyword safety alert**: Poro reads an
-implicit structural-failure complaint (`core-011`, timber that snapped when
-walked on) and flags it `kyllä` via the per-item screen (ADR-0015). A
-clean-corpus run surfaced that it **silently stopped firing**. Poro judged the
-text correctly in isolation (`kyllä`) but the app's screen returned `ei`.
+The demo's centerpiece is the **no-keyword safety alert**: Poro reads an implicit
+structural-failure complaint (`core-011`, timber that snapped when walked on) and
+flags it `kyllä` via the per-item screen (ADR-0015). A clean-corpus run surfaced
+that it **silently stopped firing** — the report's screen returned `ei` for the
+safety text, while Poro judged the *same* text `kyllä` in a direct call.
 
 A logging proxy between the API and Ollama captured both requests and diffed
-them. Two independent defects, both reproduced from the wire:
+them. The bodies were identical **except line endings**: the app sent the prompt
+with Windows **CRLF**, the direct call with **LF**.
 
-1. **Prompt line endings flip the answer.** The prompt files are stored with
-   Windows **CRLF**. Poro's greedy (temperature 0) decode is *not* invariant to
-   it: with `\r\n` it answers **`ei`**, with `\n` it answers **`kyllä`** — same
-   prompt text, same model, same options. The API read the file verbatim (CRLF)
-   and the safety alert never fired. External reproductions used Python, whose
-   default read normalises CRLF→LF, which is why the bug hid for so long — the
-   wire capture is what exposed it (the two request bodies differed by exactly
-   `\r\n` vs `\n`).
-2. **`ChatOptions` were dropped.** The `think:false` escape hatch
-   (`OllamaLlmClientFactory`) returned a bare `new ChatRequest { Think = false }`
-   from `RawRepresentationFactory`; OllamaSharp used it as the base and did **not**
-   overlay the mapped `ChatOptions`, so `temperature` and the token cap were lost
-   and every call ran at Ollama's default **0.8**. That made the "deterministic"
-   paths (structuring `temp 0`, alert-verify `temp 0`) actually random — the
-   safety alert was a ~2/3 coin flip. ADR-0015 passed on a good roll.
+- **Poro's greedy (temperature 0) decode is not invariant to line endings.**
+  With `\r\n` it answers **`ei`**; with `\n` it answers **`kyllä`** — same prompt
+  text, model, and options. The prompt files are stored CRLF (git `autocrlf` on
+  a Windows checkout), the API read them verbatim, and the safety alert never
+  fired. Every external reproduction used Python, whose default text read
+  normalizes CRLF→LF — which is why the bug hid for so long. The wire capture is
+  what finally exposed it.
 
-Together: at CRLF + temp 0.8 the safety alert was unreliable; the earlier
-"PASS" was luck, not correctness.
+**A temperature red herring, recorded so it is not re-chased.** The first
+hypothesis was that the `think:false` escape hatch (`OllamaLlmClientFactory`)
+dropped the mapped `ChatOptions`, running calls at Ollama's default 0.8. **This
+was wrong**, established by reading the pinned OllamaSharp **5.4.25** source:
+`AbstractionMapper.ToOllamaSharpChatRequest` takes the `RawRepresentationFactory`
+base request and *backfills* the mapped options onto it
+(`request.Options ??= new(); Temperature ??= options?.Temperature;
+NumPredict = options?.MaxOutputTokens; TopP/TopK/Seed/Stop via ??=`). So a bare
+`new ChatRequest { Think = false }` still sends `temperature 0` / the token cap.
+The proxy capture confirms it (alert-verify on the wire: `temperature 0`,
+synthesis `0.3`). Two further facts seal it: the alert path uses the *synthesis*
+client, which is **not** reasoning-wrapped (`SynthesisDisableReasoning` defaults
+false), so it never touches `WithThinkOff` at all; and the CRLF repro is itself
+*deterministic*, which requires temperature to already have been 0. **CRLF was
+the sole cause.**
 
 ## Decision
 
-**Every LLM call must be deterministic where configured, and prompt bytes must
-be stable across OS / editor / git checkout.**
+**Every prompt/template is read through a single normalizer that converts line
+endings to LF.** Prompt bytes are LLM *input* — a stray CRLF is a behaviour
+change, not cosmetics.
 
-1. **Normalise prompt line endings to LF on load.** All prompts/templates are
-   read through `AppPathResolver.ReadPromptAsync` / `ReadPrompt`, which applies
-   `NormalizeNewlines` (CRLF→LF, lone CR→LF). Wired into the alert-verify,
-   synthesis, alert-nomination and structuring load paths. LF is the correct
-   branch (it yields the right judgment) and, more importantly, makes behaviour
-   independent of how the file was checked out.
-2. **Carry `ChatOptions` onto the raw think-off request.** `WithThinkOff` now
-   builds the `RawRepresentationFactory` `ChatRequest` with an explicit
-   `Options { Temperature, NumPredict }` from the incoming `ChatOptions`, so the
-   configured temperature and token cap reach Ollama. Verified on the wire:
-   alert-verify now sends `temperature 0 / num_predict 12`, synthesis
-   `0.3 / 700`.
+- `AppPathResolver.ReadPromptAsync` / `ReadPrompt` resolve the path and apply
+  `NormalizeNewlines` (`\r\n`→`\n`, lone `\r`→`\n`). Wired into all four
+  product-path prompt reads: alert-verify, synthesis, alert-nomination
+  (`ReportService`), and structuring (`LlmStructuringService`).
+- `WithThinkOff` is left as the minimal `new ChatRequest { Think = false }`; it
+  does **not** set `Options` (the mapper backfills them — carrying them
+  explicitly is a verified no-op, so it was removed to avoid a misleading claim).
 
 ## Consequences
 
-- **Safety alert is reliable.** Post-fix acceptance on the clean seed-42 corpus:
-  all three planted stories ground (dairy 5/4, availability 5/3) and the
-  no-keyword safety case fires (`gen-42-0008`) — deterministically, run to run.
-- **Structuring is deterministic** (confirmed: 4/4 identical `/interpret` on the
-  same dialect text), which the temp-0 design always intended.
-- **Regression guards:** a unit test pins `NormalizeNewlines` and that a CRLF
-  template round-trips to LF through `ReadPrompt`.
-- **Known caveat:** the wire capture showed OllamaSharp does *not* honour the raw
-  request's `Think` field in this version (only `Options` survived). Harmless for
-  Poro (not a reasoning model); if a reasoning model (e.g. qwen3) is ever
-  configured for a role, reasoning-suppression must be re-verified on the wire.
-- **Lesson recorded:** prompt files are LLM *input bytes*; a stray CRLF is a
-  behaviour change, not cosmetics. Read every prompt through the normaliser.
+- **Safety alert is reliable again.** Post-fix acceptance on the clean seed-42
+  corpus: dairy 5/4, availability 5/3, and the no-keyword safety case fires
+  (`gen-42-0008`) — deterministically, run to run.
+- **Regression guards:** unit tests pin `NormalizeNewlines` and a CRLF file
+  round-trip through `ReadPrompt`, plus a call-site test that a CRLF prompt
+  reaches the model normalized through the load-bearing read path (so a refactor
+  back to raw `File.ReadAllText` fails a test, not a demo).
+- **Off-product-path prompt reads** in the generator (`VariantsRunner`) and the
+  structuring-eval harness (`StructuringEvalRunner`) are normalized too, so an
+  eval instrument is never silently skewed by a CRLF checkout.
+- **Lesson:** the earlier "PASS" of the safety alert was not luck-of-temperature
+  (temperature was always 0) — it was luck-of-checkout: whoever's prompt file
+  happened to be LF passed, CRLF failed. Read every prompt through the normalizer.
+- **Provider caveat:** if OllamaSharp is bumped, re-verify that it still backfills
+  options onto a raw request; if that changes, `WithThinkOff` would need to carry
+  options explicitly (add a wire test then).

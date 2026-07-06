@@ -32,25 +32,16 @@ internal sealed class OllamaLlmClientFactory(IOptions<LlmOptions> options) : ILl
         private static ChatOptions WithThinkOff(ChatOptions? options)
         {
             var patched = options?.Clone() ?? new ChatOptions();
-            // OllamaSharp's AbstractionMapper uses the RawRepresentationFactory
-            // result as the BASE ChatRequest and does NOT overlay the mapped
-            // ChatOptions onto it — so returning a bare `new ChatRequest { Think =
-            // false }` silently DROPPED the configured temperature and token cap,
-            // running every call at Ollama's defaults (temperature 0.8, uncapped).
-            // That made the deterministic paths (structuring temp 0, alert-verify
-            // temp 0) non-deterministic — e.g. the no-keyword safety screen flipped
-            // kyllä/ei run-to-run. Carry the options explicitly on the raw request.
-            var temperature = patched.Temperature;
-            var maxTokens = patched.MaxOutputTokens;
-            patched.RawRepresentationFactory = _ => new ChatRequest
-            {
-                Think = false,
-                Options = new OllamaSharp.Models.RequestOptions
-                {
-                    Temperature = temperature,
-                    NumPredict = maxTokens,
-                },
-            };
+            // Seed the native think=false via the raw request. No need to set
+            // Options here: OllamaSharp 5.4.25's AbstractionMapper takes this base
+            // request and BACKFILLS the mapped ChatOptions onto it
+            // (`request.Options ??= new(); Temperature ??= options?.Temperature;
+            // NumPredict = options?.MaxOutputTokens; TopP/TopK/Seed/Stop via ??=`),
+            // so the configured temperature and token cap still reach Ollama.
+            // (Verified against the pinned source. An earlier "options were
+            // dropped / ran at temp 0.8" theory was wrong — the real determinism
+            // bug was CRLF prompt line endings; see ADR-0018.)
+            patched.RawRepresentationFactory = _ => new ChatRequest { Think = false };
             return patched;
         }
     }

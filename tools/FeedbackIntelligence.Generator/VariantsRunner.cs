@@ -61,9 +61,12 @@ public sealed class VariantsRunner(
             // Story items get a dedicated intensity-preserving prompt (arc
             // protection, Mikko 2026-07-03): a mild rewording of a severe
             // "third time already" text corrupts the authored escalation.
+            // Normalize CRLF→LF: line endings can change an LLM's greedy output
+            // (see ADR-0018), so even this offline eval-fixture generator must not
+            // be silently skewed by a Windows checkout of the prompt files.
             var template = isStory
-                ? storyTemplate ??= await File.ReadAllTextAsync(ResolvePath(opts.VariantsStoryPromptPath), ct)
-                : noiseTemplate ??= await File.ReadAllTextAsync(ResolvePath(opts.VariantsPromptPath), ct);
+                ? storyTemplate ??= AppPathResolver.NormalizeNewlines(await File.ReadAllTextAsync(ResolvePath(opts.VariantsStoryPromptPath), ct))
+                : noiseTemplate ??= AppPathResolver.NormalizeNewlines(await File.ReadAllTextAsync(ResolvePath(opts.VariantsPromptPath), ct));
             var prompt = template
                 .Replace("{{count}}", perItem.ToString(), StringComparison.Ordinal)
                 .Replace("{{text}}", item.Text, StringComparison.Ordinal);

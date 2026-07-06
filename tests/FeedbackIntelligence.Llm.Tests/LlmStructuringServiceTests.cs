@@ -72,6 +72,20 @@ public class LlmStructuringServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CrlfPromptFile_ReachesModelAsLf()
+    {
+        // A prompt stored with Windows CRLF must reach the model normalized to LF
+        // — CRLF flips an LLM's greedy answer (ADR-0018). This pins the call-site:
+        // reverting the read to raw File.ReadAllTextAsync fails here, not on stage.
+        File.WriteAllText(_promptPath, "Classify this feedback as JSON:\r\n{{text}}\r\n");
+        var client = new ScriptedChatClient(ValidJson);
+
+        await CreateService(client).StructureAsync("maito oli vanhaa");
+
+        Assert.DoesNotContain('\r', client.Prompts[0]);
+    }
+
+    [Fact]
     public async Task FencedFirstResponse_SucceedsAsSalvaged_WithoutRetry()
     {
         var client = new ScriptedChatClient("```json\n" + ValidJson + "\n```");

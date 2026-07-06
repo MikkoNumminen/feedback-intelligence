@@ -75,7 +75,9 @@ public sealed class StructuringEvalRunner(
             Console.Error.WriteLine($"Prompt file not found: {promptPath}");
             return 1;
         }
-        var promptTemplate = await File.ReadAllTextAsync(promptPath, ct);
+        // Normalize CRLF→LF (ADR-0018): line endings can skew an LLM's output, so
+        // a comparison harness must not silently vary with the prompt's checkout.
+        var promptTemplate = FeedbackIntelligence.Llm.AppPathResolver.NormalizeNewlines(await File.ReadAllTextAsync(promptPath, ct));
         if (!promptTemplate.Contains("{{text}}", StringComparison.Ordinal))
         {
             Console.Error.WriteLine($"Prompt file {promptPath} must contain the {{{{text}}}} placeholder.");
