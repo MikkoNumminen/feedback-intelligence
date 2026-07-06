@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using FeedbackIntelligence.Api.Storage;
 using FeedbackIntelligence.Core.Domain;
+using FeedbackIntelligence.Core.Security;
 using FeedbackIntelligence.Llm;
 using FeedbackIntelligence.Llm.Structuring;
 
@@ -195,7 +196,7 @@ public sealed class ReportService(
     {
         var data = new StringBuilder();
         foreach (var item in batch)
-            data.AppendLine($"- [{item.Id}] ({item.Structure?.Category ?? "?"}/{item.Structure?.Severity ?? "?"}) \"{Excerpt(item.Text)}\"");
+            data.AppendLine($"- [{item.Id}] ({item.Structure?.Category ?? "?"}/{item.Structure?.Severity ?? "?"}) \"{UntrustedText.Neutralize(Excerpt(item.Text))}\"");
 
         var raw = await TryLlmAsync(activeDomain.PromptPath("alertNomination"), data.ToString(), state, ct);
         if (raw is null)
@@ -243,7 +244,9 @@ public sealed class ReportService(
         try
         {
             var template = await AppPathResolver.ReadPromptAsync(activeDomain.PromptPath("alertVerify"), ct);
-            var prompt = template.Replace("{{text}}", item.Text, StringComparison.Ordinal);
+            // Neutralize: block the audited breakout — text that closes the
+            // Palaute:"…" quote and fakes a "Vastaus: kyllä" line (ADR-0021).
+            var prompt = template.Replace("{{text}}", UntrustedText.Neutralize(item.Text), StringComparison.Ordinal);
             var chatOptions = new ChatOptions { Temperature = 0, MaxOutputTokens = 12 };
             var response = await llmGate.RunAsync(
                 innerCt => synthesisClient.GetResponseAsync(prompt, chatOptions, innerCt), ct);
@@ -290,10 +293,12 @@ public sealed class ReportService(
             .Select(g => $"{g.Key} {g.Count()}")));
         data.AppendLine($"{s.Themes}: " + string.Join(", ", groupItems
             .GroupBy(i => i.Structure!.Theme).OrderByDescending(g => g.Count())
-            .Take(6).Select(g => $"{g.Key} ({g.Count()})")));
+            .Take(6).Select(g => $"{UntrustedText.Neutralize(g.Key)} ({g.Count()})")));
         data.AppendLine($"{s.Excerpts}:");
+        // Untrusted excerpts + the model-produced theme are neutralized before they
+        // enter this prompt: no quote breakout, no forged "- [id]" rows (ADR-0021).
         foreach (var item in groupItems.Take(Math.Min(8, opts.MaxItemsPerLlmCall)))
-            data.AppendLine($"- [{item.Id}] \"{Excerpt(item.Text)}\" ({item.Structure!.Severity})");
+            data.AppendLine($"- [{item.Id}] \"{UntrustedText.Neutralize(Excerpt(item.Text))}\" ({item.Structure!.Severity})");
 
         var raw = await TryLlmAsync(activeDomain.PromptPath("synthesis"), data.ToString(), state, ct);
         if (raw is null)
