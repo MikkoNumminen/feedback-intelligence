@@ -9,6 +9,7 @@ public sealed record ReportAlert(
     string Source,
     string Timestamp,
     string TextExcerpt,
+    string Text,
     IReadOnlyList<AlertHit> DeterministicHits,
     string? LlmReason);
 

@@ -153,6 +153,7 @@ public class ReportServiceTests : IDisposable
             .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
 
         Assert.Single(report.Alerts);                       // deterministic alert survives
+        Assert.StartsWith("maito vanhaa", report.Alerts[0].Text); // full text embedded for click-through
         Assert.All(report.Themes, t => Assert.False(t.NarrativeFromLlm));
         Assert.Equal(6, report.TotalItems);
     }

@@ -82,7 +82,7 @@ const STR = {
     today: "Tänään", d7: "7 päivää", d30: "30 päivää", custom: "Oma aikaväli…", refresh: "Päivitä",
     footBefore: "Jokainen väite on jäljitettävissä: avaa teeman takaa löytyvät viestit. Kirjaa uusi palaute: ",
     footLink: "tiskikirjaus", close: "Sulje", live: "Live", snap: "Tilannekuva",
-    showMessages: "Näytä", messagesWord: "viestiä",
+    showMessages: "Näytä", showMessage: "Näytä viesti", messagesWord: "viestiä",
     sev: { low: "matala", medium: "kohtalainen", high: "korkea", critical: "kriittinen", unknown: "–" },
     pickBothDates: "Valitse oman aikavälin molemmat päivät.",
     compiling: "Koostetaan raporttia… (kielimalli kirjoittaa tiivistelmät)",
@@ -92,15 +92,13 @@ const STR = {
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
     snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
     noReport: "Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.",
-    itemError: "Palautetta ei voitu avata (palvelin ei vastaa).",
-    theme: "aihe", severity: "vakavuus", type: "tyyppi", correctedAtDesk: "korjattu tiskillä: ",
   },
   en: {
     htmlLang: "en", locale: "en-GB", pageTitle: "Feedback situation", h1: "Feedback situation",
     today: "Today", d7: "7 days", d30: "30 days", custom: "Custom range…", refresh: "Refresh",
     footBefore: "Every claim is traceable: open the messages behind each theme. Log new feedback: ",
     footLink: "desk entry", close: "Close", live: "Live", snap: "Snapshot",
-    showMessages: "Show", messagesWord: "messages",
+    showMessages: "Show", showMessage: "Show message", messagesWord: "messages",
     sev: { low: "low", medium: "medium", high: "high", critical: "critical", unknown: "–" },
     pickBothDates: "Pick both dates for the custom range.",
     compiling: "Compiling the report… (the model writes the summaries)",
@@ -110,8 +108,6 @@ const STR = {
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
     snapShown: "The server was unreachable — showing the last saved snapshot.",
     noReport: "No report and no saved snapshot found.",
-    itemError: "Could not open the feedback item (the server is not responding).",
-    theme: "theme", severity: "severity", type: "type", correctedAtDesk: "corrected at desk: ",
   },
 };
 
@@ -148,7 +144,6 @@ function applyLanguage(lang) {
 }
 
 const catLabel = key => (schema && schema.categoryLabels && schema.categoryLabels[key]) || key;
-const labelOf = (map, key) => (map && map[key]) || key;
 
 function windowRange() {
   const choice = el("window").value;
@@ -218,10 +213,14 @@ function render(report, live) {
     const origin = alert.llmReason
       ? L.model + ": " + alert.llmReason
       : L.keyword + ": " + alert.deterministicHits.map(h => h.pattern).join(", ");
-    root.appendChild(node("div", "card alert", [
+    const alertCard = node("div", "card alert", [
       node("strong", null, [alert.textExcerpt]),
       node("div", "muted", [`${alert.source} · ${short(alert.timestamp)} · ${origin}`]),
-    ]));
+    ]);
+    const abtn = node("button", "showmsgs", [`${L.showMessage} →`]);
+    abtn.addEventListener("click", () => openAlert(alert));
+    alertCard.appendChild(abtn);
+    root.appendChild(alertCard);
   }
 
   root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
@@ -265,6 +264,18 @@ function openMessages(theme) {
     list.appendChild(node("div", "msgrow", [meta, node("p", "msgtext", [s.text])]));
   }
   body.appendChild(list);
+  el("item-dialog").showModal();
+}
+
+// An alert is a single message; open its FULL text + origin (embedded, so this
+// works live and from a snapshot).
+function openAlert(alert) {
+  const origin = alert.llmReason ? L.model + ": " + alert.llmReason
+    : L.keyword + ": " + alert.deterministicHits.map(h => h.pattern).join(", ");
+  const body = el("item-body");
+  body.innerHTML = "";
+  body.appendChild(node("div", "muted", [`${alert.source} · ${short(alert.timestamp)} · ${origin}`]));
+  body.appendChild(node("p", "msgtext", [alert.text]));
   el("item-dialog").showModal();
 }
 

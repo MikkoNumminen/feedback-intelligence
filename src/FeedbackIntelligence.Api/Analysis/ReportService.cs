@@ -84,7 +84,7 @@ public sealed class ReportService(
         var alerts = items
             .Where(i => i.Alerts.Count > 0)
             .OrderByDescending(i => i.Timestamp, StringComparer.Ordinal)
-            .Select(i => new ReportAlert(i.Id, i.Source, i.Timestamp, Excerpt(i.Text), i.Alerts, null))
+            .Select(i => new ReportAlert(i.Id, i.Source, i.Timestamp, Excerpt(i.Text), i.Text, i.Alerts, null))
             .ToList();
 
         // --- Layer 2a: LLM alert screen over keyword-less items (may ADD, never removes) ---
@@ -126,7 +126,7 @@ public sealed class ReportService(
                     .ToDictionary(g => g.Key, g => g.First().Reason, StringComparer.Ordinal)
                 : new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var item in confirmed)
-                alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), [],
+                alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), item.Text, [],
                     reasons.TryGetValue(item.Id, out var r) && !string.IsNullOrWhiteSpace(r)
                         ? r
                         : ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language)));
