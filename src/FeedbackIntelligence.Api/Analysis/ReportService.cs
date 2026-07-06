@@ -47,6 +47,10 @@ public sealed class ReportService(
         public int AlertVerifiesRemaining;
         public int DroppedClaims;
         public int LlmFallbacks;
+        // A3: narratives dropped for turning directive (recommend/act/verdict)
+        // instead of describing — an injection-defense drop, distinct from an
+        // ungrounded-citation drop.
+        public int ActionDropped;
     }
 
     public async Task<ManagementReport> GenerateAsync(string fromIso, string toIso, CancellationToken ct)
@@ -179,7 +183,8 @@ public sealed class ReportService(
             themes,
             state.DroppedClaims,
             state.LlmFallbacks,
-            lang);
+            lang,
+            state.ActionDropped);
 
         await PersistSnapshotAsync(report, ct);
         return report;
@@ -344,7 +349,22 @@ public sealed class ReportService(
                 return null;
             }
 
-            return (title.GetString()!.Trim(), narrative.GetString()!.Trim());
+            // A3: bound the narrative's authority to a grounded DESCRIPTION. If it
+            // turned directive (recommend/act/verdict) — the shape an injected
+            // "erota osastopäällikkö" produces — drop it to the deterministic
+            // fallback so the instruction has no output slot. Backstop to the
+            // prompt constraint; counted separately from ungrounded drops.
+            var narrativeText = narrative.GetString()!.Trim();
+            if (NarrativeGuard.LooksActionBearing(narrativeText))
+            {
+                state.ActionDropped++;
+                logger.LogWarning(
+                    "Dropped action-bearing synthesis for '{Category}' to fallback (A3): narrative was directive, not descriptive.",
+                    category);
+                return null;
+            }
+
+            return (title.GetString()!.Trim(), narrativeText);
         }
     }
 

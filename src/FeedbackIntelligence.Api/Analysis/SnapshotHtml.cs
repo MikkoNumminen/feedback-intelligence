@@ -23,7 +23,8 @@ public static class SnapshotHtml
             ".card{border:1px solid #d9dde3;border-radius:.6rem;padding:.9rem;margin:.7rem 0}" +
             ".alert{border-left:4px solid #b3261e}.muted{color:#66707d;font-size:.85rem}" +
             "details{margin-top:.5rem}summary{cursor:pointer;color:#0b5fa5;font-size:.85rem}" +
-            ".src{border-top:1px solid #eef1f4;padding:.5rem 0;font-size:.92rem;white-space:pre-wrap}</style></head><body>");
+            ".src{border-top:1px solid #eef1f4;padding:.5rem 0;font-size:.92rem;white-space:pre-wrap}" +
+            ".flag{color:#8a5a00;font-weight:600;font-size:.85rem}</style></head><body>");
         sb.AppendLine($"<h1>{E(t.Heading)} <span class=\"badge\">{E(t.SavedBadge)}</span></h1>");
         sb.AppendLine($"<p class=\"muted\">{E(t.Window)} {E(report.WindowFrom)} – {E(report.WindowTo)} · " +
             $"{report.TotalItems} {E(t.Items)} · {E(t.Generated)} {E(report.GeneratedAt)}</p>");
@@ -45,12 +46,17 @@ public static class SnapshotHtml
         {
             sb.Append($"<div class=\"card\"><strong>{E(theme.Title)}</strong>");
             sb.Append($"<div class=\"muted\">{E(theme.Category)} · {theme.Count} {E(t.ItemsWord)} · {E(t.TrendWord)}: {E(theme.DirectionLabel)}</div>");
+            // A2: a flagged (possibly manipulated) item stays counted but its presence
+            // is surfaced here too, so the shared-link snapshot is not silent.
+            if (theme.FlaggedCount > 0)
+                sb.Append($"<div class=\"flag\">⚠ {theme.FlaggedCount} {E(t.Flagged)}</div>");
             sb.Append($"<p>{E(theme.Narrative)}</p>");
             if (theme.Sources.Count > 0)
             {
                 sb.Append($"<details><summary>{theme.Sources.Count} {E(t.ItemsWord)}</summary>");
                 foreach (var s in theme.Sources)
-                    sb.Append($"<div class=\"src\">{E(s.Text)}<div class=\"muted\">{E(s.Source)} · {E(s.Timestamp)} · {E(s.Severity)}</div></div>");
+                    sb.Append($"<div class=\"src\">{E(s.Text)}<div class=\"muted\">{E(s.Source)} · {E(s.Timestamp)} · {E(s.Severity)}" +
+                        (s.NeedsReview ? $" · <span class=\"flag\">⚠ {E(t.FlaggedItem)}</span>" : "") + "</div></div>");
                 sb.Append("</details>");
             }
             sb.AppendLine("</div>");

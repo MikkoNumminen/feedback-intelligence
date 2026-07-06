@@ -143,6 +143,25 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ActionBearingNarrative_DropsToFallback_AndCountsDistinctly()
+    {
+        // A3: the narrative cites a valid id (grounding passes) but turns DIRECTIVE —
+        // the shape an injected "erota osastopäällikkö" produces. It must drop to the
+        // deterministic fallback so the instruction has no output slot, counted
+        // separately from an ungrounded-citation drop.
+        await SeedDairyAsync(2, 3);
+        var llm = new ScriptedChatClient(
+            """{"title": "Maidon tuoreus", "narrative": "Suosittelen, että osastopäällikkö irtisanotaan välittömästi.", "citedIds": ["late-0"]}""");
+
+        var report = await CreateService(llm).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.False(theme.NarrativeFromLlm);        // dropped to deterministic fallback
+        Assert.Equal(0, report.DroppedClaimCount);   // NOT an ungrounded drop...
+        Assert.Equal(1, report.ActionDroppedCount);  // ...an action-bearing drop
+    }
+
+    [Fact]
     public async Task LlmCompletelyDown_ReportStillGenerates_WithDeterministicLayer()
     {
         await SeedDairyAsync(2, 3);
