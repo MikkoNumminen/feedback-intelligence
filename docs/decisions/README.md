@@ -30,3 +30,4 @@ these ADRs relocate that reasoning into durable records.
 | [0017](0017-trend-significance-gate.md) | Trend direction requires statistical significance (no hallucinated trends) | Accepted |
 | [0018](0018-llm-call-determinism.md) | LLM calls must be deterministic + prompt-byte-stable (CRLF flipped the safety alert) | Accepted |
 | [0019](0019-story-variants-originals-only.md) | Story items ship as originals only (the ×2 variant fallback, taken) | Accepted |
+| [0020](0020-alert-screen-escalation-intent.md) | Alert screen also flags intent to escalate to authorities/legal action | Accepted |

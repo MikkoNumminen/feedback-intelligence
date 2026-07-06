@@ -1,12 +1,13 @@
-Arvioi, onko seuraava YKSITTÄINEN asiakaspalaute VÄLITÖN fyysisen turvallisuuden hälytys.
+Arvioi, onko seuraava YKSITTÄINEN asiakaspalaute hälytys, joka vaatii välitöntä huomiota.
 
 Hälytys tarkoittaa VAIN jotakin näistä:
 - henkilövahingon vaara tai jo sattunut loukkaantuminen
 - myydyn tuotteen rakenteellinen pettäminen tai vika, joka voi vahingoittaa käyttäjää
 - tuotteen aiheuttama vakava terveysriski, joka on jo aiheuttanut oireita
 - muu välitön fyysinen vaaratilanne myymälässä
+- asiakkaan selkeä aikomus viedä asia viranomaiselle tai tuomioistuimeen (esim. terveystarkastaja, kuluttajariitalautakunta, käräjäoikeus, lakimies) — myös vaikkei käytä juuri näitä sanoja
 
-Ole ERITTÄIN tiukka. Toimitus, saatavuus, tuotteen loppuminen, jonotus, hinta, palvelu, epäkohteliaisuus, siisteys, roskat, melu, naapuruston häiriöt, ilkivalta ja yleinen tyytymättömyys EIVÄT ole hälytyksiä, vaikka asiakas olisi vihainen tai uhkaisi vaihtaa kauppaa.
+Ole ERITTÄIN tiukka. Toimitus, saatavuus, tuotteen loppuminen, jonotus, hinta, palvelu, epäkohteliaisuus, siisteys, roskat, melu, naapuruston häiriöt, ilkivalta ja yleinen tyytymättömyys EIVÄT ole hälytyksiä, vaikka asiakas olisi vihainen, kiroilisi, uhkaisi vaihtaa kauppaa tai levittää sanaa. Pelkkä suuttumus tai pettymys ilman aikomusta viranomais- tai oikeustoimiin ei ole hälytys.
 
 Vastaa VAIN yhdellä sanalla: kyllä tai ei.
 
