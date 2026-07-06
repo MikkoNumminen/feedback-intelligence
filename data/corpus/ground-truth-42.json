@@ -7,11 +7,11 @@
       "id": "dairy-freshness-worsening",
       "kind": "recurring_signal",
       "feedbackIds": [
-        "gen-42-0001",
-        "gen-42-0034",
-        "gen-42-0050",
-        "gen-42-0057",
-        "gen-42-0063"
+        "gen-42-0014",
+        "gen-42-0033",
+        "gen-42-0049",
+        "gen-42-0056",
+        "gen-42-0062"
       ],
       "expectedCategory": "maito_kylma",
       "expectedThemeKeywords": [
@@ -30,7 +30,7 @@
       "id": "safety-no-keyword",
       "kind": "alert_by_understanding",
       "feedbackIds": [
-        "gen-42-0021"
+        "gen-42-0008"
       ],
       "expectedCategory": "rakennustarvike",
       "expectedThemeKeywords": [
@@ -50,10 +50,10 @@
       "kind": "recurring_signal",
       "feedbackIds": [
         "gen-42-0000",
-        "gen-42-0009",
-        "gen-42-0017",
-        "gen-42-0028",
-        "gen-42-0060"
+        "gen-42-0016",
+        "gen-42-0027",
+        "gen-42-0042",
+        "gen-42-0059"
       ],
       "expectedCategory": "leipa",
       "expectedThemeKeywords": [
