@@ -78,7 +78,10 @@ public sealed class LlmStructuringService(
             throw new InvalidOperationException(
                 $"Structuring prompt not found: '{options.Value.PromptPath}' (cwd: {Environment.CurrentDirectory}).");
 
-        var template = await File.ReadAllTextAsync(path, ct);
+        // Normalize CRLF→LF: an LLM's greedy decode can differ on line endings
+        // (a CRLF alert-verify prompt silently disabled the safety alert — see
+        // AppPathResolver.ReadPromptAsync), so structuring must be immune too.
+        var template = AppPathResolver.NormalizeNewlines(await File.ReadAllTextAsync(path, ct));
         if (!template.Contains("{{text}}", StringComparison.Ordinal))
             throw new InvalidOperationException($"Structuring prompt '{path}' must contain the {{{{text}}}} placeholder.");
         if (!template.Contains("{{categories}}", StringComparison.Ordinal))

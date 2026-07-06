@@ -32,7 +32,25 @@ internal sealed class OllamaLlmClientFactory(IOptions<LlmOptions> options) : ILl
         private static ChatOptions WithThinkOff(ChatOptions? options)
         {
             var patched = options?.Clone() ?? new ChatOptions();
-            patched.RawRepresentationFactory = _ => new ChatRequest { Think = false };
+            // OllamaSharp's AbstractionMapper uses the RawRepresentationFactory
+            // result as the BASE ChatRequest and does NOT overlay the mapped
+            // ChatOptions onto it — so returning a bare `new ChatRequest { Think =
+            // false }` silently DROPPED the configured temperature and token cap,
+            // running every call at Ollama's defaults (temperature 0.8, uncapped).
+            // That made the deterministic paths (structuring temp 0, alert-verify
+            // temp 0) non-deterministic — e.g. the no-keyword safety screen flipped
+            // kyllä/ei run-to-run. Carry the options explicitly on the raw request.
+            var temperature = patched.Temperature;
+            var maxTokens = patched.MaxOutputTokens;
+            patched.RawRepresentationFactory = _ => new ChatRequest
+            {
+                Think = false,
+                Options = new OllamaSharp.Models.RequestOptions
+                {
+                    Temperature = temperature,
+                    NumPredict = maxTokens,
+                },
+            };
             return patched;
         }
     }
