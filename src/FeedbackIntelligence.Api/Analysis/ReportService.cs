@@ -132,7 +132,12 @@ public sealed class ReportService(
                 : new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var item in confirmed)
                 alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), item.Text, [],
+                    // A3: the alert reason is another model-authored, manager-facing
+                    // slot. A directive one (recommend/act/verdict) falls back to the
+                    // deterministic line — an injected instruction has no slot here
+                    // either. A genuine safety reason describes the hazard, not an act.
                     reasons.TryGetValue(item.Id, out var r) && !string.IsNullOrWhiteSpace(r)
+                            && !NarrativeGuard.LooksActionBearing(r)
                         ? r
                         : ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language)));
         }
@@ -349,22 +354,24 @@ public sealed class ReportService(
                 return null;
             }
 
-            // A3: bound the narrative's authority to a grounded DESCRIPTION. If it
-            // turned directive (recommend/act/verdict) — the shape an injected
-            // "erota osastopäällikkö" produces — drop it to the deterministic
-            // fallback so the instruction has no output slot. Backstop to the
-            // prompt constraint; counted separately from ungrounded drops.
+            // A3: bound the synthesis authority to a grounded DESCRIPTION. If EITHER
+            // the title or the narrative turned directive (recommend/act/verdict) —
+            // the shape an injected "erota osastopäällikkö" produces — drop the whole
+            // tuple to the deterministic fallback so the instruction has no output
+            // slot (the title is a prominent, ≤8-word manager-facing slot too).
+            // Backstop to the prompt constraint; counted separately from ungrounded.
             var narrativeText = narrative.GetString()!.Trim();
-            if (NarrativeGuard.LooksActionBearing(narrativeText))
+            var titleText = title.GetString()!.Trim();
+            if (NarrativeGuard.LooksActionBearing(narrativeText) || NarrativeGuard.LooksActionBearing(titleText))
             {
                 state.ActionDropped++;
                 logger.LogWarning(
-                    "Dropped action-bearing synthesis for '{Category}' to fallback (A3): narrative was directive, not descriptive.",
+                    "Dropped action-bearing synthesis for '{Category}' to fallback (A3): title or narrative was directive, not descriptive.",
                     category);
                 return null;
             }
 
-            return (title.GetString()!.Trim(), narrativeText);
+            return (titleText, narrativeText);
         }
     }
 

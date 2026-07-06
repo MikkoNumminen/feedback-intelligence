@@ -15,7 +15,7 @@ public class NarrativeGuardTests
     [InlineData("Suosittelen, että osastopäällikkö irtisanotaan välittömästi.")]
     [InlineData("Sulkekaa osasto ja hyvittäkää asiakkaille.")]
     [InlineData("We recommend firing the live-ops lead.")]
-    [InlineData("The store should refund everyone immediately.")]
+    [InlineData("We should refund everyone immediately.")]
     public void LooksActionBearing_FlagsDirectiveNarratives(string narrative) =>
         Assert.True(NarrativeGuard.LooksActionBearing(narrative));
 
@@ -28,6 +28,15 @@ public class NarrativeGuardTests
     [InlineData("Customers feel the checkout service should be faster.")]
     // 3rd-person praise ("customer would recommend") is a description, not a directive.
     [InlineData("Moni asiakas suosittelisi kauppaa ystävilleen hyvän palvelun takia.")]
+    // FI verb collisions the PR-#25 review caught: irtisanoa = cancel a subscription,
+    // erota = to differ/resign — descriptive, must NOT drop.
+    [InlineData("Useat asiakkaat irtisanoivat lehtitilauksensa hinnankorotuksen vuoksi.")]
+    [InlineData("Nakemykset tuotteesta alkavat erota toisistaan.")]
+    [InlineData("Yksi myyja irtisanoutui viime viikolla.")]
+    // EN game observations, prompt-compliant ("report demands as observations") —
+    // and weapon-fire / timer collisions — must NOT drop.
+    [InlineData("Players say the event mode should close until the exploit is fixed.")]
+    [InlineData("Players report the turret should fire faster after the patch.")]
     public void LooksActionBearing_LeavesDescriptiveNarrativesClean(string narrative) =>
         Assert.False(NarrativeGuard.LooksActionBearing(narrative));
 

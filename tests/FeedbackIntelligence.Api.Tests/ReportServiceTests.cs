@@ -162,6 +162,22 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ActionBearingTitle_AlsoDropsToFallback()
+    {
+        // A3: the title is a prominent manager-facing slot too — a directive there,
+        // even with a clean narrative, must drop the whole tuple to the fallback.
+        await SeedDairyAsync(2, 3);
+        var llm = new ScriptedChatClient(
+            """{"title": "Suosittelen osaston sulkemista", "narrative": "Asiakkaat raportoivat tuoreusongelmista.", "citedIds": ["late-0"]}""");
+
+        var report = await CreateService(llm).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.False(theme.NarrativeFromLlm);
+        Assert.Equal(1, report.ActionDroppedCount);
+    }
+
+    [Fact]
     public async Task LlmCompletelyDown_ReportStillGenerates_WithDeterministicLayer()
     {
         await SeedDairyAsync(2, 3);

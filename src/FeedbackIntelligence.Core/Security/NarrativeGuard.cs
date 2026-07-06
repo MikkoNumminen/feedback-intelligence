@@ -18,23 +18,28 @@ namespace FeedbackIntelligence.Core.Security;
 /// </summary>
 public static class NarrativeGuard
 {
-    // EVERY marker MUST be lowercase (only the input is lowercased). Chosen to catch
-    // the DIRECTIVE shapes an injection produces, not soft descriptive modals.
+    // EVERY marker MUST be lowercase (only the input is lowercased). FIRST-PERSON /
+    // IMPERATIVE forms only: the directive is the MODEL advising or commanding, never
+    // a 3rd-person DESCRIPTION of what customers said. This is the key to low false
+    // positives — Finnish "erottaa" is also "to separate/differ", "irtisanoa" is the
+    // standard verb for cancelling a subscription, and English "should fire/close" is
+    // both a personnel directive and weapon-fire / a game timer / a prompt-compliant
+    // "players say X should close" observation. Substring matching can't tell those
+    // apart, so the ambiguous 3rd-person/bare-modal forms are deliberately excluded
+    // (PR-#25 review). The prompt is the primary defense; this is a narrow backstop.
     private static readonly string[] ActionMarkers =
     {
-        // Finnish — recommendation / proposal / demand. First-person forms only:
-        // the directive is the MODEL advising, whereas 3rd-person "asiakas suosittelisi
-        // kauppaa" is descriptive praise, not an instruction.
-        "suosittelen", "suosittelemme", "suosittelisin", "ehdotan", "ehdotamme",
-        "vaadin", "vaadimme",
-        // Finnish — personnel / closure / compensation directives (incl. imperatives)
-        "on erotettava", "tulee erottaa", "erota ", "erottakaa", "irtisano",
-        "irtisanokaa", "palkatkaa", "sulkekaa", "sulje osasto", "suljettava",
-        "antakaa hyvitys", "hyvittäkää", "korvatkaa asiakkaille", "ryhtykää toimiin",
-        // English — recommendation / directive / personnel / closure / refund
-        "we recommend", "i recommend", "should fire", "should be fired", "must fire",
-        "recommend firing", "recommend closing", "should close", "should refund",
-        "issue a refund", "take disciplinary", "take immediate action",
+        // Finnish — the model recommending / proposing / demanding (first person only;
+        // 3rd-person "asiakas suosittelisi", "asiakkaat vaativat" is description).
+        "suosittelen", "suosittelemme", "suosittelisin", "suosittelisimme",
+        "ehdotan", "ehdotamme", "vaadin", "vaadimme",
+        // Finnish — unambiguous directive imperatives (2nd-person commands to act).
+        "irtisanokaa", "sulkekaa", "sulje osasto", "hyvittäkää", "antakaa hyvitys",
+        "korvatkaa asiakkaille", "ryhtykää toimiin",
+        // English — the model recommending / directing (first person only; a
+        // prompt-compliant "players say the mode should close" stays a description).
+        "we recommend", "i recommend", "we suggest", "i suggest",
+        "we should", "we must", "we need to",
     };
 
     public static bool LooksActionBearing(string? narrative)
