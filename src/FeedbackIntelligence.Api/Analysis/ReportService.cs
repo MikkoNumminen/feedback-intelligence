@@ -53,30 +53,42 @@ public sealed class ReportService(
         public int ActionDropped;
     }
 
-    public async Task<ManagementReport> GenerateAsync(string fromIso, string toIso, CancellationToken ct)
+    /// <summary><paramref name="persistSnapshot"/> is a deliberate OPT-IN to overwrite
+    /// the single offline fallback (report-latest.*). Only the operator's snapshot
+    /// generation (`ctl report`, which passes it) should — an ephemeral frontend view
+    /// with an arbitrary window must never clobber the shared-link's last-good page
+    /// (dotnet-audit finding #3). Applied to the resulting report whether it was freshly
+    /// generated or served from cache, so a cache hit still refreshes the fallback.</summary>
+    public async Task<ManagementReport> GenerateAsync(
+        string fromIso, string toIso, CancellationToken ct, bool persistSnapshot = false)
     {
         var key = fromIso + "|" + toIso;
-        if (cache.TryGet(key, out var cached))
-            return cached;
+        if (!cache.TryGet(key, out var report))
+        {
+            await _generationLock.WaitAsync(ct);
+            try
+            {
+                if (!cache.TryGet(key, out report))
+                {
+                    // Capture the invalidation epoch BEFORE reading items: if a desk
+                    // ingest invalidates the cache during the ~20 s generation, Set
+                    // no-ops and the stale report is not cached — the live-desk-entry
+                    // moment stays correct.
+                    var epoch = cache.Epoch;
+                    report = await GenerateCoreAsync(fromIso, toIso, ct);
+                    if (options.Value.ReportCacheSeconds > 0)
+                        cache.Set(key, report, TimeSpan.FromSeconds(options.Value.ReportCacheSeconds), epoch);
+                }
+            }
+            finally
+            {
+                _generationLock.Release();
+            }
+        }
 
-        await _generationLock.WaitAsync(ct);
-        try
-        {
-            if (cache.TryGet(key, out cached))
-                return cached;
-            // Capture the invalidation epoch BEFORE reading items: if a desk ingest
-            // invalidates the cache during the ~20 s generation, Set no-ops and the
-            // stale report is not cached — the live-desk-entry moment stays correct.
-            var epoch = cache.Epoch;
-            var report = await GenerateCoreAsync(fromIso, toIso, ct);
-            if (options.Value.ReportCacheSeconds > 0)
-                cache.Set(key, report, TimeSpan.FromSeconds(options.Value.ReportCacheSeconds), epoch);
-            return report;
-        }
-        finally
-        {
-            _generationLock.Release();
-        }
+        if (persistSnapshot)
+            await PersistSnapshotAsync(report, ct);
+        return report;
     }
 
     private async Task<ManagementReport> GenerateCoreAsync(string fromIso, string toIso, CancellationToken ct)
@@ -195,7 +207,7 @@ public sealed class ReportService(
             lang,
             state.ActionDropped);
 
-        await PersistSnapshotAsync(report, ct);
+        // Snapshot persistence moved to GenerateAsync (opt-in; applies on cache hit too).
         return report;
     }
 

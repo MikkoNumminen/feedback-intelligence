@@ -227,7 +227,10 @@ app.MapGet("/report", async (
     IOptions<ReportOptions> reportOptions,
     CancellationToken ct,
     [FromQuery] string? from = null,
-    [FromQuery] string? to = null) =>
+    [FromQuery] string? to = null,
+    // Opt-in: overwrite the offline fallback snapshot. Only the operator's `ctl report`
+    // sets it; an ephemeral frontend view must not clobber the shared-link page.
+    [FromQuery] bool snapshot = false) =>
 {
     var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
     if (!TimestampNormalizer.TryNormalize(toRaw, out var toNormalized))
@@ -242,7 +245,7 @@ app.MapGet("/report", async (
     if (fromInstant >= toInstant || (toInstant - fromInstant).TotalDays > reportOptions.Value.MaxWindowDays)
         return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
 
-    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct));
+    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct, persistSnapshot: snapshot));
 });
 
 // The ongoing quality measure that replaced the cancelled model eval: per-field

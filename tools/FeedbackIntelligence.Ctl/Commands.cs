@@ -286,7 +286,10 @@ public static class Commands
     {
         var to = DateTimeOffset.UtcNow;
         var from = to.AddDays(-Math.Clamp(days, 1, 92));
-        var q = $"/report?from={Uri.EscapeDataString(from.ToString("O"))}&to={Uri.EscapeDataString(to.ToString("O"))}";
+        // snapshot=true: the operator's deliberate generation refreshes the offline
+        // fallback (report-latest.*) that verify + publish read; ephemeral frontend
+        // views do not (dotnet-audit finding #3).
+        var q = $"/report?from={Uri.EscapeDataString(from.ToString("O"))}&to={Uri.EscapeDataString(to.ToString("O"))}&snapshot=true";
         Console.WriteLine("  " + Term.C("◐", "33") + " generating report (live Finnish synthesis) …");
         var sw = Stopwatch.StartNew();
         var body = await Shell.GetJsonAsync(q, 300);

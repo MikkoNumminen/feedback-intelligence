@@ -354,14 +354,21 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Snapshot_IsPersisted_AndReadable()
+    public async Task Snapshot_PersistedOnlyOnOptIn_NotOnEphemeralView()
     {
+        // dotnet-audit finding #3: an ephemeral frontend view (persistSnapshot: false,
+        // the default) must NOT overwrite the offline fallback; only the operator's
+        // opt-in generation (persistSnapshot: true, what `ctl report` sends) does.
         await SeedDairyAsync(1, 2);
         var service = CreateService(new ScriptedChatClient("ei-jsonia"));
+        var jsonPath = Path.Combine(_snapshotDir, "report-latest.json");
 
-        await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+        await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);   // ephemeral view
+        Assert.False(File.Exists(jsonPath));                                          // no clobber
+        Assert.Null(await service.ReadLatestSnapshotJsonAsync(CancellationToken.None));
 
-        Assert.True(File.Exists(Path.Combine(_snapshotDir, "report-latest.json")));
+        await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, persistSnapshot: true);
+        Assert.True(File.Exists(jsonPath));                                           // opt-in persists
         Assert.True(File.Exists(Path.Combine(_snapshotDir, "report-latest.html")));
         var json = await service.ReadLatestSnapshotJsonAsync(CancellationToken.None);
         Assert.NotNull(json);
