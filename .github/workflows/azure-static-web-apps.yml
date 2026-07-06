@@ -11,6 +11,8 @@ on:
       - 'src/FeedbackIntelligence.Api/wwwroot/index.html'
       - 'src/FeedbackIntelligence.Api/wwwroot/desk.html'
       - 'deploy/staticwebapp.config.json'
+      - 'deploy/snapshot/report-latest.json'
+      - 'deploy/snapshot/report-latest.html'
       - 'tools/publish-frontend.ps1'
       - '.github/workflows/azure-static-web-apps.yml'
   workflow_dispatch:
@@ -47,8 +49,10 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:FUNNEL_API_BASE)) {
             throw "Repo variable FUNNEL_API_BASE is not set - cannot build config.js."
           }
-          $splat = @{ ApiBase = $env:FUNNEL_API_BASE }
-          if ("${{ github.event.inputs.publish_snapshot }}" -eq "true") { $splat.PublishSnapshot = $true }
+          # A committed demo snapshot (deploy/snapshot) exists, so ALWAYS bundle it —
+          # otherwise a push deploy would leave the SWA with no offline fallback (404),
+          # and the shared link goes blank whenever the live backend is unreachable.
+          $splat = @{ ApiBase = $env:FUNNEL_API_BASE; PublishSnapshot = $true }
           ./tools/publish-frontend.ps1 @splat
           Write-Host "dist/ contents:"
           Get-ChildItem ./dist | Select-Object Name, Length | Format-Table -AutoSize

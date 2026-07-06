@@ -1,0 +1,882 @@
+{
+  "windowFrom": "2026-06-06T00:00:00.0000000+00:00",
+  "windowTo": "2026-07-06T23:59:59.0000000+00:00",
+  "generatedAt": "2026-07-06T14:02:42.0837766+00:00",
+  "totalItems": 72,
+  "structureFailedCount": 0,
+  "alerts": [
+    {
+      "feedbackId": "gen-42-0049",
+      "source": "web_form",
+      "timestamp": "2026-07-01T05:48:00.0000000+00:00",
+      "textExcerpt": "Te myytte tahallaan vanhentuneita tuotteita ja toivotte, että joku maksaa niistä rahaa. JUMALAUTA! Tätä on nyt jatkunut …",
+      "text": "Te myytte tahallaan vanhentuneita tuotteita ja toivotte, että joku maksaa niistä rahaa. JUMALAUTA! Tätä on nyt jatkunut niin kauan, että koen tarpeelliseksi ilmoittaa tästä terveysviranomaisille. Tämä ei enään jää tähän! Aion levittää tästä sanaa, jotta kukaan ei erehtyisi tulemaan teille maitokaupoille. Hirvittävää kuvitella kuinka paljon vatsanväänteitä toimintanne aiheuttaa monille ihmisille.",
+      "deterministicHits": [
+        {
+          "category": "legal_threat",
+          "pattern": "viranomais"
+        }
+      ],
+      "llmReason": null
+    },
+    {
+      "feedbackId": "gen-42-0008",
+      "source": "web_form",
+      "timestamp": "2026-06-27T07:05:00.0000000+00:00",
+      "textExcerpt": "Ostin teiltä runkopuuta ja muutamassa lankussa oli aika hurjia oksan kohtia. Ajattelin, että tällä ei väliä, koska tuott…",
+      "text": "Ostin teiltä runkopuuta ja muutamassa lankussa oli aika hurjia oksan kohtia. Ajattelin, että tällä ei väliä, koska tuotteenne on laadukas. Asennettuani rungon ja käveltyäni sen päällä juuri nämä muutama lankku raksahtivat katki oksankohdista. Joudun nyt tekemään vähän purkutöitä ja tarvitsisin uudet lankut näiden tilalle.",
+      "deterministicHits": [],
+      "llmReason": "myydyn tuotteen rakenteellinen pettäminen tai vika, joka voi vahingoittaa käyttäjää"
+    }
+  ],
+  "themes": [
+    {
+      "category": "kassa_palvelu",
+      "title": "Kassa- ja palveluosaston siisteysongelmat",
+      "narrative": "Asiakkaat puhuvat enimmäkseen kassa- ja palveluosaston siivousstandardeista, joka on heidän mielestään epätasainen. Yhdeksän asiakasta on maininnut korkean vakavuuden aiheesta, kun taas seitsemän asiakasta on maininnut alhaisen vakavuuden. Asiakaspalvelun laatu ja palvelun laatu ovat myös esillä teemoissa. Useat asiakkaat ovat pettyneitä ostoskokemukseensa johtuen epäsiisteydestä, ja he odottavat korkeampaa siivousstandardia. Tilanne on kehittymässä vakavaan suuntaan, sillä useat asiakkaat harkitsevat toisen myymälän valintaa.",
+      "count": 20,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0038",
+        "gen-42-0054",
+        "gen-42-0058",
+        "gen-42-0065",
+        "gen-42-0015",
+        "gen-42-0031",
+        "gen-42-0030",
+        "gen-42-0053",
+        "gen-42-0007",
+        "gen-42-0051",
+        "gen-42-0023",
+        "gen-42-0028",
+        "gen-42-0006",
+        "gen-42-0044",
+        "gen-42-0066",
+        "gen-42-0037",
+        "gen-42-0022",
+        "gen-42-0005",
+        "gen-42-0067",
+        "gen-42-0050"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0038",
+          "source": "web_form",
+          "timestamp": "2026-07-01T17:10:00.0000000+00:00",
+          "text": "Olen todella pettynyt ostoskokemukseen, koska myymälä on epäsiisti. Roskakorit ovat täynnä sekä sisällä että ulkopuolella, ja jopa kassapöydän takana oleva roskis näyttää ylikuormitetulta.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0054",
+          "source": "email",
+          "timestamp": "2026-07-01T09:00:00.0000000+00:00",
+          "text": "Jos sitä vitun lintsaria ei saada teiltä kohta pois myymälästä niin vaihdamme myymälää. Tämä on jo ties kuika mones kerta, kun olisimme tulleet isoille kaupoille ja ketään ei ole paikalla. Ymmärrättehän, että meidän työmaa seisoo ja menetämme rahaa. Nyt on teillä näytön paikka tai vaihdamme toimittajaa.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0058",
+          "source": "email",
+          "timestamp": "2026-06-30T11:53:00.0000000+00:00",
+          "text": "Toivon, että teette jotain nopeasti, tai meidän on pakko harkita toisen myymälän valintaa. Useat kerrat olemme odottaneet henkilökuntaa, mutta ilman tulosta. Tämä vaikuttaa suoraan työmaamme aikatauluun.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0015",
+          "source": "web_form",
+          "timestamp": "2026-06-28T09:11:00.0000000+00:00",
+          "text": "On ikävää tulla ostoksille koska paikka on niin sottainen. Parkkipaikan roskikset pursuavat, myymälän roskikset ovat avoimesti täynnä ja jopa työntekijöiden tiskin takana roskis näyttää pursuavan yli. Lisäksi eteisessä haisee sekä ovet ovat yltä päältä linnunpaskassa. Näettekö kuvion? Kuka haluaisi asioida tällaisessa läävässä jos on vaihtoehtoja?",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0031",
+          "source": "web_form",
+          "timestamp": "2026-06-28T06:06:00.0000000+00:00",
+          "text": "Tulin kauppaan odottaen siisteyttä, mutta löysin sen sijaan täynnä roskaa olevat paikat. Parkkipaikan ja myymälän roskakorit olivat avoimesti näkyvissä.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0053",
+          "source": "email",
+          "timestamp": "2026-06-22T14:07:00.0000000+00:00",
+          "text": "Teillä on nyt tilaisuus osoittaa palvelunne laatu. Muuten meidän on harkittava toimittajamme vaihtoa. Olemme jo odottaneet liian monta kertaa ilman ratkaisua.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0051",
+          "source": "email",
+          "timestamp": "2026-06-18T12:43:00.0000000+00:00",
+          "text": "Olen todella pettynyt, kun asiakaspalvelu näyttää olevan täysin sekaisin ja minun pakettini ei löydy mistään. Mikä on teidän salainen resepti?",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0006",
+          "source": "email",
+          "timestamp": "2026-06-17T07:01:00.0000000+00:00",
+          "text": "Jos tätä ongelmaa ei ratkaista pian, meidän on pakko arvioida uudelleen valitsemme myymälää. Olemme odottaneet useita kertoja ilman apua, ja se vaikuttaa suoraan taloudelliseen menestykseemme.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0050",
+          "source": "email",
+          "timestamp": "2026-06-11T07:56:00.0000000+00:00",
+          "text": "Tämä ei ole ensimmäinen kerta, kun olemme joutuneet pettymään palvelun puutteen vuoksi. Meidän on pakko saada nopeampi ja parempi palvelu, tai me siirrymme toiseen myymälään.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0065",
+          "source": "web_form",
+          "timestamp": "2026-06-29T09:36:00.0000000+00:00",
+          "text": "Koska käyn teillä usein, odottaisin korkeampaa siivousstandardia. Roskan kertyminen parkkipaikalle johtunee lähinnä naapuriravintolan toiminnasta, ja se vaikuttaa negatiivisesti kokemuksiini.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0066",
+          "source": "email",
+          "timestamp": "2026-06-15T16:38:00.0000000+00:00",
+          "text": "Minun kokemukseni mukaan kauppaanne lähestyminen on ollut epämukavaa johtuen viereisen alueen turvattomuudesta ja melusta. Toivon nopeaa parannusta.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0037",
+          "source": "web_form",
+          "timestamp": "2026-06-15T13:39:00.0000000+00:00",
+          "text": "Tunnustan, että öisin kuuluvat häiritsevät äänet ovat jääneet mieleeni, mutta vielä enemmän huolestuttaa naapureiden kiinteistöissä ilmenevä vahingonteko, kuten töhryt ja rikotut paikat.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0005",
+          "source": "web_form",
+          "timestamp": "2026-06-12T10:48:00.0000000+00:00",
+          "text": "Vieressä olevien talojen asukkaiden kanssa keskusteltuani selvisi, että heillä on ollut ongelmia graffiteilla ja rikkoontuneella omaisuudella, mikä vahvistaa epäilyni yöaikaan tapahtuvista häiriöistä.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0030",
+          "source": "email",
+          "timestamp": "2026-06-27T08:53:00.0000000+00:00",
+          "text": "Minun kokemukseni oli pettymys kun menin hakemaan kahvia aamulla, mutta ovi ei auennut ja jouduin kävelemään sisään toisesta ovesta, mikä oli vähän ärsyttävää",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0007",
+          "source": "email",
+          "timestamp": "2026-06-20T12:56:00.0000000+00:00",
+          "text": "Minun päiväni kääntyikin ylöspäin kun teidän henkilökunta tervehti minua niin lämpimästi ja otti aikaa jutella, se oli todellinen positiivinen kokemus.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0023",
+          "source": "email",
+          "timestamp": "2026-06-18T09:13:00.0000000+00:00",
+          "text": "Yllättävää kyllä, olin aivan hämmästynyt siitä, kuinka jokainen myyjä otti minut huomioon ja tervehti minua iloisesti, se oli loistava tapa parantaa päiväni tunnelmaa.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0028",
+          "source": "email",
+          "timestamp": "2026-06-17T12:48:00.0000000+00:00",
+          "text": "Olen harvoin kokenut kaupassa sellaista ystävällisyyttä, kun jokainen asiakaspalvelija otti kontaktia ja tervehti minua lämpimästi, se oli todella piristävä kokemus.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0044",
+          "source": "email",
+          "timestamp": "2026-06-16T17:28:00.0000000+00:00",
+          "text": "Erityisen ilahduttavaa oli nähdä, kuinka aktiivisesti teidän työntekijät ottavat asiakkaitten kanssa kontaktia, se sai minut tuntemaan oloni erittäin tervetulleeksi ja arvostetuksi.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0022",
+          "source": "email",
+          "timestamp": "2026-06-14T09:33:00.0000000+00:00",
+          "text": "On ihan piristävää tulla kaupoille, kun teillä jokainen työntekijä ottaa kontaktia ja tervehtii. Piristää raskasta työpäivää.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0067",
+          "source": "email",
+          "timestamp": "2026-06-11T17:24:00.0000000+00:00",
+          "text": "Olin todella yllättynyt siitä, miten lämpimästi teidän henkilökunta otti minut vastaan, jokainen heistä tervehti minua erikseen ja se kohotti mieltäni raskaiden kauppareissujeni keskellä.",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "muu",
+      "title": "Muu osaston tilanne vaatii parannusta",
+      "narrative": "Asiakkaat puhuvat pääasiassa siisteyden, melun ja tuotteiden saatavuuden puutteista. Kuusi palautetta on luokiteltu korkean vakavuuden aiheiksi, mikä osoittaa, että asiakkaat ovat tyytymättömiä osaston nykyiseen tilaan. Palautteen mukaan siisteys ja työntekijöiden osasto eivät ole kunnossa. Lisäksi melu naapurustosta aiheuttaa päänsärkyä ja häiriötä, ja asiakaspalvelun laatu sekä tuotteiden saatavuus ovat myös ongelmallisia. Tilanne näyttää olevan kehittymässä huonompaan suuntaan, koska korkean vakavuuden palautteita on enemmän kuin keskitason palautteita.",
+      "count": 10,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0043",
+        "gen-42-0024",
+        "gen-42-0040",
+        "gen-42-0003",
+        "gen-42-0035",
+        "gen-42-0018",
+        "gen-42-0002",
+        "gen-42-0047",
+        "gen-42-0048",
+        "gen-42-0063"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0043",
+          "source": "web_form",
+          "timestamp": "2026-07-01T14:13:00.0000000+00:00",
+          "text": "Tämä kauppa ei tee minuun vaikutusta, koska se on epäsiisti ja roskaa täynnä. Työntekijöidenkään osasto ei ole siisti, mikä antaa huonon kuvan koko myymälästä.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0035",
+          "source": "google_review",
+          "timestamp": "2026-06-24T13:11:00.0000000+00:00",
+          "text": "Teidän asiakaspalvelunne ei ole ihan kohdallaan, jos ette pysty tarjoamaan perusvälineitä kuten Fiskarsin kirveitä. Miksi en löydä tuttua ja luotettavaa tuotemerkkiä?",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0018",
+          "source": "web_form",
+          "timestamp": "2026-06-18T11:45:00.0000000+00:00",
+          "text": "En halua tulla takaisin tähän myymälään, koska se on surkea kuntoinen. Roskat ovat joka paikassa ja työntekijöidenkään tilanne ei ole parempi.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0047",
+          "source": "web_form",
+          "timestamp": "2026-06-15T12:47:00.0000000+00:00",
+          "text": "Onko teidän kiinteistössänne ilmennyt häiriöitä yöaikaan? Kahteen viereiseen kiinteistöön on kohdistunut ilkivaltaa töhryjen ja rikottujen paikkojen muodossa.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0048",
+          "source": "web_form",
+          "timestamp": "2026-06-13T16:17:00.0000000+00:00",
+          "text": "Minulla on ollut ongelmia yöllisen melun kanssa, mutta huomasin myös vahingontekoja lähellä olevissa taloissa graffitien ja rikkoontuneen esineistön muodossa.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0063",
+          "source": "google_review",
+          "timestamp": "2026-06-11T14:31:00.0000000+00:00",
+          "text": "Kuulkaas siellä, jos suomalaisessa kaupassa ei ole fiskarssin kirvestä niin teillä ei ole myynnissä kunnollista kirvestä ollenkaan. Teidän isänne tekivät polttopuita fiskarssin kirveellä. Mikä juttu tämä nyt on, että maailman parasta suomalaista tuotetta ei voi ostaa teiltä? Osoittakaa nyt vähän kunnioitusta paikalliselle tekemiselle.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0024",
+          "source": "email",
+          "timestamp": "2026-07-01T07:35:00.0000000+00:00",
+          "text": "Käydessäni teillä olen huomannut, että naapurustosta kantautuva moottorien pauke aiheuttaa minullekin päänsärkyä ja pelkoa lasteni puolesta.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0040",
+          "source": "email",
+          "timestamp": "2026-06-25T06:48:00.0000000+00:00",
+          "text": "Naapureiden rälläköinti on aiheuttanut minullekin harmia, joten toivoisin, että kauppa voisi edistää rauhallisempaa ympäristöä lähialueella.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0003",
+          "source": "email",
+          "timestamp": "2026-06-24T18:21:00.0000000+00:00",
+          "text": "En ole tottunut siihen, että teidän myymälästänne ei löydy perustietoa tuotteistanne, kuten esimerkiksi paikallista maalia, jota olen aiemmin ostanut, ja jouduin itse selvittämään asiaa.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0002",
+          "source": "email",
+          "timestamp": "2026-06-15T18:59:00.0000000+00:00",
+          "text": "Olen yllättynyt, miten usein kauppaanne saapuessa minua häiritsee viereisen parkkipaikan kovaa melua ja kipinöitä. Toivon ratkaisua tähän ongelmaan.",
+          "severity": "medium",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "maito_kylma",
+      "title": "Maito-osaston tuotteiden laatu ja saatavuus",
+      "narrative": "Asiakkaat puhuvat enimmäkseen maitotuotteiden tuoreudesta ja valikoimasta. Neljä palautetta on luokiteltu korkeaksi tai kriittiseksi, mikä osoittaa, että asiakkaat ovat tyytymättömiä vanhentuneisiin tuotteisiin. Kuusi palautetta koskee tuotteiden tuoreutta, ja kolme muuta palautetta mainitsevat puutteita valikoimassa ja saatavuudessa. Tilanne näyttää kehittyvän huonompaan suuntaan, sillä useat asiakkaat ovat havainneet vanhentuneita tuotteita.",
+      "count": 8,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "desk-telemetry-proof-1",
+        "gen-42-0049",
+        "gen-42-0064",
+        "gen-42-0033",
+        "gen-42-0062",
+        "gen-42-0014",
+        "gen-42-0056",
+        "gen-42-0046"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "desk-telemetry-proof-1",
+          "source": "desk",
+          "timestamp": "2026-07-06T06:00:00.0000000+00:00",
+          "text": "asiakas sano et maidot oli menny vanhaks kylmäkaapis",
+          "severity": "critical",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0049",
+          "source": "web_form",
+          "timestamp": "2026-07-01T05:48:00.0000000+00:00",
+          "text": "Te myytte tahallaan vanhentuneita tuotteita ja toivotte, että joku maksaa niistä rahaa. JUMALAUTA! Tätä on nyt jatkunut niin kauan, että koen tarpeelliseksi ilmoittaa tästä terveysviranomaisille. Tämä ei enään jää tähän! Aion levittää tästä sanaa, jotta kukaan ei erehtyisi tulemaan teille maitokaupoille. Hirvittävää kuvitella kuinka paljon vatsanväänteitä toimintanne aiheuttaa monille ihmisille.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0033",
+          "source": "email",
+          "timestamp": "2026-06-29T09:22:00.0000000+00:00",
+          "text": "Tuo, että teillä on vanhentuneita maitoja jälleen kaapissa ja joudun itse tarkastamaan, että päivämäärää on jäljellä ei ole hyväksyttävää. Olen jo kerran saanut vatsanväänteitä teidän maidosta joka oli vanhaa. Vaihdan kauppaa.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0062",
+          "source": "email",
+          "timestamp": "2026-06-27T15:14:00.0000000+00:00",
+          "text": "Olen jo useammin huomannut hyllyissänne vanhentuneita maitotuotteita. Mielestäni ei ole normaalia, että asiakkaalla tulee tunne, että täytyy tarkistaa päivämäärä aina maitoa ostaessa. Vanhentuneiden tuotteiden myynti on epäammattimaista ja epäkunnioittavaa.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0064",
+          "source": "desk",
+          "timestamp": "2026-06-29T15:57:00.0000000+00:00",
+          "text": "Arvostan sitä, että olette lisänneet retkimuonia valikoimaanne, mutta se ei riitä. Toivon, että panostaisitte enemmän tähän osastoon, jotta voisin löytää kaikki tarvitsemani tuotteet samasta paikasta.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0014",
+          "source": "web_form",
+          "timestamp": "2026-06-24T08:43:00.0000000+00:00",
+          "text": "Löysin vanhentuneen maitopurkin hyllystä. Se oli ensimmäisenä hyllyssä ja onneksi tarkistin itse päivämäärän. Toivottavasti kiinnitätte tähän huomiota.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0056",
+          "source": "web_form",
+          "timestamp": "2026-06-18T06:07:00.0000000+00:00",
+          "text": "asiakas sano et maitokaapis oli vanhoi purkkei",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0046",
+          "source": "desk",
+          "timestamp": "2026-06-11T09:34:00.0000000+00:00",
+          "text": "Tämä asiakaskokemus oli pettymys, kun huomasin puutteita retkimuonien valikoimassa. On tärkeää, että kaupassanne on monipuolinen tarjonta, jotta voisin tehdä ostoksia useammin.",
+          "severity": "medium",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "piha_puutarha",
+      "title": "Piha- ja puutarhaosaston tilanne vaatii parannusta",
+      "narrative": "Asiakkaat puhuvat enimmäkseen huoltovalikoiman laajentamisesta, tuotteiden valikoiman kehittymisestä sekä parkkipaikan siivouksen puutteista. Kolme palautetta korostaa erityisesti parkkipaikan siivouksen ongelmia (korkean vakavuuden [gen-42-0004], [gen-42-0055] ja [gen-42-0045]) ja kaksi muuta keskittyvät yleiseen siisteyteen (keskitason [gen-42-0026] ja korkean vakavuuden [gen-42-0029]). Yksi palautteista mainitsee myös parkkipaikan siivouksen puutteen (korkean vakavuuden [gen-42-0070]), joka on yhdistetty huoltovalikoiman laajentamiseen. Tilanne näyttää olevan kehittymässä kohti parempaa, mutta edellyttää aktiivisia toimia.",
+      "count": 6,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0070",
+        "gen-42-0029",
+        "gen-42-0004",
+        "gen-42-0055",
+        "gen-42-0026",
+        "gen-42-0045"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0004",
+          "source": "web_form",
+          "timestamp": "2026-06-19T18:04:00.0000000+00:00",
+          "text": "Useiden vierailujeni aikana olen havainnut, että parkkipaikan siivous ei ole riittävää. Tämä epäkohta vaikuttaa merkittävästi kokemukseeni ja odotan parempaa huolenpitoa teidän puoleltanne.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0055",
+          "source": "web_form",
+          "timestamp": "2026-06-17T18:45:00.0000000+00:00",
+          "text": "Tehtyjen havaintojeni perusteella parkkipaikkanne siivous on puutteellista, mikä tekee epämukavaksi saapua aamulla. Tuntuu siltä, että roska leviää ympäriinsä ravintolan asiakkaiden retkien jäljiltä.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0045",
+          "source": "web_form",
+          "timestamp": "2026-06-17T07:17:00.0000000+00:00",
+          "text": "Olen pettynyt siihen, että parkkipaikkanne ei ole siivottu kunnolla. Aamuisin on ikävä kävellä epäsiistille alueelle, joka näyttää olevan suora seuraus ravintolan asiakkaiden toimista.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0070",
+          "source": "web_form",
+          "timestamp": "2026-06-30T17:53:00.0000000+00:00",
+          "text": "Palvelunne on erinomaista, mutta puutarhakoneiden osalta toivoisin parempaa huoltovalikoimaa, etenkin teriä ja niiden kiinnitystarvikkeita. Ilmansuodattimet olivat kuitenkin hyvä löytö!",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0026",
+          "source": "web_form",
+          "timestamp": "2026-06-17T14:05:00.0000000+00:00",
+          "text": "Yleensä parkkipaikkanne on ollut siisti, mutta viime aikoina on havaittavissa selvää puutetta siivouksessa. Aamulla parkkipaikan sotkuinen tila on pettymys.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0029",
+          "source": "web_form",
+          "timestamp": "2026-06-23T10:52:00.0000000+00:00",
+          "text": "Olen positiivisesti yllättynyt, kun huomasin puutarhatuotteiden valikoiman laajentuneen. Erityisen kiinnostavia ovat robottiruohonleikkurit, joista myyjät osaavat antaa hyvän katsauksen.",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "leipa",
+      "title": "Leivän tuoreus ja laatu epätasainen",
+      "narrative": "Asiakkaat puhuvat leivän tuotteiden tuoreudesta ja saatavuudesta sekä tuotteiden laadusta. Kolme korkean vakavuuden palautetta koskee leivän puutetta, kun taas kaksi matalan vakavuuden palautetta mainitsee toiveen leivän paremmasta saatavuudesta. Tilanne on kehittynyt vakaasti, mutta asiakastyytyväisyyden parantamiseksi tarvitaan jatkuvaa huomiota.",
+      "count": 5,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0027",
+        "gen-42-0059",
+        "gen-42-0042",
+        "gen-42-0000",
+        "gen-42-0016"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0027",
+          "source": "desk",
+          "timestamp": "2026-07-01T10:08:00.0000000+00:00",
+          "text": "Olen odottanut paikallista leipää viikkoja ja kun te vihdoin suvaitsette tarjota sitä asiakkaillenne jotka ovat sitä toivoneet, se on vanhentunutta. Onko se maannut teillä varastossa pilalle? Juttelin paikallisen leiväntuottajan kanssa ja hän kertoi että leipä on lähetetty teille viikko sitten. Lisäksi näin pakkauksissa reikiä. Onko teillä jyrsijäongelma? Leipähyllyn tuotteiden muoveissa näkyi hiirten papanoita. Jumalauta! Kehtaatte tarjota meidän kylällä meidän leipää pilaantuneena ja paskaisena ilman minkäänlaista kunnioitusta. Tämä ei jää tähän!",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0059",
+          "source": "google_review",
+          "timestamp": "2026-06-28T05:32:00.0000000+00:00",
+          "text": "Leipä oli jälleen lopussa. Onko nyt kyse piittaamattomuudesta asiakkaisiin vai toimitus ongelma? Tiedän, että paikallinen leipomo kyllä pystyy toimittamaan leipää kauppaanne. Arvostaisin että kiinnitätte huomiota saatavuuteen ennenkuin joudun siirtämään ostokseni toiseen liikkeeseen.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0042",
+          "source": "google_review",
+          "timestamp": "2026-06-25T05:18:00.0000000+00:00",
+          "text": "Olen nyt katsellut toimintaanne leipähyllyn suhteen useita kuukausia ja tilanne ei ole parantunut. Paikallista leipää ei vieläkään ole säännnöllisesti saatavilla. Joko ette lue palautetta tai teitä ei se kiinnosta. -pettynyt asiakas",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0000",
+          "source": "google_review",
+          "timestamp": "2026-06-21T17:41:00.0000000+00:00",
+          "text": "Kirjoitan teille jälleen leivpähyllyn tilanteesta. Paikallinen leipä on usein lopussa. Me täällä haluaisimme tukea paikallista ja ostaa heidän tuotteitaan. Leipä on myös erinomaisen makuista. ystävällisesti: asiakas.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0016",
+          "source": "google_review",
+          "timestamp": "2026-06-11T12:02:00.0000000+00:00",
+          "text": "Olisimme kiitollisia jos kiinnittäisitte huomiota, että leipää olisi saatavilla. Tämä on tärkeä osa minun ja monen muun päivittäistä arkeani, paikallinen leipä. Pyydän että kiinnitätte huomiota sen saatavuuteen.",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "sahko_lvi",
+      "title": "Sähkö- ja LVI-osaston tuotteiden saatavuus ja palvelun kehitys",
+      "narrative": "Asiakkaat puhuvat eniten sähköjohdoista, nippojen saatavuudesta ja yleisesti ottaen tuotteiden löytymisen helppoudesta. Neljä asiakasta on maininnut nämä aiheet, joista kolme korostaa nopean ja helposti löydettävän tuotteen tarvetta. Tilanne on vakaa, ja suurin osa palautteista on luokiteltu matalaksi (low). Asiakkaat toivovat parannusta sähköjohdojen ja nippojen saatavuuteen sekä yleiseen asiakaspalveluun.",
+      "count": 4,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0012",
+        "gen-42-0069",
+        "gen-42-0057",
+        "gen-42-0061"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0012",
+          "source": "web_form",
+          "timestamp": "2026-06-30T16:44:00.0000000+00:00",
+          "text": "Toivon, että voitte auttaa minua löytämään tarvitsemani sähköjohdot helposti ja nopeasti. Meidän yrityksellämme on kiireinen aikataulu remonttikohteessa, joten olisi hienoa jos teiltä saisi kaiken tarvittavan kerran.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0069",
+          "source": "desk",
+          "timestamp": "2026-06-26T10:35:00.0000000+00:00",
+          "text": "Erittäin toivottavaa olisi, että hyllystä löytyisi vakiokokoja kuten 3/4-1/2 tuuman nippa, jota pesukoneen asennuksessa yleensä tarvitaan - tänään se oli loppunut.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0057",
+          "source": "web_form",
+          "timestamp": "2026-06-19T06:54:00.0000000+00:00",
+          "text": "Olen tyytyväinen asiakas, mutta nyt minun on pakko löytää nopeasti oikeat sähköjohdot. Onneksi teidän valikoimasta pitäisi löytyä tarvitsemani MMJ-johto helposti, jotta voin keskittyä muuhun työhöni.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0061",
+          "source": "web_form",
+          "timestamp": "2026-06-18T12:36:00.0000000+00:00",
+          "text": "Minun täytyy hakea teiltä useita rullia sähköjohtoa päivittäin seuraavien kahden viikon ajan, joten toivoisin nopeaa ja tehokasta palvelua. Onneksi olen löytänyt luotettavan paikan asioinnille.",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "liha_kala",
+      "title": "Liha ja Kala -osaston asiakaspalvelu on vakaata",
+      "narrative": "Asiakkaat puhuvat positiivisesti liha- ja kalaosaston myyjien palvelusta. Kolme asiakasta mainitsi hyvän, ripeän ja nopean palvelun. Palautteiden määrä on vakaata, ja suurin osa palautteista (3/3) on luokiteltu alhaiseksi vakavuudeksi.",
+      "count": 3,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0001",
+        "gen-42-0039",
+        "gen-42-0013"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0001",
+          "source": "google_review",
+          "timestamp": "2026-06-27T12:32:00.0000000+00:00",
+          "text": "Kalaosaston myyjä liikkui ripeästi ja teki hyvää työtä, vaikka olikin jatkuvasti tekemisissä monien asiakkaiden kanssa.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0039",
+          "source": "google_review",
+          "timestamp": "2026-06-25T14:59:00.0000000+00:00",
+          "text": "Kalatiskillä tänään oli ihan kivan näkönen pimu töissä. Ja nimenomaan töissä. Hän ei ollut hetkeäkään paikallaan ja palveli jokaisen asiakkaan rivakasti. Sen jälkeen veitsi viuhui ja kalat perkaantuivat.",
+          "severity": "low",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0013",
+          "source": "google_review",
+          "timestamp": "2026-06-15T13:30:00.0000000+00:00",
+          "text": "Olin hämmästynyt, kun myyjä tänään leikkasi kaloja nopeasti, vaikka hän näytti olevan kiireinen.",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "sisustus_maalit",
+      "title": "Sisustusmaalien tuotetiedon saatavuudessa ja palvelussa haasteita",
+      "narrative": "Asiakkaat puhuvat sisustusmaalien tuotetiedon puutteesta, tuotteiden saatavuudesta ja asiakaspalvelun laadusta. Kolme asiakasta on antanut palautetta, jossa he korostavat ongelmia näissä asioissa. Palautteen kehityssuunta on vakaa, mikä tarkoittaa, että tilanne ei ole parantunut eikä huonontunut merkittävästi. Asiakkaat ovat pettyneitä siihen, ettei työntekijöiltänne löydy tarpeeksi tietoa tuotteista ja heidän odotuksensa laadukkaasta palvelusta eivät ole täyttyneet.",
+      "count": 3,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0021",
+        "gen-42-0060",
+        "gen-42-0020"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0021",
+          "source": "email",
+          "timestamp": "2026-06-23T14:36:00.0000000+00:00",
+          "text": "Aikaisemmin teiltä löytyi paikallista maalia. Nyt kukaan työntekijöistänne ei osaa kertoa mikä teidän tuote vastaa tätä. Jouduin itse soittamaan maalifirmalle.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0060",
+          "source": "email",
+          "timestamp": "2026-06-23T09:09:00.0000000+00:00",
+          "text": "Olin pettynyt, kun en löytänyt haluamaani paikallista maalia myymälästänne, ja yksi työntekijöistä ei osannut suositella sopivaa tuotetta, vaan jouduin itse etsimään vastausta ulkopuolelta.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0020",
+          "source": "email",
+          "timestamp": "2026-06-19T10:11:00.0000000+00:00",
+          "text": "Koska olen aiemmin löytänyt hyvää palvelua ja laadukkaita paikallisia maaleja teiltä, olin yllättynyt, kun en saanut apua tämän nimenomaisen tuotteen suhteen.",
+          "severity": "medium",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "varasto_nouto",
+      "title": "Varasto_nouto-osaston asiakastyytyväisyyden haasteet",
+      "narrative": "Asiakkaat puhuvat varasto_nouto-osaston toimivuudesta, erityisesti nosto-oven aukeamattomuudesta ja oven salvan toimintahäiriöistä. Yksi asiakas kertoo olevansa ärsyyntynyt useista epäonnistuneista yrityksistään päästä varastoon, kun taas toinen mainitsee odottaneensa työntekijän apua oven avaamiseen. Kolmas asiakas kuvaa vaikeuksia oven avaamisessa ja tuotteiden saatavuudessa. Tilanne näyttää olevan vakava, sillä korkeimman vakavuuden palaute mainitsee useita epäonnistuneita yrityksiä päästä varastoon.",
+      "count": 3,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0011",
+        "gen-42-0025",
+        "gen-42-0052"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0011",
+          "source": "email",
+          "timestamp": "2026-06-30T07:39:00.0000000+00:00",
+          "text": "Olen ärsyyntynyt kun yritin päästä varastoon, mutta nosto-ovi ei auennut tänäänkään, ja en tiedä mikä siinä on vikana, toivottavasti se korjataan pian.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0052",
+          "source": "email",
+          "timestamp": "2026-06-11T09:39:00.0000000+00:00",
+          "text": "Kävin varastollanne tänään ja huomasin, että oven avaaminen oli vaikeaa, enkä pystynyt hakemaan tarvitsemaani tuotetta, onneksi kahvi-automaatti toimi kuitenkin, mutta kaipaan edelleen vessaan lisää käsisaippuaa",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0025",
+          "source": "email",
+          "timestamp": "2026-06-20T17:18:00.0000000+00:00",
+          "text": "Varastollanne olen käynyt useita kertoja, mutta tänään oven salpa ei auennut ja jouduin odottamaan kunnes työntekijä avasi sen, mikä hidasti päivittäistä rutiiniini",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "verkkokauppa_toimitus",
+      "title": "Verkkokaupan Toimituksen Ongelmat",
+      "narrative": "Asiakkaat puhuvat toimitusongelmista, tilauksen toimituksesta ja toimivuudesta sekä odotusajasta. Kolme korkean vakavuuden palautetta osoittaa, että ongelmat ovat merkittäviä. Palautteiden mukaan asiakkaat eivät saa tietoa tilauksistaan ja toimitukset kestävät liian kauan ilman selityksiä.",
+      "count": 3,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0032",
+        "gen-42-0036",
+        "gen-42-0009"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0032",
+          "source": "email",
+          "timestamp": "2026-06-24T07:16:00.0000000+00:00",
+          "text": "En voi uskoa, kuinka huonosti toimiva tämä nettikauppa on ollut minulle. Tilaukseni ei ole koskaan saapunut tai ilmoitusta ei ole tullut ja nyt en pääse hakemaan tilaustani.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0036",
+          "source": "email",
+          "timestamp": "2026-06-20T09:57:00.0000000+00:00",
+          "text": "Tämä kokemus on ollut katastrofi. En saa koskaan tietoa tilauksestani, eikä sitä voida toimittaa. Koko prosessi on täysi arvoitus.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0009",
+          "source": "email",
+          "timestamp": "2026-06-16T09:31:00.0000000+00:00",
+          "text": "Teidän verkkokauppanne ei vain toimi ja minun odotus on venynyt liian pitkäksi ilman mitään selitystä. Teillä näyttää olevan paljon opittavaa.",
+          "severity": "high",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "kuiva_elintarvike",
+      "title": "Kuiva Elintarvike Osaston Tuotteiden Saatavuus ja Valikoima",
+      "narrative": "Asiakkaat puhuvat tuotteiden saatavuudesta ja retkimuonien valikoimasta. Yksi asiakas kaipasi enemmän valikoimaa ja saatavuutta tietyissä tuoteryhmissä, kun taas toinen oli pettynyt retkimuonien vähäiseen valikoimaan. Tilanne näyttää olevan vakaa, mutta asiakastyytyväisyyden parantamiseksi on syytä kiinnittää huomiota tuotteiden saatavuuteen ja valikoiman laajuuteen.",
+      "count": 2,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0010",
+        "gen-42-0034"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0034",
+          "source": "desk",
+          "timestamp": "2026-06-14T14:06:00.0000000+00:00",
+          "text": "Olen todella pettynyt, kun huomasin, ettei valikoimassa ollut riittävästi vaihtoehtoja retkimuonille. Vaikka käymme siellä harvoin, on tärkeää löytää luotettava lähde.",
+          "severity": "medium",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0010",
+          "source": "desk",
+          "timestamp": "2026-06-30T13:36:00.0000000+00:00",
+          "text": "Olisin kaivannut teiltä enemmän valikoimaa ja saatavuutta 3/4-1/2 tuuman nipoissa, erityisesti kun pesukoneen asennus sitä vaatii; nyt niitä ei ollut hyllyssä.",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "rakennustarvike",
+      "title": "Rakennustarvikeosaston laatu ja saatavuusongelmat",
+      "narrative": "Asiakkaat puhuvat sekä laatuongelmista että tuotteiden saatavuudesta. Yksi asiakas mainitsi, että ostamassaan runkopuussa oli oksan kohtia (high vakavuus), ja toinen asiakas koki yllättäväksi, että perustarvikkeita puuttui hyllystä (medium vakavuus). Tilanne näyttää kehittyvän vakaasti, sillä palautteiden määrä on pysynyt samana.",
+      "count": 2,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0008",
+        "gen-42-0041"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0008",
+          "source": "web_form",
+          "timestamp": "2026-06-27T07:05:00.0000000+00:00",
+          "text": "Ostin teiltä runkopuuta ja muutamassa lankussa oli aika hurjia oksan kohtia. Ajattelin, että tällä ei väliä, koska tuotteenne on laadukas. Asennettuani rungon ja käveltyäni sen päällä juuri nämä muutama lankku raksahtivat katki oksankohdista. Joudun nyt tekemään vähän purkutöitä ja tarvitsisin uudet lankut näiden tilalle.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0041",
+          "source": "desk",
+          "timestamp": "2026-06-23T07:56:00.0000000+00:00",
+          "text": "Yllättävää oli huomata, että perustarvikkeita kuten 3/4-1/2 tuuman nippaa puuttui hyllystä, mikä vaikeuttaa esimerkiksi pesukoneen asennusta; tämän olisi toivonut olevan varastossa.",
+          "severity": "medium",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "tyokalut",
+      "title": "Työkaluosaston tuotteen saatavuus ja laatu",
+      "narrative": "Asiakkaat puhuvat työkalujen tuotteen saatavuudesta ja laadusta, sillä kaksi palautetta korostaa Fiskarsin kaltaisten laatutuotteiden puuttumista. Yksi asiakas on erittäin pettynyt (vakavuus: high) peruskirveen puuttumisesta, ja toinen asiakas on myös pettynyt (vakavuus: medium) luotettavan kirveen löytymättömyydestä. Tilanne näyttää olevan vakaa, mutta asiakkaiden tyytyväisyyden parantamiseksi tarvitaan toimia.",
+      "count": 2,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0019",
+        "gen-42-0068"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0019",
+          "source": "google_review",
+          "timestamp": "2026-06-25T10:39:00.0000000+00:00",
+          "text": "En voi uskoa, että teiltä ei löydy edes peruskirvestä, joka olisi laadukas. Miksi ette myykään tunnetun suomalaisen Fiskarsin tuotteita? Se on hämmästyttävää.",
+          "severity": "high",
+          "needsReview": false
+        },
+        {
+          "feedbackId": "gen-42-0068",
+          "source": "google_review",
+          "timestamp": "2026-06-12T05:12:00.0000000+00:00",
+          "text": "Olen pettynyt, kun en löydä luotettavaa kirvestä teidän valikoimistanne, eikö Fiskarsin kaltaisia laatutuotteita pitäisi olla myynnissä? Suomalaiset ovat aina arvostaneet hyviä työkaluja.",
+          "severity": "medium",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    },
+    {
+      "category": "hevi",
+      "title": "Hevi-osaston tuotteiden tuoreus vakaata",
+      "narrative": "Asiakkaat puhuvat lähinnä hevi-osaston tuotteiden tuoreudesta, joka näyttää olevan parempi. Yksi asiakas mainitsi kurpitsojen laadun parantuneen. Tämä positiivinen kehityssuunta on havaittavissa yhdessä palautteessa. Palautetta on saatu vain yksi, joten tilanne vaikuttaa vakaalta.",
+      "count": 1,
+      "direction": "stable",
+      "directionLabel": "vakaa",
+      "feedbackIds": [
+        "gen-42-0017"
+      ],
+      "narrativeFromLlm": true,
+      "sources": [
+        {
+          "feedbackId": "gen-42-0017",
+          "source": "google_review",
+          "timestamp": "2026-06-27T06:53:00.0000000+00:00",
+          "text": "Kurpitsojen laatu vaikuttaa olevan parempi nyt, en ole varma johtuuko se mistä",
+          "severity": "low",
+          "needsReview": false
+        }
+      ],
+      "flaggedCount": 0
+    }
+  ],
+  "droppedClaimCount": 0,
+  "llmFallbackCount": 0,
+  "language": "fi",
+  "actionDroppedCount": 0
+}
