@@ -245,7 +245,15 @@ app.MapGet("/report", async (
     if (fromInstant >= toInstant || (toInstant - fromInstant).TotalDays > reportOptions.Value.MaxWindowDays)
         return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
 
-    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct, persistSnapshot: snapshot));
+    // Snap the window to a 10-minute bucket so repeated browser loads (each with a
+    // slightly different `to=now`) share ONE cached report instead of each firing a
+    // fresh ~40 s synthesis. Freshness is preserved by ingest invalidation, not TTL.
+    var bucket = TimeSpan.FromMinutes(10).Ticks;
+    var keyFrom = new DateTimeOffset(fromInstant.UtcTicks - fromInstant.UtcTicks % bucket, TimeSpan.Zero)
+        .ToString("O", CultureInfo.InvariantCulture);
+    var keyTo = new DateTimeOffset(toInstant.UtcTicks - toInstant.UtcTicks % bucket, TimeSpan.Zero)
+        .ToString("O", CultureInfo.InvariantCulture);
+    return Results.Ok(await reports.GenerateAsync(keyFrom, keyTo, ct, persistSnapshot: snapshot));
 });
 
 // The ongoing quality measure that replaced the cancelled model eval: per-field
