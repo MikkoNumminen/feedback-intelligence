@@ -240,8 +240,7 @@ public sealed class ReportService(
         state.AlertVerifiesRemaining--;
         try
         {
-            var template = await File.ReadAllTextAsync(
-                AppPathResolver.Resolve(activeDomain.PromptPath("alertVerify")), ct);
+            var template = await AppPathResolver.ReadPromptAsync(activeDomain.PromptPath("alertVerify"), ct);
             var prompt = template.Replace("{{text}}", item.Text, StringComparison.Ordinal);
             var chatOptions = new ChatOptions { Temperature = 0, MaxOutputTokens = 12 };
             var response = await llmGate.RunAsync(
@@ -345,7 +344,7 @@ public sealed class ReportService(
         state.LlmCallsRemaining--;
         try
         {
-            var template = await File.ReadAllTextAsync(AppPathResolver.Resolve(promptPath), ct);
+            var template = await AppPathResolver.ReadPromptAsync(promptPath, ct);
             var prompt = template.Replace("{{data}}", data, StringComparison.Ordinal);
             var chatOptions = new ChatOptions
             {

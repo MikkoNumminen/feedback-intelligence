@@ -28,3 +28,4 @@ these ADRs relocate that reasoning into durable records.
 | [0015](0015-poro-real-corpus-tuning.md) | Poro tuning after the first real-corpus run (keep the model, fix the usage) | Accepted |
 | [0016](0016-zero-cost-static-web-apps-deploy.md) | Zero-cost Azure Static Web Apps (Free SKU) deploy | Accepted |
 | [0017](0017-trend-significance-gate.md) | Trend direction requires statistical significance (no hallucinated trends) | Accepted |
+| [0018](0018-llm-call-determinism.md) | LLM calls must be deterministic + prompt-byte-stable (CRLF flipped the safety alert) | Accepted |
