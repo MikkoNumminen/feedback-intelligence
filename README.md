@@ -81,6 +81,18 @@ portable across models, quality must be re-measured, and moving from local to
 hosted is a data-residency decision that belongs to the customer.
 ([ADR-0002](docs/decisions/0002-llm-behind-one-abstraction.md).)
 
+## Prompt injection, honestly
+
+Every feedback item is hostile-by-default free text fed to a model, so the LLM
+boundary is hardened in depth: untrusted text is fenced and neutralized before
+any prompt splice; injection *symptoms* raise a `needs_review` flag (the item is
+kept, never dropped); the synthesis narrative is bounded to grounded
+description; and a committed red-team fixture turns a reopened hole into a red
+build. This is defense-in-depth and measurable coverage — **not** a proof of
+safety: prompt injection is unsolved, and the deterministic layer stays the
+trust anchor.
+([ADR-0021](docs/decisions/0021-prompt-injection-defense-in-depth.md).)
+
 ## Running it
 
 ```
@@ -89,7 +101,7 @@ docker compose up -d ollama                   # local Ollama (isolated volume)
 dotnet run --project src/FeedbackIntelligence.Api   # API + UIs on localhost
 ```
 
-- `/` — management view (Finnish; live report with snapshot fallback)
+- `/` — management view (Finnish; snapshot-first render, then the live report)
 - `/desk.html` — desk entry: type one sentence, accept/correct, save
 - `POST /feedback` — the one ingest endpoint all four channels share
 

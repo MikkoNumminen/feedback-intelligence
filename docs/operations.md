@@ -71,7 +71,13 @@ demo, modelled on the sibling RAG's `ragctl`. It orchestrates docker, the
   detached with a tracked PID → warm Poro → **expose the public Tailscale
   Funnel**) / take the Funnel down, stop both, free the GPU. `up` **refuses if
   the shared `mikkonumminendev` RAG is running** — the announce-before-GPU hard
-  rule, enforced by the tool.
+  rule, enforced by the tool. Optional **`up --supervise`** stays in the
+  foreground and restarts the API if it dies mid-demo, backing off the instant
+  the shared RAG reappears (a re-checked guard, so supervision never contends for
+  the GPU). There is deliberately **no boot-autostart**: an auto-started backend
+  would warm Poro and grab the Funnel's port 443 unattended, contending for the
+  two shared resources — exactly what the isolation discipline (and `up`'s own
+  RAG guard) forbid. Robustness is operator-invoked, never automatic.
 - **`data <mock|demo|clean>`** — explicitly choose the DB's starting data:
   `mock` (AI-generated placeholder corpus, non-evidential), `demo` (the real
   seeded corpus), or `clean` (empty). Each wipes the DB and restarts the API on
@@ -91,17 +97,23 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
 - **Frontend → Azure Static Web Apps** (free tier). The two pages read
   `window.API_BASE` from a publish-time `config.js` (same-origin locally; the
   Funnel URL on the static host). `tools/publish-frontend.ps1 -ApiBase <url>`
-  assembles `dist/` with both pages, `deploy/staticwebapp.config.json`, and —
-  with `-PublishSnapshot` — the latest report snapshot (JSON + HTML), so a
-  shared link renders a situational view even with the backend down. Snapshot
-  publication is opt-in on purpose: a placeholder-derived snapshot must never be
-  deployed (verify provenance against
-  [mock-data-register.md](mock-data-register.md)).
+  assembles `dist/` with both pages, `deploy/staticwebapp.config.json`, and the
+  report snapshot (JSON + HTML) so a shared link renders a situational view even
+  with the backend down. **CI always bundles the committed, provenance-verified
+  seed-42 snapshot** (`deploy/snapshot/`), so the shared link is never a 404; the
+  `-PublishSnapshot` switch stays opt-in only for a *locally generated* runtime
+  snapshot, whose provenance must be verified against
+  [mock-data-register.md](mock-data-register.md) before deploying.
 - **Backend → Tailscale Funnel**, owned by feedctl (`up` exposes it on port 443
   → the API's `:5088`, `down` frees 443). The API's CORS allowlist
   (`Ingest:AllowedCorsOrigins`, empty = same-origin only) must include the SWA
   origin (no trailing slash — it is validated at startup). ForwardedHeaders runs
-  before the rate limiter so tunneled clients carry their real IP.
+  before the rate limiter so tunneled clients carry their real IP. Because the
+  SWA is a **public** origin calling a **private-range** Funnel target, the API
+  also answers the CORS preflight with `Access-Control-Allow-Private-Network:
+  true` (a Chrome Private Network Access requirement,
+  [ADR-0023](decisions/0023-deploy-hardening-snapshot-and-pna.md)); the CORS
+  allowlist still gates the actual request.
 - **Coexistence with the sibling RAG (`ragctl`).** Both projects are
   single-tenant on TWO shared resources: the one GPU, and the Funnel's public
   port 443 (ragctl funnels its `:8000` backend; feedctl funnels the API on
@@ -152,6 +164,11 @@ repo settings:
    Confirm $0 in Cost Management (scope: `rg-feedback-intelligence`). Optional
    tripwire: a $1 budget alert on the group.
 
-Publishing the snapshot is opt-in — `gh workflow run azure-static-web-apps.yml -f
-publish_snapshot=true` — and only after verifying provenance against
-[mock-data-register.md](mock-data-register.md).
+The committed `deploy/snapshot/` (real seed-42, provenance-verified) is bundled
+on **every** deploy, so a shared link always has an offline fallback
+([ADR-0023](decisions/0023-deploy-hardening-snapshot-and-pna.md)). To refresh it,
+regenerate the snapshot (`feedctl report`, which sets `?snapshot=true`), copy the
+new `report-latest.{json,html}` into `deploy/snapshot/`, and push — after
+re-verifying provenance against [mock-data-register.md](mock-data-register.md).
+The `-PublishSnapshot` switch remains only for a *locally generated* runtime
+snapshot.

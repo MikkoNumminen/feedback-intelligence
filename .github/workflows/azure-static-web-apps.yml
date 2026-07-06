@@ -16,11 +16,6 @@ on:
       - 'tools/publish-frontend.ps1'
       - '.github/workflows/azure-static-web-apps.yml'
   workflow_dispatch:
-    inputs:
-      publish_snapshot:
-        description: 'Bundle the latest report snapshot (ONLY if its provenance is verified REAL - see docs/mock-data-register.md)'
-        type: boolean
-        default: false
 
 # One deploy at a time; never cancel a running upload.
 concurrency:

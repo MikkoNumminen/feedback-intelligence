@@ -31,4 +31,6 @@ these ADRs relocate that reasoning into durable records.
 | [0018](0018-llm-call-determinism.md) | LLM calls must be deterministic + prompt-byte-stable (CRLF flipped the safety alert) | Accepted |
 | [0019](0019-story-variants-originals-only.md) | Story items ship as originals only (the ×2 variant fallback, taken) | Accepted |
 | [0020](0020-alert-screen-escalation-intent.md) | Alert screen also flags intent to escalate to authorities/legal action | Accepted |
-| [0021](0021-prompt-injection-defense-in-depth.md) | Prompt-injection defense-in-depth at the LLM boundary (A1 done, A2–A4 staged) | Accepted |
+| [0021](0021-prompt-injection-defense-in-depth.md) | Prompt-injection defense-in-depth at the LLM boundary (A1–A4 implemented) | Accepted |
+| [0022](0022-lock-poro-prompts-v0.md) | Lock the retail Poro prompts at v0 (a change is gated by re-checks, not forbidden) | Accepted |
+| [0023](0023-deploy-hardening-snapshot-and-pna.md) | Deploy hardening: always-bundle the committed snapshot + Private Network Access (amends 0016) | Accepted |

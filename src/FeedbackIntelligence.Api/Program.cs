@@ -235,7 +235,7 @@ app.MapGet("/feedback", async (
 
 // The management view: two-layer analysis over a selectable window. Always
 // renders (deterministic layer 1); LLM narratives/nominations degrade to
-// deterministic fallbacks. Every generation persists a snapshot.
+// deterministic fallbacks. A snapshot is persisted only when `?snapshot=true`.
 app.MapGet("/report", async (
     ReportService reports,
     IOptions<ReportOptions> reportOptions,

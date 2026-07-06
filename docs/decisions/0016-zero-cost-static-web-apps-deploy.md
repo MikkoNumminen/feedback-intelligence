@@ -4,6 +4,9 @@
 - **Deciders:** Mikko
 - **Relates to:** [ADR-0009](0009-grounding-is-structural.md) (snapshot fallback),
   PR-0006 (SWA/Funnel topology prep)
+- **Amended by:** [ADR-0023](0023-deploy-hardening-snapshot-and-pna.md) — the
+  committed snapshot is now always bundled (superseding the "opt-in" consequence
+  below), plus Private Network Access on the CORS preflight
 
 ## Context
 

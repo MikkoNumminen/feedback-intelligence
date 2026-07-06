@@ -53,7 +53,8 @@ than queueing behind a slow generation.
 
 Other endpoints: `POST /interpret` (desk preview, stores nothing),
 `GET /feedback/{id}`, `GET /feedback?from&to&limit`, `GET /schema` (enum sets
-for UIs, single source is the schema), `GET /report`, `GET /report/snapshot(.html)`,
+for UIs, single source is the schema), `GET /report` (`?snapshot=true` persists
+the render), `GET /report/snapshot(.html)`,
 `GET /telemetry/corrections`, `GET /health` (a 1-token *real* completion, not a
 liveness ping).
 
@@ -89,12 +90,21 @@ LLM fully down.
 
 To keep one report refresh from starving the desk `/interpret` path on the
 shared GPU, a report carries a per-generation **LLM call budget** and is served
-from a one-entry cache that ingest invalidates — so a new desk entry appears on
-the very next refresh (the live-demo centerpiece).
+from a one-entry cache. The cache key snaps the window to a ~10-minute bucket so
+repeated browser loads share one entry; entries carry a 900 s TTL
+(`Report:ReportCacheSeconds`), and ingest still invalidates immediately through
+an **epoch compare-and-set** — a report generated against a now-stale epoch is
+dropped rather than cached, so a new desk entry appears on the very next refresh
+(the live-demo centerpiece) with no lost-invalidation race.
 
-**Snapshot mode:** every generated report persists (JSON + a self-contained HTML
-render); the frontend falls back to the latest snapshot when the backend is
-unreachable, so a shared link never shows a dead page.
+**Snapshot mode:** a report persists its snapshot (JSON + a self-contained HTML
+render) only when explicitly asked — `GET /report?snapshot=true`, set solely by
+the operator's `feedctl report`, so an ephemeral browser view never overwrites
+the shared-link fallback. Writes are atomic (`File.Replace` + bounded retry) and
+reads share-tolerant, so a concurrent fetch never sees a torn file. The frontend
+paints the latest snapshot **first** (`./report-latest.json`, then
+`/report/snapshot`) on load, then swaps in the live report — so a shared link
+renders instantly and never shows a dead page even with the backend down.
 
 ## Containment
 
