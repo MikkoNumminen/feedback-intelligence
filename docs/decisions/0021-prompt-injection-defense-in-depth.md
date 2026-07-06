@@ -1,6 +1,6 @@
 # ADR-0021 — Prompt-injection defense-in-depth at the LLM boundary
 
-- **Status:** Accepted (2026-07-06); A1 implemented, A2–A4 staged
+- **Status:** Accepted (2026-07-06); A1–A2 implemented, A3–A4 staged
 - **Deciders:** Mikko
 - **Follows:** [ADR-0009](0009-grounding-is-structural.md) (deterministic trust
   anchor + grounded LLM layer), [ADR-0004](0004-salvage-layer-mandatory.md)
@@ -61,11 +61,50 @@ through before any prompt splice:
   a model *could* echo one into the free-text `theme`; that value is neutralized
   again at the synthesis splice, so the effect is at most cosmetic, never a breakout.
 
-**A2 — salvage extension (staged).** Flag injection symptoms (imperative-to-model
-patterns, embedded fake JSON/role markers) and **high/critical severity with no
-corroborating signal** as a new `needs_review` status: re-prompt once, then store
-with raw text preserved — lose nothing, and no manipulated item silently shapes
-output. Logged to correction telemetry.
+**A2 — needs_review flag (implemented).** A deterministic Core detector,
+`FeedbackIntelligence.Core.Security.InjectionSignals`, scans the raw text for
+injection SYMPTOMS — imperative-to-model phrases (Finnish + English), role/system
+overrides, field-injection ("set severity"), and format forges (```json`,
+`"role"`, `vastaus: kyllä`) — the same cheap, never-hallucinates substring
+contract as the deterministic alert layer. When a symptom co-occurs with a
+model-assigned **severe** rating (`high`/`critical`) it adds the higher-risk
+"talked-into-critical" flag. The ingest layer stores the result as a first-class
+`needs_review` status **without dropping or altering the item**: structure is kept
+best-effort, raw text preserved, and the flag surfaces on `FeedbackResponse` and as
+an all-source `needsReviewAllSources` count in the correction telemetry (a rising
+count = more injection-shaped input arriving). So a manipulated item can never
+*silently* shape output — it is flagged and visible.
+
+- **No re-prompt** (correcting the earlier plan): the A1 fence already governs the
+  structuring call, so re-prompting the *same* fenced text is deterministic and adds
+  nothing. The honest lever is the flag + preservation + a human's glance, not a
+  retry.
+- **Tuning is measured, not asserted:** the detector fires on the red-team phrases
+  yet returns **zero** flags across all 343 committed corpus items (real + variants +
+  placeholder) — a false positive costs only a human glance, but the demo corpus
+  stays clean. The PR-#24 review caught FP-prone phrases that would trip on the
+  *multi-domain* future (a bug report's bare `severity:` field, "new software",
+  "developer mode", a quoted "you are now offline" popup, a "shop assistant:"
+  mini-review); the pattern list was tightened to anchored/specific forms and pinned
+  by regression tests. The severe-set is `{high, critical}`; a domain with other
+  severity names simply never adds the co-occurrence flag (safe degradation).
+- **Visible where it lands, not excluded.** A flagged item is **not** removed from
+  its theme group, count, or the deterministic trend — excluding it would be
+  *exploitable* (append injection phrases to a genuine `critical` to get it dropped
+  and suppress real signal). Instead the influence is made visible at the output:
+  the report carries a per-theme `FlaggedCount` and a per-source `NeedsReview`, and
+  the management view warns "⚠ N tarkistettavana" on the theme and tags the flagged
+  message. So "not silently" holds at the report surface, not only in telemetry.
+- **Desk path is exempt.** The `AcceptedStructure` (desk) flow already had a human
+  in the loop at `/interpret`, so `needs_review` is already satisfied and the
+  co-occurrence flag's "model-assigned severe" meaning doesn't fit a human-chosen
+  severity — the scan runs only on the automated sources.
+- **Residual (convention):** the FI+EN phrases live in the domain-neutral Core (like
+  the fence markers, a security invariant) rather than as domain config. Deliberate
+  defense-in-depth — injection arrives in English against a Finnish deployment — but
+  if a third language/domain lands, the natural evolution is to keep the
+  language-agnostic markers (```json`, `<|`, `[inst]`, `"role":`) in Core and move
+  imperative phrases to domain-contributed lists, as the alert keywords already are.
 
 **A3 — bound synthesis authority (staged).** The narrative may only be a
 **descriptive observation of the cited items** — the prompt forbids

@@ -147,10 +147,15 @@ public sealed class ReportService(
             var directionLabel = ReportText.DirectionLabel(direction, lang);
             var ids = groupItems.Select(i => i.Id).ToList();
             var sources = BuildSources(groupItems);
+            // Injection hardening (ADR-0021 A2): flagged items stay IN the group and
+            // trend (excluding them would be exploitable), but the count surfaces so
+            // the view can warn a manager that the group holds possibly-manipulated
+            // items driving its number/direction.
+            var flaggedCount = groupItems.Count(i => i.NeedsReview);
 
             var narrative = await SynthesizeThemeAsync(group.Key, groupItems, directionLabel, state, ct);
             themes.Add(narrative is { } ok
-                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, directionLabel, ids, true, sources)
+                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, directionLabel, ids, true, sources, flaggedCount)
                 : new ReportTheme(
                     group.Key,
                     FallbackTitle(group.Key, groupItems),
@@ -160,7 +165,8 @@ public sealed class ReportService(
                     directionLabel,
                     ids,
                     false,
-                    sources));
+                    sources,
+                    flaggedCount));
         }
 
         var report = new ManagementReport(
@@ -449,7 +455,7 @@ public sealed class ReportService(
             .OrderByDescending(i => SeverityRank(i.Structure?.Severity))
             .ThenByDescending(i => i.Timestamp, StringComparer.Ordinal)
             .Select(i => new ReportSourceItem(
-                i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown"))
+                i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview))
             .ToList();
 
     private static int SeverityRank(string? severity) => severity switch

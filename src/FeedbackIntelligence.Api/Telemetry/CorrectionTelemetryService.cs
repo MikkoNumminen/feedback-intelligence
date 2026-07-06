@@ -36,13 +36,20 @@ public sealed record CorrectionTelemetry(
     bool Truncated,
     int UnbucketedEntries,
     IReadOnlyList<FieldCorrectionRate> PerField,
-    IReadOnlyList<WeeklyCorrections> Weekly);
+    IReadOnlyList<WeeklyCorrections> Weekly,
+    // Injection hardening (ADR-0021 A2): count of items flagged needs_review in the
+    // window, across ALL sources — deliberately NOT part of the desk correction
+    // population above; it's a separate drift signal (a rising count means more
+    // prompt-injection-shaped input is arriving).
+    int NeedsReviewAllSources = 0);
 
 public sealed class CorrectionTelemetryService(FeedbackStore store, IOptions<IngestOptions> options)
 {
     public async Task<CorrectionTelemetry> SummarizeAsync(string fromIso, string toIso, CancellationToken ct)
     {
         var deskItems = await store.QueryAsync(fromIso, toIso, options.Value.QueryMaxLimit, ct, source: "desk");
+        // All-source needs_review count (A2) — accurate COUNT, not desk-scoped.
+        var needsReview = await store.CountNeedsReviewAsync(fromIso, toIso, ct);
         // No silent caps: when the fetch cap bites, the response says so —
         // QueryAsync returns newest-first, so the OLDEST weeks would be the
         // ones silently missing.
@@ -96,7 +103,8 @@ public sealed class CorrectionTelemetryService(FeedbackStore store, IOptions<Ing
             truncated,
             deskItems.Count - bucketed.Count,
             perField,
-            weekly);
+            weekly,
+            needsReview);
     }
 
     /// <summary>Per-entry counting: two corrections on the same field in one

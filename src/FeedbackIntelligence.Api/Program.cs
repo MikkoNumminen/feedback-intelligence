@@ -135,7 +135,8 @@ app.MapPost("/feedback", async (
     {
         var stored = await ingest.IngestAsync(request, ct);
         return Results.Created($"/feedback/{stored.Id}", new FeedbackResponse(
-            stored.Id, stored.Structure, stored.StructureFailed, stored.SalvageNotes, stored.Alerts));
+            stored.Id, stored.Structure, stored.StructureFailed, stored.SalvageNotes, stored.Alerts,
+            stored.NeedsReview, stored.ReviewFlags));
     }
     catch (LlmBusyException)
     {

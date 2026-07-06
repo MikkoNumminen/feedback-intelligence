@@ -32,6 +32,8 @@
   .msgtext { margin:.35rem 0 0; white-space:pre-wrap; }
   .sevdot { width:.7rem; height:.7rem; border-radius:50%; display:inline-block; flex:none; background:#8a94a0; }
   .sev-medium { background:#c99a3b; } .sev-high { background:#b3541e; } .sev-critical { background:#b3261e; }
+  .flagwarn { color:#8a5a00; font-weight:600; }
+  .flagtag { font-size:.72rem; color:#8a5a00; border:1px solid #d9b877; border-radius:.5rem; padding:0 .3rem; margin-left:.35rem; }
   dialog { border:1px solid var(--line); border-radius:.7rem; max-width:42rem; width:92vw; padding:1rem; }
   dialog::backdrop { background:rgba(20,25,30,.45); }
   #status { min-height:1.2rem; font-size:.9rem; color:var(--mut); }
@@ -90,6 +92,7 @@ const STR = {
     dropped: "perustelematonta väitettä hylätty", fallbacks: "koostetta ilman kielimallia",
     alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
+    flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa", flaggedItem: "tarkistettava",
     snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
     noReport: "Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.",
   },
@@ -106,6 +109,7 @@ const STR = {
     dropped: "ungrounded claim(s) dropped", fallbacks: "summary(ies) without the model",
     alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
+    flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted", flaggedItem: "review",
     snapShown: "The server was unreachable — showing the last saved snapshot.",
     noReport: "No report and no saved snapshot found.",
   },
@@ -231,6 +235,10 @@ function render(report, live) {
         (theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
       node("p", null, [theme.narrative]),
     ]);
+    // A2: a possibly-manipulated (needs_review) item is NOT excluded from the
+    // count/trend (that would be exploitable), so warn it's in the mix here.
+    if (theme.flaggedCount > 0)
+      card.appendChild(node("div", "flagwarn", [`⚠ ${theme.flaggedCount} ${L.flaggedTheme} · ${L.flaggedHint}`]));
     const sources = theme.sources || [];
     if (sources.length) {
       const btn = node("button", "showmsgs", [`${L.showMessages} ${sources.length} ${L.messagesWord} →`]);
@@ -257,11 +265,12 @@ function openMessages(theme) {
   const list = node("div", "msglist", []);
   for (const s of theme.sources) {
     const sm = severityMeta(s.severity);
-    const meta = node("div", "msgmeta", [
+    const metaKids = [
       node("span", ("sevdot " + sm.cls).trim(), []),
       node("span", null, [`${s.source} · ${short(s.timestamp)} · ${sm.label}`]),
-    ]);
-    list.appendChild(node("div", "msgrow", [meta, node("p", "msgtext", [s.text])]));
+    ];
+    if (s.needsReview) metaKids.push(node("span", "flagtag", [`⚠ ${L.flaggedItem}`]));
+    list.appendChild(node("div", "msgrow", [node("div", "msgmeta", metaKids), node("p", "msgtext", [s.text])]));
   }
   body.appendChild(list);
   el("item-dialog").showModal();

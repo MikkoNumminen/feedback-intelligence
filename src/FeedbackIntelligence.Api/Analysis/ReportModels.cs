@@ -22,7 +22,12 @@ public sealed record ReportSourceItem(
     string Source,
     string Timestamp,
     string Text,
-    string Severity);
+    string Severity,
+    // Injection hardening (ADR-0021 A2): this item showed injection symptoms and was
+    // flagged needs_review at ingest. It is NOT excluded from the group/trend —
+    // excluding it would be exploitable (append injection phrases to a real critical
+    // to get it suppressed) — so instead the influence is made VISIBLE here.
+    bool NeedsReview = false);
 
 /// <summary>One theme group. Count, direction and the feedback IDs are computed
 /// deterministically; only Title/Narrative come from the synthesis model, and
@@ -41,7 +46,11 @@ public sealed record ReportTheme(
     string DirectionLabel,
     IReadOnlyList<string> FeedbackIds,
     bool NarrativeFromLlm,
-    IReadOnlyList<ReportSourceItem> Sources);
+    IReadOnlyList<ReportSourceItem> Sources,
+    // Injection hardening (ADR-0021 A2): how many of this group's items are flagged
+    // needs_review, so the view can warn that a possibly-manipulated item is part of
+    // the (still-counted) group — the influence is visible, not silent.
+    int FlaggedCount = 0);
 
 /// <summary>DroppedClaimCount counts ONLY citation-validation failures (the
 /// model made a claim it could not ground). LlmFallbackCount counts groups
