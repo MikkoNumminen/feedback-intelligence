@@ -9,6 +9,10 @@
 - **Phase 2** — findings + remediation plan → `docs/security/02-findings-and-plan.md`.
   S2 (LLM DoS), S3 (PNA), S4 (snapshot integrity) were remediated as robustness fixes
   on branch `fix/audit-suite-2026-07-09`.
+- **Phase 4** — AI-first docs → `SECURITY.md`, `threat-model.md`, `invariants.md`,
+  `03-documentation-summary.md`. (Phase 4 done ahead of a full Phase 3 because the
+  S1/S5 remediations are owner-gated; the docs describe the post-fix state and flag
+  the open decisions.)
 
 ## Next pending — OWNER DECISION required, not auto-advanced
 - **S1 — no-auth posture:** is this a synthetic-data demo (→ document as by-design) or
