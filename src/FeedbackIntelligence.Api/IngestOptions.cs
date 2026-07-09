@@ -34,6 +34,14 @@ public sealed class IngestOptions
     public int LlmMaxConcurrency { get; init; } = 2;
     public int LlmAcquireTimeoutMs { get; init; } = 500;
 
+    /// <summary>Server-side deadline for a single model generation, enforced inside
+    /// <see cref="LlmGate"/>. Bounds a HUNG generation: without it a stalled Ollama
+    /// call inherits only the caller's request-abort token, ties up the request
+    /// thread indefinitely, and holds its concurrency slot — two such calls exhaust
+    /// the gate and 503 every other client. Generous by default (a cold model load +
+    /// long synthesis is legitimate); the point is to cap infinity, not fast calls.</summary>
+    public int LlmCallTimeoutMs { get; init; } = 120_000;
+
     public string DbPath { get; init; } = "data/feedback.db";
 
     // Accepted `source` values are domain data (ingest channels differ per
@@ -70,6 +78,8 @@ public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>
         // Must be > 0: an acquire timeout of 0 always sheds even with a free slot.
         if (options.LlmAcquireTimeoutMs < 1)
             failures.Add($"Ingest:LlmAcquireTimeoutMs must be positive, got {options.LlmAcquireTimeoutMs}.");
+        if (options.LlmCallTimeoutMs < 1)
+            failures.Add($"Ingest:LlmCallTimeoutMs must be positive, got {options.LlmCallTimeoutMs}.");
         if (string.IsNullOrWhiteSpace(options.DbPath))
             failures.Add("Ingest:DbPath must be set.");
         if (options.IdMaxLength < 1)
