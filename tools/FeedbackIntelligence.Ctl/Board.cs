@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 
 namespace FeedbackIntelligence.Ctl;
@@ -109,7 +110,8 @@ public static class Board
         var row = res.Output.Trim().Split('\n').FirstOrDefault()?.Trim() ?? "";
         var parts = row.Split(',').Select(p => p.Trim()).ToArray();
         if (res.Code != 0 || parts.Length < 3
-            || !double.TryParse(parts[1], out var used) || !double.TryParse(parts[2], out var total) || total == 0)
+            || !double.TryParse(parts[1], CultureInfo.InvariantCulture, out var used)
+            || !double.TryParse(parts[2], CultureInfo.InvariantCulture, out var total) || total == 0)
             return Row2("GPU", Term.State.Warn, "nvidia-smi unavailable", false);
         var pct = used / total * 100;
         var detail = $"{parts[0]}% util · {parts[1]}/{parts[2]} MiB VRAM ({pct:F0}%)";
@@ -162,7 +164,7 @@ public static class Board
                 _ => null,
             };
         }
-        catch { return null; }
+        catch { return null; /* best effort — provenance tag is cosmetic; unreadable dataset file reads as "unknown" */ }
     }
 
     private static Row CheckSnapshot() =>

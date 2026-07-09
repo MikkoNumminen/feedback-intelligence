@@ -44,7 +44,7 @@ public static class OutputValidation
 
             foreach (var prop in root.EnumerateObject())
                 if (!StructuringSchema.Fields.Contains(prop.Name))
-                    violations.Add(new FieldViolation(prop.Name, "extra_field", Truncate(prop.Value.ToString(), 40)));
+                    violations.Add(new FieldViolation(prop.Name, "extra_field", Formatting.Truncate(prop.Value.ToString(), 40)));
 
             CheckEnum(root, "category", domain.Categories, violations);
             CheckEnum(root, "severity", domain.Severities, violations);
@@ -71,7 +71,7 @@ public static class OutputValidation
             return;
         if (value.ValueKind != JsonValueKind.String)
         {
-            violations.Add(new FieldViolation(field, "non_string", Truncate(value.ToString(), 40)));
+            violations.Add(new FieldViolation(field, "non_string", Formatting.Truncate(value.ToString(), 40)));
             return;
         }
         var s = value.GetString()!;
@@ -84,7 +84,7 @@ public static class OutputValidation
         if (!root.TryGetProperty(field, out var value))
             return;
         if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()))
-            violations.Add(new FieldViolation(field, "non_string", Truncate(value.ToString(), 40)));
+            violations.Add(new FieldViolation(field, "non_string", Formatting.Truncate(value.ToString(), 40)));
     }
 
     private static (ParseOutcome Outcome, JsonDocument? Doc) Parse(string raw)
@@ -94,5 +94,4 @@ public static class OutputValidation
         return (strict ? ParseOutcome.StrictJson : ParseOutcome.SalvagedJson, doc);
     }
 
-    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 }

@@ -473,7 +473,7 @@ public static class Commands
 
     public static int Open()
     {
-        try { Process.Start(new ProcessStartInfo(Config.BaseUrl + "/") { UseShellExecute = true }); }
+        try { using var _p = Process.Start(new ProcessStartInfo(Config.BaseUrl + "/") { UseShellExecute = true }); }
         catch (Exception ex) { Console.WriteLine(Term.C("  ○ " + ex.Message, "31")); return 1; }
         Console.WriteLine("  opened " + Term.C(Config.BaseUrl + "/", "36"));
         return 0;

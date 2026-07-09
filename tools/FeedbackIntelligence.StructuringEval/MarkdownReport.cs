@@ -70,7 +70,7 @@ public static class MarkdownReport
         foreach (var item in items)
         {
             var cells = eval.Candidates.Select(m => Cell(records, m, item.Id));
-            sb.AppendLine($"| {item.Id} | {Escape(Truncate(item.Text, 60))} |{string.Join("|", cells)}|");
+            sb.AppendLine($"| {item.Id} | {Escape(Formatting.Truncate(item.Text, 60))} |{string.Join("|", cells)}|");
         }
 
         return sb.ToString();
@@ -157,5 +157,4 @@ public static class MarkdownReport
 
     private static string Escape(string s) => s.Replace("\r", " ").Replace("\n", " ").Replace("|", "\\|");
 
-    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 }
