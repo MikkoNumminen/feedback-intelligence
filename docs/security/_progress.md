@@ -14,13 +14,16 @@
   S1/S5 remediations are owner-gated; the docs describe the post-fix state and flag
   the open decisions.)
 
-## Next pending — OWNER DECISION required, not auto-advanced
-- **S1 — no-auth posture:** is this a synthetic-data demo (→ document as by-design) or
-  does real feedback flow here (→ plan an auth control)? No auth was added.
-- **S5 — forwarded-header / ingress model:** tunnel-only or also-directly-reachable?
-  Decides whether to pin `KnownProxies` / bind loopback-only.
-- **Phase 3** remediation of S1/S5 proceeds only on your answer + per-finding approval;
-  auth/secrets fixes escalate to Opus review (skill rules 8–9).
+- **Phase 5** — final verification → `docs/security/05-final-report.md`.
+
+## Owner decisions (resolved 2026-07-09)
+- **S1** — synthetic demo data only → no-auth **accepted**, documented in `SECURITY.md`.
+- **S5** — tunnel-only ingress → XFF loopback exemption **accepted** (safe as deployed).
+
+## Status: AUDIT COMPLETE
+Phases 0–5 all done. No open findings. Re-audit if the operating model changes
+(real data introduced, a directly-reachable bind added, a new endpoint, or a
+model/provider swap).
 
 ## Resume
 Run `/mikko-security-audit` (or reply "approved") to continue from Phase 2. The suite

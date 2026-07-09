@@ -31,11 +31,11 @@ the audit-suite attack-surface map; revisit when the operating assumption change
 
 | # | Threat | Vector | Mitigation | Residual |
 |---|---|---|---|---|
-| T1 | Mass data read | `GET /feedback`, `/feedback/{id}`, `/report` unauthenticated | Tunnel + **operating assumption** (synthetic data) | **S1** — high if real data; then needs auth |
+| T1 | Mass data read | `GET /feedback`, `/feedback/{id}`, `/report` unauthenticated | Tunnel + **owner-confirmed synthetic-data model** (2026-07-09) | **S1 accepted** — informational under demo model; becomes high if real data is ever introduced |
 | T2 | Snapshot integrity write | `GET /report?snapshot=true` unauthenticated overwrite | Tunnel; **per-writer unique temp + atomic replace** (this PR) stops write-collision corruption | S1 (who may write) |
 | T3 | Model-capacity DoS | Unauthenticated `/feedback` `/interpret` `/report` `/health` each trigger model work | **`LlmGate` concurrency shedding + per-call timeout** (this PR) + rate limit + input caps | Bounded, not eliminated |
 | T4 | Prompt injection | Untrusted feedback text → prompt | **Six-layer defense** (ADR-0021): neutralize, symptom-flag, authority-bound, citation-ground, deterministic-anchor, red-team fixture | Injection is **unsolved**; named residuals pinned in fixture |
-| T5 | Rate-limit / loopback-exemption bypass | Spoofed `X-Forwarded-For` → loopback exemption | Forwarded-headers default known-proxy trust; safe iff tunnel-only ingress | **S5** — pin `KnownProxies` / bind loopback-only |
+| T5 | Rate-limit / loopback-exemption bypass | Spoofed `X-Forwarded-For` → loopback exemption | **Tunnel-only ingress (owner-confirmed 2026-07-09)** — no direct reach, so no spoof path | **S5 accepted** — safe as deployed; pin `KnownProxies`/loopback-bind only if a direct interface is ever added |
 | T6 | SQL injection | Feedback fields → SQL | All statements parameterized | none identified |
 | T7 | Path traversal | Request input → filesystem path | No request-derived paths | none identified |
 | T8 | SSRF | Request input → outbound URL | Ollama `BaseUrl` is config-sourced, not request-derived | none identified |

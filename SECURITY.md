@@ -11,12 +11,14 @@ the one operating assumption the whole posture rests on.
 > "the concrete breakout mechanics are closed and monitored", never as "cannot be
 > injected".
 
-## Operating assumption (confirm before deploying with real data)
+## Operating model (owner-confirmed 2026-07-09)
 
 **This service is a public *demo* over *synthetic* feedback corpora, reachable
-only through a local tunnel daemon.** Under that assumption there is deliberately
-**no authentication**: confidentiality of the stored feedback and integrity of the
-published snapshot rest on the tunnel plus a per-IP rate limiter, not on app auth.
+only through a local tunnel daemon** — both confirmed by the owner on 2026-07-09.
+Under that model there is deliberately **no authentication**: confidentiality of the
+stored feedback and integrity of the published snapshot rest on the tunnel plus a
+per-IP rate limiter, not on app auth. This is a documented, accepted posture, not an
+oversight.
 
 - ✅ **If the data is synthetic demo content** (the current assumption — the corpora
   are generated, not real customer PII), the no-auth posture is *by design*. Do
@@ -51,9 +53,11 @@ Everything below is written for the demo assumption. If you change it, revisit S
   Named residuals (homoglyph fence markers, paraphrased directives) are pinned in
   the red-team fixture and documented in `Core/Security/*`.
 - **Forwarded-header trust** — the rate-limit loopback exemption trusts the
-  processed client IP. Safe **iff** the backend is reachable only via the loopback
-  tunnel; if the port is also directly reachable, a spoofed `X-Forwarded-For` could
-  win the exemption. Pin `KnownProxies`/bind loopback-only — see finding **S5**.
+  processed client IP. The backend is **tunnel-only (loopback ingress)**
+  (owner-confirmed 2026-07-09), so a remote client cannot inject a trusted
+  `X-Forwarded-For` and this is **safe** as deployed (finding **S5**, accepted). If
+  the backend is ever also bound to a directly-reachable interface, pin
+  `KnownProxies` / keep Kestrel loopback-only before doing so.
 
 ## Threat model & invariants
 

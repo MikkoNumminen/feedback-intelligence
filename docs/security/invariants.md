@@ -57,6 +57,7 @@ invariant true or update this file with the ADR that changes it. These are the
 
 ## Posture (documented, not a code invariant)
 
-- **P-1 — No authentication, by the demo operating assumption.** See
-  [`SECURITY.md`](../../SECURITY.md). If real data is introduced this stops being a
-  posture and becomes finding **S1**.
+- **P-1 — No authentication, by the owner-confirmed demo model** (synthetic data,
+  tunnel-only ingress; confirmed 2026-07-09). See [`SECURITY.md`](../../SECURITY.md).
+  If real data is ever introduced this stops being an accepted posture and becomes
+  finding **S1** (needs an auth control first).

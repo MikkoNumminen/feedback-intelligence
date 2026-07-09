@@ -12,11 +12,11 @@ is NOT fixed and is surfaced for your call.
 
 | # | Finding | Severity | Status | Location |
 |---|---|---|---|---|
-| S1 | **No authentication/authorization on any endpoint** — all stored feedback is publicly readable (`GET /feedback`, `/feedback/{id}`, `/report`), and any caller can overwrite the shared snapshot (`?snapshot=true`) or trigger LLM work. | **owner-decision** (high if real data; informational if synthetic-demo-by-design) | ⛔ **open — needs your call** | `Program.cs` (all routes) |
+| S1 | **No authentication/authorization on any endpoint** — all stored feedback is publicly readable (`GET /feedback`, `/feedback/{id}`, `/report`), and any caller can overwrite the shared snapshot (`?snapshot=true`) or trigger LLM work. | informational (accepted) | ✅ **accepted 2026-07-09** — owner confirmed synthetic-demo data; documented in `SECURITY.md` | `Program.cs` (all routes) |
 | S2 | **Unauthenticated LLM-work DoS amplification** — `/feedback`, `/interpret`, `/report`, `/health` each trigger model work; a hung/slow generation held a `LlmGate` slot with no deadline → 503 for everyone. | high | ✅ **fixed (this branch)** | `LlmGate.cs`, `OllamaLlmClientFactory` timeout |
 | S3 | **Unconditional Private-Network-Access grant** — PNA preflight answered `true` to any Origin. | low | ✅ **fixed (this branch)** — now gated on the CORS allowlist | `Program.cs` PNA middleware |
 | S4 | **Snapshot write integrity** — concurrent `?snapshot=true` writers collided on a shared temp path, silently failing the atomic write. | medium | ✅ **fixed (this branch)** — per-writer unique temp + cleanup | `ReportService.WriteAtomicAsync` |
-| S5 | **`X-Forwarded-For` trust vs rate-limit loopback exemption** — confirm a client can't spoof `XFF` to a loopback address and win `RateLimitExemptLoopback`, bypassing the limiter. | medium (needs confirmation) | 🔎 **open — verify** | `Program.cs` ForwardedHeaders + rate limiter |
+| S5 | **`X-Forwarded-For` trust vs rate-limit loopback exemption** — confirm a client can't spoof `XFF` to a loopback address and win `RateLimitExemptLoopback`, bypassing the limiter. | low (accepted) | ✅ **accepted 2026-07-09** — owner confirmed tunnel-only ingress; no direct-reach spoof path | `Program.cs` ForwardedHeaders + rate limiter |
 | S6 | **`GET /feedback` data exposure without ownership model** — subset of S1; severity tracks data sensitivity. | (folds into S1) | ⛔ tied to S1 | `Program.cs` |
 
 ## Analysis & recommended remediation order
