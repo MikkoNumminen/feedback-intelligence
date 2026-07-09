@@ -38,6 +38,10 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
 {
     private const int SqliteConstraintErrorCode = 19;
 
+    // A brief busy wait so a concurrent writer (or an ingest overlapping a long report
+    // read) retries internally instead of surfacing SQLITE_BUSY as a 500.
+    private const string BusyTimeoutPragma = "PRAGMA busy_timeout=5000;";
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private string ConnectionString => $"Data Source={options.Value.DbPath}";
@@ -50,6 +54,11 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
 
         using var connection = new SqliteConnection(ConnectionString);
         connection.Open();
+        using (var pragma = connection.CreateCommand())
+        {
+            pragma.CommandText = BusyTimeoutPragma;
+            pragma.ExecuteNonQuery();
+        }
         using var command = connection.CreateCommand();
         command.CommandText = """
             CREATE TABLE IF NOT EXISTS feedback (
@@ -102,8 +111,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
 
     public async Task InsertAsync(StoredFeedback item, CancellationToken ct)
     {
-        await using var connection = new SqliteConnection(ConnectionString);
-        await connection.OpenAsync(ct);
+        await using var connection = await OpenConnectionAsync(ct);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT INTO feedback
@@ -140,10 +148,32 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         }
     }
 
+    /// <summary>Open a connection with a bounded busy wait. SQLite's default is to
+    /// fail IMMEDIATELY with SQLITE_BUSY (error 5) when another writer holds the lock;
+    /// a 5 s busy_timeout lets a brief concurrent writer — or an ingest overlapping a
+    /// long report read — retry internally instead of surfacing an unhandled 500.
+    /// Complements the InsertAsync unique-constraint catch.</summary>
+    private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken ct)
+    {
+        var connection = new SqliteConnection(ConnectionString);
+        try
+        {
+            await connection.OpenAsync(ct);
+            await using var pragma = connection.CreateCommand();
+            pragma.CommandText = BusyTimeoutPragma;
+            await pragma.ExecuteNonQueryAsync(ct);
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
+    }
+
     public async Task<StoredFeedback?> GetAsync(string id, CancellationToken ct)
     {
-        await using var connection = new SqliteConnection(ConnectionString);
-        await connection.OpenAsync(ct);
+        await using var connection = await OpenConnectionAsync(ct);
         await using var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM feedback WHERE id = $id";
         command.Parameters.AddWithValue("$id", id);
@@ -154,8 +184,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
     public async Task<List<StoredFeedback>> QueryAsync(
         string? fromIso, string? toIso, int limit, CancellationToken ct, string? source = null)
     {
-        await using var connection = new SqliteConnection(ConnectionString);
-        await connection.OpenAsync(ct);
+        await using var connection = await OpenConnectionAsync(ct);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT * FROM feedback
@@ -181,8 +210,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
     /// can't undercount it. Backed by the timestamp index.</summary>
     public async Task<int> CountNeedsReviewAsync(string? fromIso, string? toIso, CancellationToken ct)
     {
-        await using var connection = new SqliteConnection(ConnectionString);
-        await connection.OpenAsync(ct);
+        await using var connection = await OpenConnectionAsync(ct);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT COUNT(*) FROM feedback

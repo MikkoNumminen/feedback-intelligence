@@ -46,7 +46,7 @@ public sealed class StructuringEvalRunner(
             {
                 var response = await client.GetResponseAsync("Reply with exactly: pong", cancellationToken: ct);
                 sw.Stop();
-                Console.WriteLine($"OK   {model,-55} {sw.ElapsedMilliseconds,6} ms  \"{Truncate(response.Text.Trim(), 60)}\"");
+                Console.WriteLine($"OK   {model,-55} {sw.ElapsedMilliseconds,6} ms  \"{Formatting.Truncate(response.Text.Trim(), 60)}\"");
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -175,5 +175,4 @@ public sealed class StructuringEvalRunner(
     private static string RenderJsonArray(IEnumerable<string> values) =>
         "[" + string.Join(", ", values.Select(v => JsonSerializer.Serialize(v))) + "]";
 
-    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 }

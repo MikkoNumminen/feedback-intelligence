@@ -26,7 +26,17 @@ public sealed class LlmGate(IOptions<IngestOptions> options) : IDisposable
             throw new LlmBusyException();
         try
         {
-            return await work(ct);
+            // Bound the generation with a server-side deadline so a HUNG model call
+            // cannot hold this slot (and the request thread) forever. The linked
+            // source cancels on EITHER the caller's request-abort OR the timeout;
+            // on timeout the work throws OperationCanceledException carrying the
+            // timeout token (ct is NOT cancelled), so callers' request-cancellation
+            // guards (`when (ct.IsCancellationRequested)`) correctly treat it as an
+            // LLM failure (structure_failed / deterministic fallback), not a client
+            // disconnect. The finally releases the slot either way.
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(options.Value.LlmCallTimeoutMs);
+            return await work(timeout.Token);
         }
         finally
         {

@@ -120,7 +120,14 @@ app.Use(async (ctx, next) =>
 {
     if (HttpMethods.IsOptions(ctx.Request.Method) &&
         ctx.Request.Headers.ContainsKey("Access-Control-Request-Private-Network"))
-        ctx.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+    {
+        // Grant private-network access ONLY to an allowlisted origin — the same
+        // allowlist CORS enforces for response reads. An unlisted or absent Origin
+        // gets no grant, so the PNA answer can't be handed out unconditionally.
+        var origin = ctx.Request.Headers["Origin"].ToString();
+        if (ingestConfig.AllowedCorsOrigins.Contains(origin, StringComparer.Ordinal))
+            ctx.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+    }
     await next();
 });
 
@@ -168,6 +175,7 @@ app.MapPost("/interpret", async (
     IStructuringService structuring,
     LlmGate gate,
     IOptions<IngestOptions> options,
+    ILoggerFactory loggerFactory,
     CancellationToken ct) =>
 {
     var errors = RequestValidator.ValidateText(request.Text, options.Value);
@@ -186,6 +194,19 @@ app.MapPost("/interpret", async (
     }
     catch (LlmBusyException)
     {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+    {
+        throw; // genuine client disconnect — let the framework abort the request
+    }
+    catch (Exception ex)
+    {
+        // Parity with /feedback's resilience: an LLM outage (HttpRequestException),
+        // a stalled model hitting the LlmGate timeout, or a prompt-load fault must
+        // not leak a raw 500. /interpret is a preview that stores nothing, so there
+        // is no structure_failed to persist — shed with a clean 503 instead.
+        loggerFactory.CreateLogger("Interpret").LogWarning(ex, "Interpret failed; returning 503.");
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
     }
 });
@@ -246,18 +267,8 @@ app.MapGet("/report", async (
     // sets it; an ephemeral frontend view must not clobber the shared-link page.
     [FromQuery] bool snapshot = false) =>
 {
-    var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
-    if (!TimestampNormalizer.TryNormalize(toRaw, out var toNormalized))
-        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
-    var toInstant = DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture);
-
-    var fromRaw = from ?? toInstant.AddDays(-reportOptions.Value.DefaultWindowDays).ToString("O", CultureInfo.InvariantCulture);
-    if (!TimestampNormalizer.TryNormalize(fromRaw, out var fromNormalized))
-        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
-    var fromInstant = DateTimeOffset.Parse(fromNormalized, CultureInfo.InvariantCulture);
-
-    if (fromInstant >= toInstant || (toInstant - fromInstant).TotalDays > reportOptions.Value.MaxWindowDays)
-        return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
+    if (TryBuildWindow(from, to, reportOptions.Value, out _, out _, out var fromInstant, out var toInstant) is { } badWindow)
+        return badWindow;
 
     // Snap the window to a 10-minute bucket so repeated browser loads (each with a
     // slightly different `to=now`) share ONE cached report instead of each firing a
@@ -280,19 +291,10 @@ app.MapGet("/telemetry/corrections", async (
     [FromQuery] string? from = null,
     [FromQuery] string? to = null) =>
 {
-    var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
-    if (!TimestampNormalizer.TryNormalize(toRaw, out var toNormalized))
-        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
-    var telemetryTo = DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture);
-    var fromRaw = from ?? telemetryTo
-        .AddDays(-reportOptions.Value.DefaultWindowDays).ToString("O", CultureInfo.InvariantCulture);
-    if (!TimestampNormalizer.TryNormalize(fromRaw, out var fromNormalized))
-        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
-    var telemetryFrom = DateTimeOffset.Parse(fromNormalized, CultureInfo.InvariantCulture);
-    // Window parity with /report: an inverted window here would read as
-    // "model perfect, zero corrections" — garbage in must 400, not go green.
-    if (telemetryFrom >= telemetryTo || (telemetryTo - telemetryFrom).TotalDays > reportOptions.Value.MaxWindowDays)
-        return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {reportOptions.Value.MaxWindowDays} days." } });
+    // Shared window parse/validate with /report (parity is load-bearing: an inverted
+    // window here would read as "model perfect, zero corrections" — garbage must 400).
+    if (TryBuildWindow(from, to, reportOptions.Value, out var fromNormalized, out var toNormalized, out _, out _) is { } badWindow)
+        return badWindow;
     return Results.Ok(await telemetry.SummarizeAsync(fromNormalized, toNormalized, ct));
 });
 
@@ -328,3 +330,33 @@ app.MapGet("/health", async (IServiceProvider services, IOptions<IngestOptions> 
 });
 
 app.Run();
+
+// Parse + validate a report/telemetry query window: default `to` to now and `from`
+// to now-DefaultWindowDays, normalise both to the store's UTC round-trip form, and
+// reject an inverted or over-long window. Returns a 400 IResult on failure, or null
+// on success with the normalised strings and parsed instants written to the outs.
+// Single source of truth so /report and /telemetry/corrections can't drift.
+static IResult? TryBuildWindow(
+    string? from, string? to, ReportOptions ro,
+    out string fromNormalized, out string toNormalized,
+    out DateTimeOffset fromInstant, out DateTimeOffset toInstant)
+{
+    fromNormalized = string.Empty;
+    fromInstant = default;
+    toInstant = default;
+
+    var toRaw = to ?? DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+    if (!TimestampNormalizer.TryNormalize(toRaw, out toNormalized))
+        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
+    toInstant = DateTimeOffset.Parse(toNormalized, CultureInfo.InvariantCulture);
+
+    var fromRaw = from ?? toInstant.AddDays(-ro.DefaultWindowDays).ToString("O", CultureInfo.InvariantCulture);
+    if (!TimestampNormalizer.TryNormalize(fromRaw, out fromNormalized))
+        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
+    fromInstant = DateTimeOffset.Parse(fromNormalized, CultureInfo.InvariantCulture);
+
+    if (fromInstant >= toInstant || (toInstant - fromInstant).TotalDays > ro.MaxWindowDays)
+        return Results.BadRequest(new { errors = new[] { $"window must be positive and at most {ro.MaxWindowDays} days." } });
+
+    return null;
+}

@@ -20,7 +20,7 @@ public static class ApiHost
                 return null;
             if (!int.TryParse(File.ReadAllText(Config.PidFile).Trim(), out var pid))
                 return null;
-            var p = Process.GetProcessById(pid); // throws if not running
+            using var p = Process.GetProcessById(pid); // throws if not running
             return p.HasExited ? null : pid;
         }
         catch
@@ -103,7 +103,9 @@ public static class ApiHost
             psi.ArgumentList.Add("--Ingest:DbPath=" + db);
             psi.ArgumentList.Add("--Report:SnapshotDir=" + snapDir);
 
-            var proc = Process.Start(psi);
+            // Dispose the wrapper (frees the handle); UseShellExecute=true detaches the
+            // real process, so disposing does not terminate the launched API.
+            using var proc = Process.Start(psi);
             if (proc is null)
             {
                 Console.WriteLine("  " + Term.C("○ could not start the API process", "31"));
