@@ -162,6 +162,20 @@ public sealed class ReportService(
         var lang = activeDomain.Descriptor.Language;
         var themes = new List<ReportTheme>();
         var structured = items.Where(i => i.Structure is not null).ToList();
+        // Make the severity-rank fallback non-silent: a domain whose severity values
+        // fall outside the built-in rank map ranks every item as "medium", which
+        // disables worsening-trend detection. Surface it once per report rather than
+        // letting the trend quietly flatten.
+        var unknownSeverities = structured
+            .Select(i => i.Structure!.Severity)
+            .Where(s => !KnownSeverities.Contains(s))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (unknownSeverities.Count > 0)
+            logger.LogWarning(
+                "Severity value(s) {Unknown} are outside the built-in severity rank map and rank as 'medium' in "
+                + "trend math — worsening-trend detection is degraded for this domain.",
+                string.Join(", ", unknownSeverities));
         foreach (var group in structured
                      .GroupBy(i => i.Structure!.Category)
                      .OrderByDescending(g => g.Count())
@@ -408,7 +422,13 @@ public sealed class ReportService(
 
     /// <summary>Returns the raw LLM text, or null when the model could not be
     /// reached (unavailable/busy) — which is counted as a fallback, never as a
-    /// dropped claim.</summary>
+    /// dropped claim.
+    /// <para><b>Injection contract (ADR-0021):</b> <paramref name="data"/> is spliced
+    /// into the prompt's <c>{{data}}</c> placeholder RAW. Every caller MUST have run
+    /// each untrusted fragment through <see cref="Core.Security.UntrustedText"/> first
+    /// (see <see cref="SynthesizeThemeAsync"/>/<see cref="NominateAlertsAsync"/>). This
+    /// method does NOT neutralize — do not add a caller that passes un-neutralized
+    /// feedback text here.</para></summary>
     private async Task<string?> TryLlmAsync(string promptPath, string data, GenState state, CancellationToken ct)
     {
         var opts = options.Value;
@@ -494,15 +514,23 @@ public sealed class ReportService(
         return "stable";
     }
 
-    private static double AverageSeverityRank(IReadOnlyList<StoredFeedback> items)
+    // Single source of truth for severity ordering, shared by trend math
+    // (AverageSeverityRank) and source display sort (SeverityRank) so the two can
+    // never drift. Unknown/absent maps to the neutral middle (2). A domain whose
+    // severity KEYS fall outside this built-in set no longer collapses SILENTLY —
+    // GenerateAsync emits a one-shot warning naming the offending values. (A full
+    // fix — domain-declared severity ORDERING — needs a descriptor schema change and
+    // is tracked separately; DomainDescriptor.Severities is an unordered set today.)
+    private static readonly IReadOnlySet<string> KnownSeverities =
+        new HashSet<string>(StringComparer.Ordinal) { "low", "medium", "high", "critical" };
+
+    private static int RankOf(string? severity) => severity switch
     {
-        if (items.Count == 0)
-            return 0;
-        return items.Average(i => i.Structure!.Severity switch
-        {
-            "low" => 1, "medium" => 2, "high" => 3, "critical" => 4, _ => 2,
-        });
-    }
+        "low" => 1, "medium" => 2, "high" => 3, "critical" => 4, _ => 2,
+    };
+
+    private static double AverageSeverityRank(IReadOnlyList<StoredFeedback> items) =>
+        items.Count == 0 ? 0 : items.Average(i => (double)RankOf(i.Structure!.Severity));
 
     /// <summary>The group's messages, embedded in the report so the view shows the
     /// evidence in one click (live OR from a snapshot, no per-item fetch). Ordered
@@ -516,10 +544,7 @@ public sealed class ReportService(
                 i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview))
             .ToList();
 
-    private static int SeverityRank(string? severity) => severity switch
-    {
-        "critical" => 4, "high" => 3, "medium" => 2, "low" => 1, _ => 0,
-    };
+    private static int SeverityRank(string? severity) => RankOf(severity);
 
     private static string FallbackTitle(string category, IReadOnlyList<StoredFeedback> groupItems)
     {
@@ -551,8 +576,12 @@ public sealed class ReportService(
         {
             var dir = options.Value.SnapshotDir;
             Directory.CreateDirectory(dir);
-            // Atomic temp-then-rename: a concurrent snapshot reader must never
-            // observe a truncated file.
+            // Each file is written atomically (temp-then-rename) so a concurrent reader
+            // never observes a truncated file. The json/html PAIR is only eventually
+            // consistent: if the second write throws, the pair is briefly mismatched
+            // (new json, stale html) until the next successful persist re-writes both.
+            // Accepted — a snapshot is a best-effort offline fallback, self-heals on the
+            // next report, and both readers tolerate a one-generation-old file.
             await WriteAtomicAsync(Path.Combine(dir, "report-latest.json"), JsonSerializer.Serialize(report, Json), ct);
             await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report, activeDomain.Descriptor.Language), ct);
         }
@@ -565,29 +594,43 @@ public sealed class ReportService(
 
     private static async Task WriteAtomicAsync(string path, string content, CancellationToken ct)
     {
-        var temp = path + ".tmp";
-        await File.WriteAllTextAsync(temp, content, ct);
-
-        // Windows: File.Move(overwrite) is MoveFileEx(REPLACE_EXISTING) — it unlinks the
-        // destination and throws a sharing violation if a reader has it open (readers
-        // here open with FileShare.Read, not Delete). File.Replace is NTFS's
-        // replace-while-open primitive and keeps an in-flight reader's handle valid; a
-        // bounded retry rides out a transient violation so the snapshot is never
-        // silently left stale. On a first write (no destination yet) fall back to Move.
-        for (var attempt = 0; ; attempt++)
+        // Per-writer UNIQUE temp name: two concurrent snapshot writers (public
+        // /report?snapshot=true is unauthenticated) must not collide on one shared
+        // "<path>.tmp" and defeat the atomic replace. Deleted on any failure so the
+        // uniqueness can't leak temp files on the disk.
+        var temp = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
         {
-            try
+            await File.WriteAllTextAsync(temp, content, ct);
+
+            // Windows: File.Move(overwrite) is MoveFileEx(REPLACE_EXISTING) — it unlinks the
+            // destination and throws a sharing violation if a reader has it open (readers
+            // here open with FileShare.Read, not Delete). File.Replace is NTFS's
+            // replace-while-open primitive and keeps an in-flight reader's handle valid; a
+            // bounded retry rides out a transient violation so the snapshot is never
+            // silently left stale. On a first write (no destination yet) fall back to Move.
+            for (var attempt = 0; ; attempt++)
             {
-                if (File.Exists(path))
-                    File.Replace(temp, path, destinationBackupFileName: null);
-                else
-                    File.Move(temp, path);
-                return;
+                try
+                {
+                    if (File.Exists(path))
+                        File.Replace(temp, path, destinationBackupFileName: null);
+                    else
+                        File.Move(temp, path);
+                    return;
+                }
+                catch (IOException) when (attempt < 5)
+                {
+                    await Task.Delay(40, ct);
+                }
             }
-            catch (IOException) when (attempt < 5)
-            {
-                await Task.Delay(40, ct);
-            }
+        }
+        catch
+        {
+            // Success paths consume `temp` via Replace/Move; any failure (write error,
+            // retries exhausted, cancellation) can leave it behind — best-effort remove.
+            try { if (File.Exists(temp)) File.Delete(temp); } catch { /* best effort */ }
+            throw;
         }
     }
 }
