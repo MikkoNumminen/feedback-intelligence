@@ -166,16 +166,18 @@ public sealed class ReportService(
         // fall outside the built-in rank map ranks every item as "medium", which
         // disables worsening-trend detection. Surface it once per report rather than
         // letting the trend quietly flatten.
-        var unknownSeverities = structured
-            .Select(i => i.Structure!.Severity)
-            .Where(s => !KnownSeverities.Contains(s))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-        if (unknownSeverities.Count > 0)
+        if (structured.Any(i => !KnownSeverities.Contains(i.Structure!.Severity)))
+        {
+            var unknownSeverities = structured
+                .Select(i => i.Structure!.Severity)
+                .Where(s => !KnownSeverities.Contains(s))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
             logger.LogWarning(
                 "Severity value(s) {Unknown} are outside the built-in severity rank map and rank as 'medium' in "
                 + "trend math — worsening-trend detection is degraded for this domain.",
                 string.Join(", ", unknownSeverities));
+        }
         foreach (var group in structured
                      .GroupBy(i => i.Structure!.Category)
                      .OrderByDescending(g => g.Count())
@@ -599,6 +601,11 @@ public sealed class ReportService(
         // "<path>.tmp" and defeat the atomic replace. Deleted on any failure so the
         // uniqueness can't leak temp files on the disk.
         var temp = $"{path}.{Guid.NewGuid():N}.tmp";
+        // Reclaim temps orphaned by a HARD process kill between write and rename: a
+        // unique name is never reused by a later run, so unlike the old fixed-name
+        // temp it wouldn't self-limit. Sweep prior orphans, age-gated so a concurrent
+        // writer's in-flight temp (always seconds old) is never touched.
+        SweepStaleTemps(path);
         try
         {
             await File.WriteAllTextAsync(temp, content, ct);
@@ -632,5 +639,20 @@ public sealed class ReportService(
             try { if (File.Exists(temp)) File.Delete(temp); } catch { /* best effort */ }
             throw;
         }
+    }
+
+    private static void SweepStaleTemps(string path)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(path);
+            if (dir is null)
+                return;
+            var cutoff = DateTime.UtcNow.AddMinutes(-1);
+            foreach (var stale in Directory.EnumerateFiles(dir, Path.GetFileName(path) + ".*.tmp"))
+                if (File.GetLastWriteTimeUtc(stale) < cutoff)
+                    try { File.Delete(stale); } catch { /* best effort — another writer may have it */ }
+        }
+        catch { /* best effort — a sweep failure must never fail a snapshot write */ }
     }
 }

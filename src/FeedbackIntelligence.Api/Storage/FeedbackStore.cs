@@ -38,6 +38,10 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
 {
     private const int SqliteConstraintErrorCode = 19;
 
+    // A brief busy wait so a concurrent writer (or an ingest overlapping a long report
+    // read) retries internally instead of surfacing SQLITE_BUSY as a 500.
+    private const string BusyTimeoutPragma = "PRAGMA busy_timeout=5000;";
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private string ConnectionString => $"Data Source={options.Value.DbPath}";
@@ -52,7 +56,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         connection.Open();
         using (var pragma = connection.CreateCommand())
         {
-            pragma.CommandText = "PRAGMA busy_timeout=5000;";
+            pragma.CommandText = BusyTimeoutPragma;
             pragma.ExecuteNonQuery();
         }
         using var command = connection.CreateCommand();
@@ -156,7 +160,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
         {
             await connection.OpenAsync(ct);
             await using var pragma = connection.CreateCommand();
-            pragma.CommandText = "PRAGMA busy_timeout=5000;";
+            pragma.CommandText = BusyTimeoutPragma;
             await pragma.ExecuteNonQueryAsync(ct);
             return connection;
         }
