@@ -17,8 +17,9 @@ proves a new domain is a new folder with zero core edits — switch with
 [ADR-0012](docs/decisions/0012-pluggable-domain-modules.md)).
 
 Built as a demonstrable work sample: .NET 8 backend, local LLM serving (Ollama),
-100% synthetic data, live-runnable in an interview with a snapshot fallback so a
-shared link never shows a dead page.
+100% synthetic data, live-runnable in an interview with a snapshot fallback so
+[the shared link](https://red-ground-0bacf9c03.7.azurestaticapps.net/) never
+shows a dead page.
 
 ## Why AI is only in two places
 
@@ -110,6 +111,22 @@ multiplication; `generate --seed N` = deterministic composition, never calls
 the LLM; `verify` = mechanized acceptance against ground truth). Structuring
 eval harness: `tools/FeedbackIntelligence.StructuringEval`.
 
+## Live demo
+
+- [Management view](https://red-ground-0bacf9c03.7.azurestaticapps.net/) —
+  renders the committed seed-42 snapshot instantly (badge: *Tallennettu
+  tilannekuva*), then upgrades in place to the live report whenever the
+  operator backend is reachable.
+- [Desk entry](https://red-ground-0bacf9c03.7.azurestaticapps.net/desk.html) —
+  live-only: interpretation needs the backend up; there is no snapshot
+  stand-in for it.
+
+The hosting is deliberately minimal: a static bundle on Azure Static Web Apps
+Free, with the browser calling the operator's local API + Ollama through a
+Tailscale Funnel — no cloud inference, no managed API, $0 hosting
+([ADR-0016](docs/decisions/0016-zero-cost-static-web-apps-deploy.md),
+[ADR-0023](docs/decisions/0023-deploy-hardening-snapshot-and-pna.md)).
+
 ## Design & docs
 
 - Engine design and the two-layer pipeline: [docs/architecture.md](docs/architecture.md)
@@ -120,8 +137,12 @@ eval harness: `tools/FeedbackIntelligence.StructuringEval`.
 
 ## Honest status
 
-Built end-to-end and exercised with **placeholder data** (recorded in
-`docs/mock-data-register.md` — everything mock is labeled non-evidential and
-never appears as demo evidence). Waiting on the hand-written core corpus;
-remaining owner tasks live in `docs/TODO.md`. PR history with review findings:
-`docs/prs/`.
+Built end-to-end and demoed on the real corpus: the hand-written core
+(27 texts, evidential) expanded and composed into the seed-42 dataset, its
+analysis captured as a provenance-verified snapshot committed at
+`deploy/snapshot/` and always bundled by CI
+([ADR-0023](docs/decisions/0023-deploy-hardening-snapshot-and-pna.md)). The
+live loop — desk entry → structuring → re-synthesis — is verified end to end.
+Placeholder artifacts still exist but are labeled non-evidential and never
+appear as demo evidence (`docs/mock-data-register.md`). Remaining owner tasks
+live in `docs/TODO.md`; PR history with review findings: `docs/prs/`.
