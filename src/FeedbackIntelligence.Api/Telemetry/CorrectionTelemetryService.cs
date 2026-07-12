@@ -43,17 +43,28 @@ public sealed record CorrectionTelemetry(
     // prompt-injection-shaped input is arriving).
     int NeedsReviewAllSources = 0);
 
-public sealed class CorrectionTelemetryService(FeedbackStore store, IOptions<IngestOptions> options)
+// liveStore is the desk's own channel (ADR-0024): real desk corrections land there,
+// while the corpus channel (store) holds the other sources — telemetry must read
+// BOTH or it goes blind to one half. Optional so store-only unit tests keep working.
+public sealed class CorrectionTelemetryService(FeedbackStore store, IOptions<IngestOptions> options, FeedbackStore? liveStore = null)
 {
     public async Task<CorrectionTelemetry> SummarizeAsync(string fromIso, string toIso, CancellationToken ct)
     {
-        var deskItems = await store.QueryAsync(fromIso, toIso, options.Value.QueryMaxLimit, ct, source: "desk");
-        // All-source needs_review count (A2) — accurate COUNT, not desk-scoped.
-        var needsReview = await store.CountNeedsReviewAsync(fromIso, toIso, ct);
+        var max = options.Value.QueryMaxLimit;
+        var mainDesk = await store.QueryAsync(fromIso, toIso, max, ct, source: "desk");
+        var liveDesk = liveStore is null
+            ? (IReadOnlyList<StoredFeedback>)[]
+            : await liveStore.QueryAsync(fromIso, toIso, max, ct, source: "desk");
+        // The two stores have disjoint id spaces (separate databases), so a plain
+        // concat is the merged desk population — no dedup needed.
+        var deskItems = mainDesk.Concat(liveDesk).ToList();
+        // All-source needs_review count (A2) — accurate COUNT across both channels.
+        var needsReview = await store.CountNeedsReviewAsync(fromIso, toIso, ct)
+            + (liveStore is null ? 0 : await liveStore.CountNeedsReviewAsync(fromIso, toIso, ct));
         // No silent caps: when the fetch cap bites, the response says so —
         // QueryAsync returns newest-first, so the OLDEST weeks would be the
-        // ones silently missing.
-        var truncated = deskItems.Count >= options.Value.QueryMaxLimit;
+        // ones silently missing. Each store is capped independently.
+        var truncated = mainDesk.Count >= max || liveDesk.Count >= max;
 
         var interpretedItems = deskItems.Where(i => !i.ModelFailed).ToList();
         var modelFailed = deskItems.Count - interpretedItems.Count;

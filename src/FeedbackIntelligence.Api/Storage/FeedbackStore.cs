@@ -34,7 +34,10 @@ public sealed class DuplicateFeedbackIdException(string id)
     public string Id { get; } = id;
 }
 
-public sealed class FeedbackStore(IOptions<IngestOptions> options)
+// dbPathOverride carries the live channel's path (ADR-0024): the default instance
+// reads Ingest:DbPath, the keyed "live" instance passes Ingest:LiveDbPath — one
+// class, two databases, no copied options object to drift.
+public sealed class FeedbackStore(IOptions<IngestOptions> options, string? dbPathOverride = null)
 {
     private const int SqliteConstraintErrorCode = 19;
 
@@ -44,11 +47,13 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options)
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private string ConnectionString => $"Data Source={options.Value.DbPath}";
+    private string DbPath => dbPathOverride ?? options.Value.DbPath;
+
+    private string ConnectionString => $"Data Source={DbPath}";
 
     public void Initialize()
     {
-        var directory = Path.GetDirectoryName(Path.GetFullPath(options.Value.DbPath));
+        var directory = Path.GetDirectoryName(Path.GetFullPath(DbPath));
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 

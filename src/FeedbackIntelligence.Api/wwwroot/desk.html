@@ -32,6 +32,20 @@
   .corrected { outline:2px solid var(--warn); outline-offset:1px; }
   .hint { font-size:.8rem; color:var(--mut); margin-top:.4rem; }
   #interpret-card { display:none; }
+  .segment-head { display:flex; justify-content:space-between; align-items:center; gap:.6rem; }
+  .segment-head button { min-height:36px; padding:.35rem .7rem; }
+  .seg-total { font-size:.85rem; color:var(--mut); margin:.3rem 0 .6rem; }
+  .seg-alert { border-left:3px solid var(--err); padding:.4rem .6rem; margin:.5rem 0;
+               background:#faf3f2; border-radius:.35rem; font-size:.9rem; }
+  .seg-theme { border-top:1px solid var(--line); padding:.7rem 0 .2rem; }
+  .seg-theme h3 { font-size:.95rem; margin:0 0 .15rem; }
+  .seg-meta { font-size:.8rem; color:var(--mut); margin:0 0 .35rem; }
+  .seg-narrative { font-size:.9rem; margin:0 0 .5rem; }
+  .seg-items { list-style:none; margin:0 0 .6rem; padding:0; }
+  .seg-items li { font-size:.85rem; padding:.25rem 0; border-top:1px dashed var(--line); }
+  .seg-items .sev { font-weight:600; margin-right:.35rem; }
+  .seg-items .when { color:var(--mut); margin-left:.35rem; font-size:.78rem; }
+  .flagwarn { color:#8a5a00; font-weight:600; font-size:.85rem; margin:0 0 .4rem; }
 </style>
 </head>
 <body>
@@ -62,6 +76,17 @@
     </div>
     <p class="status" id="status2"></p>
   </div>
+
+  <!-- The live desk segment (ADR-0024): the situational view over THIS desk's own
+       channel — its own database, untouched by (and untouching) the demo corpus. -->
+  <div class="card" id="segment">
+    <div class="segment-head">
+      <strong id="segmentHeading"></strong>
+      <button class="ghost" id="segmentRefresh"></button>
+    </div>
+    <p class="status" id="segmentStatus"></p>
+    <div id="segmentBody"></div>
+  </div>
 </main>
 
 <script src="./config.js"></script>
@@ -77,7 +102,7 @@ const el = id => document.getElementById(id);
 // domain (categoryField), not from here.
 const STR = {
   fi: {
-    htmlLang: "fi", pageTitle: "Palaute — tiskikirjaus",
+    htmlLang: "fi", locale: "fi-FI", pageTitle: "Palaute — tiskikirjaus",
     h1: "Tiskikirjaus — kirjaa asiakaspalaute yhdellä lauseella",
     textLabel: "Mitä asiakas sanoi?",
     placeholder: "esim. asiakas sano et maitokaapis oli vanhoi purkkei",
@@ -95,9 +120,17 @@ const STR = {
     busyShort: "Ruuhkaa — yritä hetken päästä.", saveFailed: "Tallennus epäonnistui.",
     savedAlready: "Kirjattu ✓ (oli jo tallennettu)", savedThanks: "Kirjattu ✓ — kiitos!",
     saveUncertain: "Yhteysvirhe — tallennus jäi epävarmaksi. Yritä uudelleen: sama kirjaus ei tuplaannu.",
+    segmentHeading: "Tiskin palautetilanne", segmentRefresh: "Päivitä",
+    segmentLoading: "Tekoäly analysoi kirjauksia…",
+    segmentEmpty: "Ei vielä kirjauksia — tallenna ensimmäinen palaute yllä.",
+    segmentError: "Tilannekuvaa ei saatu — palvelin ei vastaa.",
+    segmentTotal: "kirjausta ikkunassa", segmentAlerts: "Hälytykset",
+    segmentUnstructured: "ilman rakennetta (tulkinta ei onnistunut)",
+    itemsWord: "palautetta",
+    flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa",
   },
   en: {
-    htmlLang: "en", pageTitle: "Feedback — desk entry",
+    htmlLang: "en", locale: "en-GB", pageTitle: "Feedback — desk entry",
     h1: "Desk entry — log feedback in one sentence",
     textLabel: "What did they say?",
     placeholder: "e.g. what the customer/player said, in their own words",
@@ -115,6 +148,14 @@ const STR = {
     busyShort: "Busy — try again shortly.", saveFailed: "Save failed.",
     savedAlready: "Saved ✓ (was already stored)", savedThanks: "Saved ✓ — thanks!",
     saveUncertain: "Connection error — the save is uncertain. Try again: the same entry won't duplicate.",
+    segmentHeading: "Desk feedback situation", segmentRefresh: "Refresh",
+    segmentLoading: "The AI is analyzing the entries…",
+    segmentEmpty: "No entries yet — save the first feedback above.",
+    segmentError: "Situation view unavailable — the server is not responding.",
+    segmentTotal: "entries in the window", segmentAlerts: "Alerts",
+    segmentUnstructured: "without structure (interpretation failed)",
+    itemsWord: "items",
+    flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted",
   },
 };
 
@@ -152,6 +193,11 @@ function applyLanguage(lang) {
   el("typeLabel").textContent = L.type;
   el("cancel").textContent = L.cancel;
   el("save").textContent = L.save;
+  el("segmentHeading").textContent = L.segmentHeading;
+  el("segmentRefresh").textContent = L.segmentRefresh;
+  // Re-render only when the language actually changed — /schema resolving to the
+  // boot language must not rebuild the segment DOM a second time.
+  if (lastReport && renderedL !== L) renderSegment(lastReport);
   // Category label is the DOMAIN's word (osasto / area) — only known once /schema lands.
   if (schema && schema.categoryField) {
     const cf = schema.categoryField;
@@ -296,7 +342,9 @@ el("save").addEventListener("click", async () => {
   el("save").disabled = true;
   setStatus("status2", "", L.saving);
   try {
-    const res = await fetch(`${API}/feedback`, {
+    // The live channel (ADR-0024): desk entries have their own database and
+    // situational segment; the demo corpus flows through /feedback, never here.
+    const res = await fetch(`${API}/live/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -318,6 +366,9 @@ el("save").addEventListener("click", async () => {
     el("text").value = "";
     el("chars").textContent = "0";
     el("text").focus();
+    // The ingest invalidated the live report cache — this refetch runs a fresh
+    // synthesis, so the entry just saved appears in the segment below.
+    loadSegment();
   } catch {
     setStatus("status2", "warn", L.saveUncertain);
   } finally {
@@ -331,9 +382,103 @@ function setStatus(id, kind, message) {
   node.textContent = message;
 }
 
+// ----- The live desk segment (ADR-0024) -----
+// Renders GET /live/report: theme narratives (the short summary) and each theme's
+// source items (the categorized list). All feedback text lands via textContent —
+// hostile input must never reach innerHTML.
+let segmentBusy = false;
+// A refresh requested while one is in flight must RUN AGAIN after it, not be
+// dropped: the in-flight response predates the just-saved entry, so dropping the
+// request would leave the fresh entry invisible until a manual refresh.
+let segmentQueued = false;
+let lastReport = null;   // re-render (not refetch) when /schema resolves the language
+let renderedL = null;    // the language bundle the segment was last rendered with
+
+function node(tag, className, text) {
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function shortTime(iso) {
+  const d = new Date(iso);
+  // Same shape as index.html's short(): the two pages must render one timestamp
+  // the same way.
+  return isNaN(d) ? iso : d.toLocaleString(L.locale, { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function renderSegment(report) {
+  renderedL = L;
+  const body = el("segmentBody");
+  body.replaceChildren();
+  if (report.totalItems === 0) {
+    body.appendChild(node("p", "seg-total", L.segmentEmpty));
+    return;
+  }
+  let totalLine = `${report.totalItems} ${L.segmentTotal}`;
+  if (report.structureFailedCount > 0)
+    totalLine += ` · ${report.structureFailedCount} ${L.segmentUnstructured}`;
+  body.appendChild(node("p", "seg-total", totalLine));
+
+  if (report.alerts?.length) {
+    body.appendChild(node("strong", null, `${L.segmentAlerts} (${report.alerts.length})`));
+    for (const alert of report.alerts)
+      body.appendChild(node("div", "seg-alert", alert.textExcerpt || alert.text));
+  }
+
+  for (const theme of report.themes ?? []) {
+    const box = node("div", "seg-theme");
+    box.appendChild(node("h3", null, theme.title));
+    const catLabel = (schema && schema.categoryLabels?.[theme.category]) || theme.category;
+    box.appendChild(node("p", "seg-meta",
+      `${catLabel} · ${theme.count} ${L.itemsWord} · ${theme.directionLabel}`));
+    // ADR-0021 A2 parity with index.html: a possibly-manipulated (needs_review)
+    // item stays in the count — so the warning that it is in the mix must show
+    // here too, or the desk reads a poisoned count as clean.
+    if (theme.flaggedCount > 0)
+      box.appendChild(node("div", "flagwarn", `⚠ ${theme.flaggedCount} ${L.flaggedTheme} · ${L.flaggedHint}`));
+    box.appendChild(node("p", "seg-narrative", theme.narrative));
+    const list = node("ul", "seg-items");
+    for (const item of theme.sources ?? []) {
+      const li = node("li");
+      const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity;
+      li.appendChild(node("span", "sev", sevLabel));
+      li.appendChild(document.createTextNode(item.text));
+      li.appendChild(node("span", "when", shortTime(item.timestamp)));
+      list.appendChild(li);
+    }
+    box.appendChild(list);
+    body.appendChild(box);
+  }
+}
+
+async function loadSegment() {
+  if (segmentBusy) { segmentQueued = true; return; }
+  segmentBusy = true;
+  el("segmentRefresh").disabled = true;
+  setStatus("segmentStatus", "", L.segmentLoading);
+  try {
+    const res = await fetch(`${API}/live/report`);
+    if (!res.ok) throw new Error();
+    lastReport = await res.json();
+    renderSegment(lastReport);
+    setStatus("segmentStatus", "", "");
+  } catch {
+    setStatus("segmentStatus", "err", L.segmentError);
+  } finally {
+    segmentBusy = false;
+    el("segmentRefresh").disabled = false;
+    if (segmentQueued) { segmentQueued = false; loadSegment(); }
+  }
+}
+
+el("segmentRefresh").addEventListener("click", loadSegment);
+
 applyLanguage();                 // en chrome immediately (resolves on /schema)
 setStatus("status1", "", L.connecting);
 loadSchema();
+loadSegment();
 </script>
 </body>
 </html>

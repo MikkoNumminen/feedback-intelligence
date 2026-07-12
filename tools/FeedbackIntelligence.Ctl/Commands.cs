@@ -216,10 +216,14 @@ public static class Commands
         }
 
         Console.WriteLine(Term.Bold($"\n  switching dataset → {mode} …\n"));
-        Console.WriteLine("  " + Term.C("◐", "33") + " wiping the database (ollama stays up) …");
+        Console.WriteLine("  " + Term.C("◐", "33") + " wiping the databases (ollama stays up) …");
         ApiHost.Stop();
-        foreach (var suffix in new[] { "", "-wal", "-shm" })
-            try { File.Delete(Config.Abs(Config.DemoDbPath) + suffix); } catch { /* best effort */ }
+        // BOTH channels (ADR-0024): leaving desk-live.db would let a rehearsal's desk
+        // entries reappear in the fresh demo's segment — the same evidential/non-
+        // evidential mixing this wipe exists to prevent.
+        foreach (var dbPath in new[] { Config.DemoDbPath, Config.LiveDbPath })
+            foreach (var suffix in new[] { "", "-wal", "-shm" })
+                try { File.Delete(Config.Abs(dbPath) + suffix); } catch { /* best effort */ }
 
         Console.WriteLine("  " + Term.C("◐", "33") + " restarting the API on the empty DB …");
         if (ApiHost.Start(build: false) is null) return 1;   // no rebuild — a data switch never changes API code
@@ -238,12 +242,15 @@ public static class Commands
         // could keep it alive. If the restarted API still sees rows, the wipe FAILED;
         // abort rather than load a new corpus on top of the old and mislabel the mix
         // (that would silently break the evidential/non-evidential separation).
-        var existing = await Shell.GetJsonAsync("/feedback?limit=1", 10);
-        if (existing is { ValueKind: JsonValueKind.Array } && existing.Value.GetArrayLength() > 0)
+        foreach (var probe in new[] { "/feedback?limit=1", "/live/feedback?limit=1" })
         {
-            Console.WriteLine("  " + Term.C("○ database not empty after wipe — a stray API may hold the file. " +
-                "Aborting to avoid mixing datasets; run `down`, then retry.", "31"));
-            return 1;
+            var existing = await Shell.GetJsonAsync(probe, 10);
+            if (existing is { ValueKind: JsonValueKind.Array } && existing.Value.GetArrayLength() > 0)
+            {
+                Console.WriteLine("  " + Term.C($"○ database not empty after wipe ({probe}) — a stray API may hold the file. " +
+                    "Aborting to avoid mixing datasets; run `down`, then retry.", "31"));
+                return 1;
+            }
         }
 
         // Keep the public link live across the data switch (idempotent — the API
@@ -455,17 +462,31 @@ public static class Commands
 
     public static async Task<int> LogsAsync(int n)
     {
-        var body = await Shell.GetJsonAsync($"/feedback?limit={Math.Clamp(n, 1, 200)}", 15);
-        if (body is null || body.Value.ValueKind != JsonValueKind.Array) { Console.WriteLine(Term.C("  ○ no data (API up?)", "31")); return 1; }
-        Console.WriteLine(Term.Bold($"\n  last {body.Value.GetArrayLength()} ingested item(s):\n"));
-        foreach (var it in body.Value.EnumerateArray())
+        // Both channels (ADR-0024): desk-UI saves live in /live/feedback — a
+        // corpus-only view would read a successful desk save as "never landed".
+        var limit = Math.Clamp(n, 1, 200);
+        var main = await Shell.GetJsonAsync($"/feedback?limit={limit}", 15);
+        if (main is null || main.Value.ValueKind != JsonValueKind.Array) { Console.WriteLine(Term.C("  ○ no data (API up?)", "31")); return 1; }
+        var live = await Shell.GetJsonAsync($"/live/feedback?limit={limit}", 15);
+
+        var items = main.Value.EnumerateArray().Select(it => (Item: it, Channel: "corpus"));
+        if (live is { ValueKind: JsonValueKind.Array })
+            items = items.Concat(live.Value.EnumerateArray().Select(it => (Item: it, Channel: "live")));
+        var merged = items
+            .OrderByDescending(x => x.Item.TryGetProperty("timestamp", out var ts) ? ts.GetString() : "", StringComparer.Ordinal)
+            .Take(limit)
+            .ToList();
+
+        Console.WriteLine(Term.Bold($"\n  last {merged.Count} ingested item(s) (corpus + live):\n"));
+        foreach (var (it, channel) in merged)
         {
             var failed = it.TryGetProperty("structureFailed", out var sf) && sf.GetBoolean();
             var dept = it.TryGetProperty("structure", out var st) && st.ValueKind == JsonValueKind.Object
                 ? st.GetProperty("category").GetString() : (failed ? Term.C("structure_failed", "31") : "?");
             var text = it.GetProperty("text").GetString() ?? "";
             if (text.Length > 60) text = text[..60] + "…";
-            Console.WriteLine($"    {Term.C(it.GetProperty("source").GetString() ?? "?", "36"),-16} {dept,-22} {text}");
+            var source = it.GetProperty("source").GetString() ?? "?";
+            Console.WriteLine($"    {Term.C(channel, channel == "live" ? "32" : "2"),-14} {Term.C(source, "36"),-16} {dept,-22} {text}");
         }
         Console.WriteLine();
         return 0;

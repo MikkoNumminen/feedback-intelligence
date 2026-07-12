@@ -34,3 +34,4 @@ these ADRs relocate that reasoning into durable records.
 | [0021](0021-prompt-injection-defense-in-depth.md) | Prompt-injection defense-in-depth at the LLM boundary (A1–A4 implemented) | Accepted |
 | [0022](0022-lock-poro-prompts-v0.md) | Lock the retail Poro prompts at v0 (a change is gated by re-checks, not forbidden) | Accepted |
 | [0023](0023-deploy-hardening-snapshot-and-pna.md) | Deploy hardening: always-bundle the committed snapshot + Private Network Access (amends 0016) | Accepted |
+| [0024](0024-live-desk-channel-separate-db.md) | The desk is its own live channel: separate database, own segment | Accepted |

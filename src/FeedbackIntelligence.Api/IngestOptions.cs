@@ -44,6 +44,11 @@ public sealed class IngestOptions
 
     public string DbPath { get; init; } = "data/feedback.db";
 
+    /// <summary>The live desk channel's own database (ADR-0024): desk entries are
+    /// demo evidence for the desk segment, never mixed with the seeded corpus in
+    /// <see cref="DbPath"/> — and the corpus can never leak into the segment.</summary>
+    public string LiveDbPath { get; init; } = "data/desk-live.db";
+
     // Accepted `source` values are domain data (ingest channels differ per
     // domain) — validated against the active domain, not configured here.
 
@@ -82,6 +87,12 @@ public sealed class IngestOptionsValidator : IValidateOptions<IngestOptions>
             failures.Add($"Ingest:LlmCallTimeoutMs must be positive, got {options.LlmCallTimeoutMs}.");
         if (string.IsNullOrWhiteSpace(options.DbPath))
             failures.Add("Ingest:DbPath must be set.");
+        if (string.IsNullOrWhiteSpace(options.LiveDbPath))
+            failures.Add("Ingest:LiveDbPath must be set.");
+        // Same file would silently merge the channels ADR-0024 exists to separate.
+        else if (!string.IsNullOrWhiteSpace(options.DbPath)
+                 && string.Equals(Path.GetFullPath(options.LiveDbPath), Path.GetFullPath(options.DbPath), StringComparison.OrdinalIgnoreCase))
+            failures.Add($"Ingest:LiveDbPath must differ from Ingest:DbPath, both resolve to '{Path.GetFullPath(options.DbPath)}'.");
         if (options.IdMaxLength < 1)
             failures.Add($"Ingest:IdMaxLength must be positive, got {options.IdMaxLength}.");
         if (options.QueryDefaultLimit < 1 || options.QueryMaxLimit < options.QueryDefaultLimit)

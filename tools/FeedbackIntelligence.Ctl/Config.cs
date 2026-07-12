@@ -21,6 +21,12 @@ public static class Config
     public const string ApiProject = "src/FeedbackIntelligence.Api";
     public const string GeneratorProject = "tools/FeedbackIntelligence.Generator";
     public const string DemoDbPath = "data/demo.db";
+
+    /// <summary>The desk's own live-channel database (ADR-0024). ctl passes it to
+    /// the API explicitly — without that the API would resolve its relative default
+    /// against its own CWD and the file would land where no ctl command manages it.</summary>
+    public const string LiveDbPath = "data/desk-live.db";
+
     public const string SnapshotJson = "data/snapshots/report-latest.json";
 
     /// <summary>The real, evidential seeded corpus (`data` demo mode).</summary>
