@@ -10,6 +10,7 @@ on:
     paths:
       - 'src/FeedbackIntelligence.Api/wwwroot/index.html'
       - 'src/FeedbackIntelligence.Api/wwwroot/desk.html'
+      - 'src/FeedbackIntelligence.Api/wwwroot/feedback.html'
       - 'deploy/staticwebapp.config.json'
       - 'deploy/snapshot/report-latest.json'
       - 'deploy/snapshot/report-latest.html'
