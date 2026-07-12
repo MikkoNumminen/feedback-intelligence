@@ -10,7 +10,9 @@ Pre-demo checklist (10 min before):
    explicit steps below are the manual form.
 1. RAG stack down; `docker compose up -d ollama --wait` (models warm after
    first call; hit `/health` once to load Poro).
-2. Fresh demo DB: delete `data/feedback.db`, start API, push the seed-42
+2. Fresh demo DBs: delete `data/feedback.db` AND `data/desk-live.db` (the desk's
+   own channel, ADR-0024 — stale rehearsal entries would resurface in the desk
+   segment; `feedctl data <mode>` wipes both), start API, push the seed-42
    corpus: `tools/push-corpus.ps1 -Corpus data/corpus/generated-42.jsonl`.
 3. Open `/` (management view) and `/desk.html` on the phone.
 

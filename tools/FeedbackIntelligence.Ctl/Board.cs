@@ -144,10 +144,16 @@ public static class Board
         if (body is null || body.Value.ValueKind != JsonValueKind.Array)
             return Row2("demo data", Term.State.Warn, "none — `data mock|demo` or `load`", false);
         var n = body.Value.GetArrayLength();
-        if (n == 0)
+        // The desk's own channel (ADR-0024) — counted separately so a desk-only
+        // session never reads as "empty" while the segment is showing entries.
+        var live = await Shell.GetJsonAsync("/live/feedback?limit=1000", 10);
+        var liveN = live is { ValueKind: JsonValueKind.Array } ? live.Value.GetArrayLength() : 0;
+        var liveSuffix = liveN > 0 ? $" · desk live: {liveN}" : "";
+        if (n == 0 && liveN == 0)
             return Row2("demo data", Term.State.Warn, "empty — `data mock|demo` or `load`", false);
         var tag = DatasetTag();
-        return Row2("demo data", Term.State.Ok, tag is null ? $"{n} item(s)" : $"{n} item(s) · {tag}", false);
+        return Row2("demo data", Term.State.Ok,
+            (tag is null ? $"{n} item(s)" : $"{n} item(s) · {tag}") + liveSuffix, false);
     }
 
     /// <summary>Provenance of the loaded dataset, recorded by `data <mode>`; null

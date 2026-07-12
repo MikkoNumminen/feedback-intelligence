@@ -58,11 +58,14 @@ public sealed class ReportService(
     /// generation (`ctl report`, which passes it) should — an ephemeral frontend view
     /// with an arbitrary window must never clobber the shared-link's last-good page
     /// (dotnet-audit finding #3). Applied to the resulting report whether it was freshly
-    /// generated or served from cache, so a cache hit still refreshes the fallback.</summary>
+    /// generated or served from cache, so a cache hit still refreshes the fallback.
+    /// <paramref name="cacheKey"/> lets the endpoint bucket cache identity (10-min
+    /// buckets) while the QUERY runs on the exact window; when omitted, the key is
+    /// the window itself.</summary>
     public async Task<ManagementReport> GenerateAsync(
-        string fromIso, string toIso, CancellationToken ct, bool persistSnapshot = false)
+        string fromIso, string toIso, CancellationToken ct, bool persistSnapshot = false, string? cacheKey = null)
     {
-        var key = fromIso + "|" + toIso;
+        var key = cacheKey ?? (fromIso + "|" + toIso);
         if (!cache.TryGet(key, out var report))
         {
             await _generationLock.WaitAsync(ct);

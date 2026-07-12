@@ -99,22 +99,37 @@ public class ChannelIsolationTests : IDisposable
         Assert.Null(await _mainStore.GetAsync("desk-live-001", CancellationToken.None));
     }
 
+    [Fact]
+    public async Task CorrectionTelemetry_MergesDeskEntriesAndNeedsReview_AcrossBothChannels()
+    {
+        // Desk entries in BOTH channels (the corpus simulates desk items; real
+        // ones live in the live channel) + a needs_review item on the corpus side.
+        await _mainStore.InsertAsync(MakeStored("main-desk-1", "corpus desk item"), CancellationToken.None);
+        await _liveStore.InsertAsync(MakeStored("live-desk-1", "live desk item"), CancellationToken.None);
+        await _mainStore.InsertAsync(new StoredFeedback(
+            "main-nr-1", "google_review", "epäilyttävä teksti", "2026-07-01T07:00:00.0000000+00:00",
+            "2026-07-01T07:00:00Z", ValidStructure, false, false, [], [], null,
+            NeedsReview: true, ReviewFlags: ["imperative"]), CancellationToken.None);
+
+        var telemetry = new Telemetry.CorrectionTelemetryService(_mainStore, _options, _liveStore);
+        var summary = await telemetry.SummarizeAsync(
+            "2026-06-01T00:00:00.0000000+00:00", "2026-08-01T00:00:00.0000000+00:00", CancellationToken.None);
+
+        Assert.Equal(2, summary.DeskEntries);            // desk population spans both channels
+        Assert.Equal(1, summary.NeedsReviewAllSources);  // A2 signal summed across channels
+    }
+
     private static StoredFeedback MakeStored(string id, string text) => new(
         id, "desk", text, "2026-07-01T07:00:00.0000000+00:00", "2026-07-01T07:00:00Z",
         ValidStructure, false, false, [], [], null);
 
-    private static StructuringResult Success(bool salvaged = false, IReadOnlyList<string>? notes = null) =>
-        new(ValidStructure, "{}", salvaged, false, false, notes ?? []);
+    private static StructuringResult Success() =>
+        new(ValidStructure, "{}", false, false, false, []);
 
     private sealed class FakeStructuring(StructuringResult result) : IStructuringService
     {
-        public int Calls { get; private set; }
-
-        public Task<StructuringResult> StructureAsync(string feedbackText, CancellationToken ct = default)
-        {
-            Calls++;
-            return Task.FromResult(result);
-        }
+        public Task<StructuringResult> StructureAsync(string feedbackText, CancellationToken ct = default) =>
+            Task.FromResult(result);
     }
 }
 

@@ -101,6 +101,7 @@ public static class ApiHost
             psi.ArgumentList.Add("--urls");
             psi.ArgumentList.Add(Config.BaseUrl);
             psi.ArgumentList.Add("--Ingest:DbPath=" + db);
+            psi.ArgumentList.Add("--Ingest:LiveDbPath=" + Config.Abs(Config.LiveDbPath));
             psi.ArgumentList.Add("--Report:SnapshotDir=" + snapDir);
 
             // Dispose the wrapper (frees the handle); UseShellExecute=true detaches the

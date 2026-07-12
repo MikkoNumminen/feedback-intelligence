@@ -61,6 +61,6 @@ The demo view additionally gets a stable explicit address: publish copies
   (cache invalidation, as on the main report) — the ~20–40 s LLM wait is now
   visible at the desk. Acceptable: it is the honest cost of the live loop, and
   the segment shows a loading state.
-- Two databases to reset instead of one when preparing a demo (`feedctl` data
-  modes manage `data/feedback.db`; the live channel is cleared by deleting
-  `data/desk-live.db`).
+- Two databases to reset instead of one when preparing a demo. `feedctl data
+  <mode>` wipes both and its post-wipe emptiness guard probes both channels; a
+  manual reset must delete `data/desk-live.db` alongside the main database.

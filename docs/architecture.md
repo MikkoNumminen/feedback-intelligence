@@ -26,11 +26,17 @@ Concretely, two layers, in this order:
    *and* misses when selecting from a list, but discriminates flawlessly on one
    item). See [ADR-0015](decisions/0015-poro-real-corpus-tuning.md) for the knobs.
 
-## Ingest pipeline — one endpoint, source-valued channels
+## Ingest pipeline — one contract, two channel databases
 
-There is **one** ingest endpoint, `POST /feedback` with `{ source, text,
-timestamp }`. "Channels" are `source` *values* (`google_review`, `email`,
-`web_form`, `desk`) — not four integrations. On ingest:
+The ingest contract is `POST` with `{ source, text, timestamp }`, served on two
+endpoints backed by **separate databases**
+([ADR-0024](decisions/0024-live-desk-channel-separate-db.md)): `POST /feedback`
+is the corpus/demo channel (seeded data, simulated sources), and
+`POST /live/feedback` is the desk’s own live channel (real entries from the
+desk UI) — the two share one handler body so their validation and failure
+semantics cannot drift, and neither dataset can contaminate the other. Within a
+channel, "channels" in the domain sense are `source` *values* (`google_review`,
+`email`, `web_form`, `desk`) — not four integrations. On ingest:
 
 1. The deterministic alert layer runs first; its hits are stored regardless of
    what the LLM does.
@@ -52,10 +58,13 @@ text preserved: **LLM down ≠ feedback lost**. A busy GPU sheds with 503 rather
 than queueing behind a slow generation.
 
 Other endpoints: `POST /interpret` (desk preview, stores nothing),
-`GET /feedback/{id}`, `GET /feedback?from&to&limit`, `GET /schema` (enum sets
+`GET /feedback/{id}`, `GET /feedback?from&to&limit`, `GET /live/feedback`
+(the live channel’s list), `GET /schema` (enum sets
 for UIs, single source is the schema), `GET /report` (`?snapshot=true` persists
-the render), `GET /report/snapshot(.html)`,
-`GET /telemetry/corrections`, `GET /health` (a 1-token *real* completion, not a
+the render), `GET /live/report` (the desk segment’s report over the live
+channel; never persists a snapshot), `GET /report/snapshot(.html)`,
+`GET /telemetry/corrections` (reads BOTH channels — desk corrections live in
+the live channel), `GET /health` (a 1-token *real* completion, not a
 liveness ping).
 
 ## The mandatory LLM abstraction

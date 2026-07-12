@@ -42,32 +42,34 @@ builder.Services.AddSingleton<ReportService>();
 // database and report pipeline, so the seeded corpus and the live channel can never
 // contaminate each other. Keyed clones of store/cache/ingest/report; the LlmGate and
 // chat clients stay SHARED so GPU containment remains global across both channels.
-const string LiveChannel = Channels.Live;
-builder.Services.AddKeyedSingleton(LiveChannel, (sp, _) =>
-    new FeedbackStore(
-        sp.GetRequiredService<IOptions<IngestOptions>>(),
-        sp.GetRequiredService<IOptions<IngestOptions>>().Value.LiveDbPath));
-builder.Services.AddKeyedSingleton(LiveChannel, (_, _) => new ReportCache());
-builder.Services.AddKeyedSingleton(LiveChannel, (sp, _) => new IngestService(
-    sp.GetRequiredKeyedService<FeedbackStore>(LiveChannel),
+builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) =>
+{
+    var ingestOptions = sp.GetRequiredService<IOptions<IngestOptions>>();
+    return new FeedbackStore(ingestOptions, ingestOptions.Value.LiveDbPath);
+});
+builder.Services.AddKeyedSingleton(Channels.Live, (_, _) => new ReportCache());
+builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) => new IngestService(
+    sp.GetRequiredKeyedService<FeedbackStore>(Channels.Live),
     sp.GetRequiredService<IStructuringService>(),
     sp.GetRequiredService<LlmGate>(),
     sp.GetRequiredService<AlertKeywordSet>(),
-    sp.GetRequiredKeyedService<ReportCache>(LiveChannel),
+    sp.GetRequiredKeyedService<ReportCache>(Channels.Live),
     sp.GetRequiredService<ILogger<IngestService>>()));
-builder.Services.AddKeyedSingleton(LiveChannel, (sp, _) => new ReportService(
-    sp.GetRequiredKeyedService<FeedbackStore>(LiveChannel),
+builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) => new ReportService(
+    sp.GetRequiredKeyedService<FeedbackStore>(Channels.Live),
     sp.GetRequiredKeyedService<IChatClient>(LlmServiceCollectionExtensions.SynthesisKey),
     sp.GetRequiredService<LlmGate>(),
-    sp.GetRequiredKeyedService<ReportCache>(LiveChannel),
+    sp.GetRequiredKeyedService<ReportCache>(Channels.Live),
     sp.GetRequiredService<IOptions<ReportOptions>>(),
     sp.GetRequiredService<IActiveDomain>(),
     sp.GetRequiredService<ILogger<ReportService>>()));
-// Correction telemetry measures DESK correction rates, and desk saves live in the
-// live channel now — pointing this at the main store would read permanent zeroes.
+// Correction telemetry reads BOTH channels: real desk corrections live in the live
+// channel, while the corpus channel holds the other sources whose needs_review
+// count is the ADR-0021 A2 injection-drift signal — either store alone goes blind.
 builder.Services.AddSingleton(sp => new FeedbackIntelligence.Api.Telemetry.CorrectionTelemetryService(
-    sp.GetRequiredKeyedService<FeedbackStore>(LiveChannel),
-    sp.GetRequiredService<IOptions<IngestOptions>>()));
+    sp.GetRequiredService<FeedbackStore>(),
+    sp.GetRequiredService<IOptions<IngestOptions>>(),
+    sp.GetRequiredKeyedService<FeedbackStore>(Channels.Live)));
 
 // Per-IP fixed window; protects the machine while the tunnel is open.
 builder.Services.AddRateLimiter(limiter =>
@@ -132,7 +134,7 @@ if (!activeDomain.Descriptor.Sources.Contains("desk", StringComparer.Ordinal))
         $"Domain '{activeDomain.Name}' must include \"desk\" in its sources — the desk-entry UI posts source=desk.");
 
 app.Services.GetRequiredService<FeedbackStore>().Initialize();
-app.Services.GetRequiredKeyedService<FeedbackStore>(LiveChannel).Initialize();
+app.Services.GetRequiredKeyedService<FeedbackStore>(Channels.Live).Initialize();
 
 // The public deployment sits behind a local tunnel daemon: without forwarded
 // headers every request would arrive as loopback and the per-IP rate limit
@@ -392,22 +394,19 @@ static async Task<IResult> QueryEndpoint(
 static async Task<IResult> ReportEndpoint(
     ReportService reports, ReportOptions options, string? from, string? to, bool persistSnapshot, CancellationToken ct)
 {
-    if (TryBuildWindow(from, to, options, out _, out _, out var fromInstant, out var toInstant) is { } badWindow)
+    if (TryBuildWindow(from, to, options, out var fromNormalized, out var toNormalized, out var fromInstant, out var toInstant) is { } badWindow)
         return badWindow;
 
-    // Snap the window to a 10-minute bucket so repeated browser loads (each with a
-    // slightly different `to=now`) share ONE cached report instead of each firing a
-    // fresh ~40 s synthesis. Freshness is preserved by ingest invalidation, not TTL.
-    // The END rounds UP: these keys are also the store's query bounds, and a floor
-    // would exclude an entry saved seconds ago until the next bucket — silently
-    // breaking "a fresh desk entry appears on the very next refresh".
+    // The 10-minute bucket is the CACHE KEY only, so repeated browser loads (each
+    // with a slightly different `to=now`) share ONE cached report instead of each
+    // firing a fresh ~40 s synthesis. The store QUERY uses the exact validated
+    // window: the report never claims a window end in the future, a fresh entry is
+    // inside the window on the very next refresh, and /report shares its window
+    // semantics with /telemetry/corrections. Within-bucket freshness is preserved
+    // by ingest invalidation (a cache hit proves no ingest happened), not TTL.
     var bucket = TimeSpan.FromMinutes(10).Ticks;
-    var keyFrom = new DateTimeOffset(fromInstant.UtcTicks - fromInstant.UtcTicks % bucket, TimeSpan.Zero)
-        .ToString("O", CultureInfo.InvariantCulture);
-    var toRemainder = toInstant.UtcTicks % bucket;
-    var keyTo = new DateTimeOffset(toRemainder == 0 ? toInstant.UtcTicks : toInstant.UtcTicks - toRemainder + bucket, TimeSpan.Zero)
-        .ToString("O", CultureInfo.InvariantCulture);
-    return Results.Ok(await reports.GenerateAsync(keyFrom, keyTo, ct, persistSnapshot: persistSnapshot));
+    var cacheKey = $"{fromInstant.UtcTicks / bucket}|{toInstant.UtcTicks / bucket}";
+    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct, persistSnapshot, cacheKey));
 }
 
 // Parse + validate a report/telemetry query window: default `to` to now and `from`
