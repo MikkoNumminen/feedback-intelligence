@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Assembles the static frontend bundle for Azure Static Web Apps: the two UI
+Assembles the static frontend bundle for Azure Static Web Apps: the three UI
 pages, a config.js pointing at the Tailscale Funnel backend, and the SWA
 config. With -PublishSnapshot it also bundles the latest report snapshot so a
 shared link renders a situational view even with the backend completely down.
@@ -40,6 +40,7 @@ New-Item -ItemType Directory $OutDir | Out-Null
 
 Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/index.html") $OutDir/
 Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/desk.html") $OutDir/
+Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/feedback.html") $OutDir/
 Copy-Item (Join-Path $repoRoot "deploy/staticwebapp.config.json") $OutDir/
 
 # UTF-8 without BOM so browsers parse it identically everywhere.

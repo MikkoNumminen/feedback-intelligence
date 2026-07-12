@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feedback</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1c2430; --mut:#66707d; --line:#d9dde3;
+          --acc:#0b5fa5; --ok:#1b7f4d; --warn:#b3541e; --err:#b3261e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width:34rem; margin:0 auto; padding:1rem; }
+  h1 { font-size:1.15rem; margin:.5rem 0 1rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:.75rem;
+          padding:1rem; margin-bottom:1rem; }
+  textarea { width:100%; min-height:6.5rem; font:inherit; padding:.65rem;
+             border:1px solid var(--line); border-radius:.5rem; resize:vertical; }
+  label { display:block; font-size:.8rem; color:var(--mut); margin:.7rem 0 .2rem; }
+  select { width:100%; font:inherit; padding:.55rem;
+           border:1px solid var(--line); border-radius:.5rem; background:#fff; }
+  button { font:inherit; font-weight:600; border:0; border-radius:.6rem;
+           padding:.8rem 1.1rem; cursor:pointer; min-height:48px; }
+  .primary { background:var(--acc); color:#fff; width:100%; }
+  .primary:disabled { opacity:.55; cursor:default; }
+  .row { display:flex; gap:.6rem; margin-top:1rem; }
+  .row button { flex:1; }
+  .status { margin:.6rem 0 0; font-size:.9rem; min-height:1.3rem; }
+  .status.ok { color:var(--ok); } .status.err { color:var(--err); } .status.warn { color:var(--warn); }
+  .hint { font-size:.8rem; color:var(--mut); margin-top:.4rem; }
+  #subject-block { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="h1"></h1>
+
+  <div class="card">
+    <div id="subject-block">
+      <label for="subject" id="subjectLabel"></label>
+      <select id="subject"></select>
+    </div>
+    <label for="text" id="textLabel"></label>
+    <textarea id="text" maxlength="800" autofocus></textarea>
+    <div class="hint"><span id="chars">0</span>/800 <span id="charsWord"></span></div>
+    <div class="row"><button class="primary" id="send"></button></div>
+    <p class="status" id="status"></p>
+  </div>
+</main>
+
+<script src="./config.js"></script>
+<script>
+"use strict";
+// Same-origin locally; on the static host, config.js (written at publish
+// time) points API at the Tailscale Funnel backend.
+const API = window.API_BASE || "";
+const el = id => document.getElementById(id);
+
+// Subjects are prepared but dormant: the selector renders only when
+// window.FEEDBACK_SUBJECTS (config.js, publish-time) is a non-empty list of
+// {value, label} entries. The chosen value is posted as `subject`, which the
+// API does not persist yet — making subjects real means adding the field to
+// FeedbackRequest/storage first, THEN populating this list, in that order.
+const SUBJECTS = Array.isArray(window.FEEDBACK_SUBJECTS) ? window.FEEDBACK_SUBJECTS : [];
+
+// All user-facing text keyed by domain language (from /schema). Retail is "fi";
+// game and any new domain default to "en". Offline stays en (never a wrong
+// specific language) — matches index.html and desk.html.
+const STR = {
+  fi: {
+    htmlLang: "fi", pageTitle: "Palaute",
+    h1: "Jätä palaute",
+    subjectLabel: "Aihe",
+    textLabel: "Kerro omin sanoin",
+    placeholder: "esim. maitokaapissa oli vanhoja purkkeja",
+    charsWord: "merkkiä", send: "Lähetä",
+    writeFirst: "Kirjoita palaute ensin.", sending: "Lähetetään…",
+    busy: "Ruuhkaa — yritä hetken päästä uudelleen.",
+    invalid: "Palautetta ei voitu käsitellä — tarkista teksti ja yritä uudelleen.",
+    offline: "Palautetta ei voida juuri nyt vastaanottaa. Yritä myöhemmin uudelleen.",
+    sentThanks: "Kiitos palautteestasi!",
+    sentAlready: "Palaute oli jo tallennettu — kiitos!",
+  },
+  en: {
+    htmlLang: "en", pageTitle: "Feedback",
+    h1: "Leave feedback",
+    subjectLabel: "Subject",
+    textLabel: "In your own words",
+    placeholder: "e.g. what you noticed, in your own words",
+    charsWord: "characters", send: "Send",
+    writeFirst: "Write the feedback first.", sending: "Sending…",
+    busy: "Busy — try again in a moment.",
+    invalid: "The feedback could not be processed — check the text and try again.",
+    offline: "Feedback cannot be received right now. Please try again later.",
+    sentThanks: "Thank you for your feedback!",
+    sentAlready: "Feedback was already saved — thank you!",
+  },
+};
+
+let L = STR.en;
+
+// entryId makes send retries idempotent (server 409s a duplicate). It is
+// pinned to the CURRENT text: any edit mints a new id, so a retry after an
+// uncertain send can never claim a 409-success for different text.
+let entryId = null;
+
+function applyLanguage(lang) {
+  L = STR[lang] || STR.en;
+  document.documentElement.lang = L.htmlLang;
+  document.title = L.pageTitle;
+  el("h1").textContent = L.h1;
+  el("subjectLabel").textContent = L.subjectLabel;
+  el("textLabel").textContent = L.textLabel;
+  el("text").placeholder = L.placeholder;
+  el("charsWord").textContent = L.charsWord;
+  el("send").textContent = L.send;
+}
+
+function renderSubjects() {
+  if (SUBJECTS.length === 0) return;
+  const select = el("subject");
+  select.innerHTML = "";
+  for (const subject of SUBJECTS) {
+    const option = document.createElement("option");
+    option.value = subject.value ?? subject;
+    option.textContent = subject.label ?? subject;
+    select.appendChild(option);
+  }
+  el("subject-block").style.display = "block";
+}
+
+// Language only — the form itself never blocks on the backend: a visitor can
+// always type, and an unreachable backend surfaces as a friendly send error.
+async function loadLanguage() {
+  try {
+    const res = await fetch(`${API}/schema`);
+    if (!res.ok) throw new Error();
+    applyLanguage((await res.json()).language);
+  } catch {
+    setTimeout(loadLanguage, 10000);
+  }
+}
+
+el("text").addEventListener("input", () => {
+  el("chars").textContent = el("text").value.length;
+  entryId = null;
+});
+
+el("send").addEventListener("click", async () => {
+  const text = el("text").value.trim();
+  if (!text) { setStatus("err", L.writeFirst); return; }
+  entryId ??= "web-" + crypto.randomUUID();
+  el("send").disabled = true;
+  setStatus("", L.sending);
+  try {
+    const body = {
+      id: entryId,
+      source: "web_form",
+      text,
+      timestamp: new Date().toISOString(),
+    };
+    if (SUBJECTS.length > 0) body.subject = el("subject").value;
+    const res = await fetch(`${API}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 503) { setStatus("warn", L.busy); return; }
+    if (res.status === 400) { setStatus("err", L.invalid); return; }
+    // 409 = an earlier attempt of THIS entry already landed: that is a success.
+    if (!res.ok && res.status !== 409) { setStatus("err", L.offline); return; }
+    setStatus("ok", res.status === 409 ? L.sentAlready : L.sentThanks);
+    entryId = null;
+    el("text").value = "";
+    el("chars").textContent = "0";
+  } catch {
+    setStatus("warn", L.offline);
+  } finally {
+    el("send").disabled = false;
+  }
+});
+
+function setStatus(kind, message) {
+  const node = el("status");
+  node.className = "status" + (kind ? " " + kind : "");
+  node.textContent = message;
+}
+
+applyLanguage();                 // en chrome immediately (resolves on /schema)
+renderSubjects();
+loadLanguage();
+</script>
+</body>
+</html>
