@@ -37,7 +37,37 @@ builder.Services.AddOptions<ReportOptions>()
 builder.Services.AddSingleton<IValidateOptions<ReportOptions>, ReportOptionsValidator>();
 builder.Services.AddSingleton<ReportCache>();
 builder.Services.AddSingleton<ReportService>();
-builder.Services.AddSingleton<FeedbackIntelligence.Api.Telemetry.CorrectionTelemetryService>();
+
+// The live desk channel (ADR-0024): desk entries are real evidence with their own
+// database and report pipeline, so the seeded corpus and the live channel can never
+// contaminate each other. Keyed clones of store/cache/ingest/report; the LlmGate and
+// chat clients stay SHARED so GPU containment remains global across both channels.
+const string LiveChannel = Channels.Live;
+builder.Services.AddKeyedSingleton(LiveChannel, (sp, _) =>
+    new FeedbackStore(
+        sp.GetRequiredService<IOptions<IngestOptions>>(),
+        sp.GetRequiredService<IOptions<IngestOptions>>().Value.LiveDbPath));
+builder.Services.AddKeyedSingleton(LiveChannel, (_, _) => new ReportCache());
+builder.Services.AddKeyedSingleton(LiveChannel, (sp, _) => new IngestService(
+    sp.GetRequiredKeyedService<FeedbackStore>(LiveChannel),
+    sp.GetRequiredService<IStructuringService>(),
+    sp.GetRequiredService<LlmGate>(),
+    sp.GetRequiredService<AlertKeywordSet>(),
+    sp.GetRequiredKeyedService<ReportCache>(LiveChannel),
+    sp.GetRequiredService<ILogger<IngestService>>()));
+builder.Services.AddKeyedSingleton(LiveChannel, (sp, _) => new ReportService(
+    sp.GetRequiredKeyedService<FeedbackStore>(LiveChannel),
+    sp.GetRequiredKeyedService<IChatClient>(LlmServiceCollectionExtensions.SynthesisKey),
+    sp.GetRequiredService<LlmGate>(),
+    sp.GetRequiredKeyedService<ReportCache>(LiveChannel),
+    sp.GetRequiredService<IOptions<ReportOptions>>(),
+    sp.GetRequiredService<IActiveDomain>(),
+    sp.GetRequiredService<ILogger<ReportService>>()));
+// Correction telemetry measures DESK correction rates, and desk saves live in the
+// live channel now — pointing this at the main store would read permanent zeroes.
+builder.Services.AddSingleton(sp => new FeedbackIntelligence.Api.Telemetry.CorrectionTelemetryService(
+    sp.GetRequiredKeyedService<FeedbackStore>(LiveChannel),
+    sp.GetRequiredService<IOptions<IngestOptions>>()));
 
 // Per-IP fixed window; protects the machine while the tunnel is open.
 builder.Services.AddRateLimiter(limiter =>
@@ -102,6 +132,7 @@ if (!activeDomain.Descriptor.Sources.Contains("desk", StringComparer.Ordinal))
         $"Domain '{activeDomain.Name}' must include \"desk\" in its sources — the desk-entry UI posts source=desk.");
 
 app.Services.GetRequiredService<FeedbackStore>().Initialize();
+app.Services.GetRequiredKeyedService<FeedbackStore>(LiveChannel).Initialize();
 
 // The public deployment sits behind a local tunnel daemon: without forwarded
 // headers every request would arrive as loopback and the per-IP rate limit
@@ -142,32 +173,22 @@ app.UseRateLimiter();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapPost("/feedback", async (
+app.MapPost("/feedback", (
     FeedbackRequest request,
     IngestService ingest,
     IOptions<IngestOptions> options,
     IActiveDomain domain,
-    CancellationToken ct) =>
-{
-    var errors = RequestValidator.Validate(request, options.Value, domain.Descriptor);
-    if (errors.Count > 0)
-        return Results.BadRequest(new { errors });
-    try
-    {
-        var stored = await ingest.IngestAsync(request, ct);
-        return Results.Created($"/feedback/{stored.Id}", new FeedbackResponse(
-            stored.Id, stored.Structure, stored.StructureFailed, stored.SalvageNotes, stored.Alerts,
-            stored.NeedsReview, stored.ReviewFlags));
-    }
-    catch (LlmBusyException)
-    {
-        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
-    }
-    catch (DuplicateFeedbackIdException ex)
-    {
-        return Results.Conflict(new { error = "duplicate id", id = ex.Id });
-    }
-});
+    CancellationToken ct) => IngestEndpoint(request, ingest, options.Value, domain, ct));
+
+// The live desk channel's ingest (ADR-0024): identical contract, its own database.
+// The desk UI posts here; the corpus loader keeps posting to /feedback, so seeded
+// data and real desk entries can never mix.
+app.MapPost("/live/feedback", (
+    FeedbackRequest request,
+    [FromKeyedServices(Channels.Live)] IngestService ingest,
+    IOptions<IngestOptions> options,
+    IActiveDomain domain,
+    CancellationToken ct) => IngestEndpoint(request, ingest, options.Value, domain, ct));
 
 // Desk-entry preview (Phase 3): interpretation shown BEFORE saving; nothing stored.
 app.MapPost("/interpret", async (
@@ -234,25 +255,22 @@ app.MapGet("/schema", (IActiveDomain domain) =>
 app.MapGet("/feedback/{id}", async (string id, FeedbackStore store, CancellationToken ct) =>
     await store.GetAsync(id, ct) is { } item ? Results.Ok(item) : Results.NotFound());
 
-app.MapGet("/feedback", async (
+app.MapGet("/feedback", (
     FeedbackStore store,
     IOptions<IngestOptions> options,
     CancellationToken ct,
     [FromQuery] string? from = null,
     [FromQuery] string? to = null,
-    [FromQuery] int? limit = null) =>
-{
-    // Window bounds normalize to the same UTC round-trip format the store
-    // uses, so lexical range filtering is instant-correct across offsets.
-    string? fromNormalized = null, toNormalized = null;
-    if (from is not null && !TimestampNormalizer.TryNormalize(from, out fromNormalized!))
-        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
-    if (to is not null && !TimestampNormalizer.TryNormalize(to, out toNormalized!))
-        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
-    var effectiveLimit = Math.Clamp(
-        limit ?? options.Value.QueryDefaultLimit, 1, options.Value.QueryMaxLimit);
-    return Results.Ok(await store.QueryAsync(fromNormalized, toNormalized, effectiveLimit, ct));
-});
+    [FromQuery] int? limit = null) => QueryEndpoint(store, options.Value, from, to, limit, ct));
+
+// The live desk channel's item list — the desk segment's "categorized stuff".
+app.MapGet("/live/feedback", (
+    [FromKeyedServices(Channels.Live)] FeedbackStore store,
+    IOptions<IngestOptions> options,
+    CancellationToken ct,
+    [FromQuery] string? from = null,
+    [FromQuery] string? to = null,
+    [FromQuery] int? limit = null) => QueryEndpoint(store, options.Value, from, to, limit, ct));
 
 // The management view: two-layer analysis over a selectable window. Always
 // renders (deterministic layer 1); LLM narratives/nominations degrade to
@@ -267,19 +285,18 @@ app.MapGet("/report", async (
     // sets it; an ephemeral frontend view must not clobber the shared-link page.
     [FromQuery] bool snapshot = false) =>
 {
-    if (TryBuildWindow(from, to, reportOptions.Value, out _, out _, out var fromInstant, out var toInstant) is { } badWindow)
-        return badWindow;
-
-    // Snap the window to a 10-minute bucket so repeated browser loads (each with a
-    // slightly different `to=now`) share ONE cached report instead of each firing a
-    // fresh ~40 s synthesis. Freshness is preserved by ingest invalidation, not TTL.
-    var bucket = TimeSpan.FromMinutes(10).Ticks;
-    var keyFrom = new DateTimeOffset(fromInstant.UtcTicks - fromInstant.UtcTicks % bucket, TimeSpan.Zero)
-        .ToString("O", CultureInfo.InvariantCulture);
-    var keyTo = new DateTimeOffset(toInstant.UtcTicks - toInstant.UtcTicks % bucket, TimeSpan.Zero)
-        .ToString("O", CultureInfo.InvariantCulture);
-    return Results.Ok(await reports.GenerateAsync(keyFrom, keyTo, ct, persistSnapshot: snapshot));
+    return await ReportEndpoint(reports, reportOptions.Value, from, to, snapshot, ct);
 });
+
+// The live desk channel's report — the desk segment's grounded summary. Never
+// persists a snapshot: the shared-link fallback page belongs to the demo channel.
+app.MapGet("/live/report", async (
+    [FromKeyedServices(Channels.Live)] ReportService reports,
+    IOptions<ReportOptions> reportOptions,
+    CancellationToken ct,
+    [FromQuery] string? from = null,
+    [FromQuery] string? to = null) =>
+    await ReportEndpoint(reports, reportOptions.Value, from, to, persistSnapshot: false, ct));
 
 // The ongoing quality measure that replaced the cancelled model eval: per-field
 // desk correction rates over time (drift detector; the quality measure that
@@ -330,6 +347,68 @@ app.MapGet("/health", async (IServiceProvider services, IOptions<IngestOptions> 
 });
 
 app.Run();
+
+// One ingest contract, two channels: /feedback (corpus/demo) and /live/feedback
+// (desk, ADR-0024) share this body so validation and failure semantics can't drift.
+static async Task<IResult> IngestEndpoint(
+    FeedbackRequest request, IngestService ingest, IngestOptions options, IActiveDomain domain, CancellationToken ct)
+{
+    var errors = RequestValidator.Validate(request, options, domain.Descriptor);
+    if (errors.Count > 0)
+        return Results.BadRequest(new { errors });
+    try
+    {
+        var stored = await ingest.IngestAsync(request, ct);
+        return Results.Created($"/feedback/{stored.Id}", new FeedbackResponse(
+            stored.Id, stored.Structure, stored.StructureFailed, stored.SalvageNotes, stored.Alerts,
+            stored.NeedsReview, stored.ReviewFlags));
+    }
+    catch (LlmBusyException)
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (DuplicateFeedbackIdException ex)
+    {
+        return Results.Conflict(new { error = "duplicate id", id = ex.Id });
+    }
+}
+
+// Shared list body for /feedback and /live/feedback (GET). Window bounds normalize
+// to the same UTC round-trip format the store uses, so lexical range filtering is
+// instant-correct across offsets.
+static async Task<IResult> QueryEndpoint(
+    FeedbackStore store, IngestOptions options, string? from, string? to, int? limit, CancellationToken ct)
+{
+    string? fromNormalized = null, toNormalized = null;
+    if (from is not null && !TimestampNormalizer.TryNormalize(from, out fromNormalized!))
+        return Results.BadRequest(new { errors = new[] { $"from must be ISO-8601, got '{from}'." } });
+    if (to is not null && !TimestampNormalizer.TryNormalize(to, out toNormalized!))
+        return Results.BadRequest(new { errors = new[] { $"to must be ISO-8601, got '{to}'." } });
+    var effectiveLimit = Math.Clamp(limit ?? options.QueryDefaultLimit, 1, options.QueryMaxLimit);
+    return Results.Ok(await store.QueryAsync(fromNormalized, toNormalized, effectiveLimit, ct));
+}
+
+// Shared report body for /report and /live/report.
+static async Task<IResult> ReportEndpoint(
+    ReportService reports, ReportOptions options, string? from, string? to, bool persistSnapshot, CancellationToken ct)
+{
+    if (TryBuildWindow(from, to, options, out _, out _, out var fromInstant, out var toInstant) is { } badWindow)
+        return badWindow;
+
+    // Snap the window to a 10-minute bucket so repeated browser loads (each with a
+    // slightly different `to=now`) share ONE cached report instead of each firing a
+    // fresh ~40 s synthesis. Freshness is preserved by ingest invalidation, not TTL.
+    // The END rounds UP: these keys are also the store's query bounds, and a floor
+    // would exclude an entry saved seconds ago until the next bucket — silently
+    // breaking "a fresh desk entry appears on the very next refresh".
+    var bucket = TimeSpan.FromMinutes(10).Ticks;
+    var keyFrom = new DateTimeOffset(fromInstant.UtcTicks - fromInstant.UtcTicks % bucket, TimeSpan.Zero)
+        .ToString("O", CultureInfo.InvariantCulture);
+    var toRemainder = toInstant.UtcTicks % bucket;
+    var keyTo = new DateTimeOffset(toRemainder == 0 ? toInstant.UtcTicks : toInstant.UtcTicks - toRemainder + bucket, TimeSpan.Zero)
+        .ToString("O", CultureInfo.InvariantCulture);
+    return Results.Ok(await reports.GenerateAsync(keyFrom, keyTo, ct, persistSnapshot: persistSnapshot));
+}
 
 // Parse + validate a report/telemetry query window: default `to` to now and `from`
 // to now-DefaultWindowDays, normalise both to the store's UTC round-trip form, and

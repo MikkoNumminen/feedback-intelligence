@@ -31,7 +31,9 @@ Minute 2–4 — the desk moment (the centerpiece):
   ("asiakas sano et maitokaapis taas vanhoi purkkei").
 - Show the interpretation appearing BEFORE saving; correct one field (e.g.
   severity) to show human-in-the-loop; save.
-- Back on `/`: Päivitä → the new desk entry joins the dairy theme, count +1.
+- The desk's own segment below refreshes: the entry appears categorized, and
+  the AI writes the desk channel's summary live (ADR-0024 — desk entries live
+  in their own database, never mixed into the demo corpus).
   "Tiskillä kuultu palaute ei enää kuole vuoron loppuun."
 
 Minute 4–5 — resilience + the design story:
