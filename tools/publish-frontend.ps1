@@ -42,6 +42,7 @@ New-Item -ItemType Directory $OutDir | Out-Null
 
 Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/index.html") $OutDir/
 Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/desk.html") $OutDir/
+Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/charts.js") $OutDir/
 # The demo view also gets an explicit stable address (/demo.html) alongside the
 # root - same file copied at publish time, so the two can never drift apart.
 Copy-Item (Join-Path $repoRoot "src/FeedbackIntelligence.Api/wwwroot/index.html") (Join-Path $OutDir "demo.html")

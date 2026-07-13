@@ -52,19 +52,6 @@
   .seg-overall .seg-meta { margin:.25rem 0 0; }
   .seg-tag { font-size:.72rem; font-weight:400; color:var(--mut); border:1px solid var(--line);
              border-radius:.4rem; padding:.05rem .35rem; margin-left:.45rem; vertical-align:middle; }
-  /* Charts (dataviz specs: thin marks, recessive chrome, text in ink not series color) */
-  .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(6.5rem, 1fr)); gap:.5rem; margin:.6rem 0; }
-  .kpi { background:#f7f9fb; border:1px solid var(--line); border-radius:.5rem; padding:.45rem .6rem; }
-  .kpi .kpi-label { font-size:.72rem; color:var(--mut); }
-  .kpi .kpi-value { font-size:1.35rem; font-weight:700; line-height:1.2; }
-  .kpi .kpi-value.warn { color:var(--warn); }
-  .chart-block { margin:.7rem 0; }
-  .chart-title { font-size:.8rem; color:var(--mut); margin:0 0 .3rem; }
-  .chart-block svg { display:block; width:100%; height:auto; }
-  .chart-block .bar { transition:opacity .12s; }
-  .chart-block .bar:hover { opacity:.75; }
-  .sev-legend { display:flex; flex-wrap:wrap; gap:.4rem .9rem; margin:.3rem 0 0; padding:0; list-style:none; font-size:.78rem; color:var(--mut); }
-  .sev-legend .swatch { display:inline-block; width:.62rem; height:.62rem; border-radius:.15rem; margin-right:.3rem; vertical-align:-.05rem; }
 </style>
 </head>
 <body>
@@ -109,6 +96,7 @@
 </main>
 
 <script src="./config.js"></script>
+<script src="./charts.js"></script>
 <script>
 "use strict";
 // Same-origin locally; on the static host, config.js (written at publish
@@ -448,152 +436,6 @@ function shortTime(iso) {
 
 const catLabel = key => (schema && schema.categoryLabels?.[key]) || key;
 
-// ----- Charts (ADR-0026 view; specs and palette per the dataviz method) -----
-// Severity status palette, validated (lightness band, chroma floor, CVD
-// separation, contrast vs white) with the palette validator — do not eyeball
-// replacements. Keys follow the core severity enum; unknown keys read neutral.
-const SEV_COLORS = { low: "#4e8ac8", medium: "#d97706", high: "#ef5350", critical: "#a02c2c" };
-const SEV_FALLBACK = "#9aa4af";
-// Magnitude bars and chart text reference the page's OWN tokens — retheming
-// :root must not strand the charts on stale copies. (The severity palette
-// above stays literal: it is chart-specific and validator-pinned, not a theme
-// token.)
-const BAR_HUE = "var(--acc)";
-const INK = "var(--ink)", MUT = "var(--mut)";
-
-// Severity display order: the domain declares severities least→most severe
-// (the documented domain.json convention); appended after them, any severity
-// present in the data but missing from the schema — those items must never
-// vanish from the distribution (the degraded case is the one to see).
-function sevOrder(sevCounts) {
-  const declared = (schema?.severities) || Object.keys(SEV_COLORS);
-  return [...declared, ...Object.keys(sevCounts).filter(k => !declared.includes(k))];
-}
-
-const svgNode = (tag, attrs) => {
-  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
-  return n;
-};
-
-// Rounded at the DATA end only (right), square at the baseline (left).
-const barPath = (x, y, w, h) => {
-  const r = Math.min(4, w);
-  return `M${x},${y} L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} L${x},${y + h} Z`;
-};
-
-// Horizontal single-hue bar chart: entries per section. Direct value labels at
-// the bar tips (small N), category names in text ink, native tooltips on marks.
-function categoryBarChart(sections) {
-  const width = 320, rowH = 26, barH = 14, labelW = 118, valueW = 26;
-  const max = Math.max(...sections.map(s => s.count), 1);
-  const plotW = width - labelW - valueW;
-  const svg = svgNode("svg", { viewBox: `0 0 ${width} ${sections.length * rowH}`, role: "img" });
-  sections.forEach((s, i) => {
-    const y = i * rowH + (rowH - barH) / 2;
-    const w = Math.max((s.count / max) * plotW, 3);
-    const name = svgNode("text", { x: labelW - 6, y: y + barH - 3, "text-anchor": "end", "font-size": "11", fill: MUT });
-    name.textContent = s.label.length > 18 ? s.label.slice(0, 17) + "…" : s.label;
-    svg.appendChild(name);
-    const bar = svgNode("path", { d: barPath(labelW, y, w, barH), fill: BAR_HUE, class: "bar" });
-    const tip = svgNode("title", {});
-    tip.textContent = `${s.label} · ${s.count}`;
-    bar.appendChild(tip);
-    svg.appendChild(bar);
-    // Value at the tip when it fits inside the plot; otherwise INSIDE the bar
-    // end in white (never clipped by the viewBox — the biggest bar is exactly
-    // the one whose number must stay readable).
-    const estimated = String(s.count).length * 7 + 4;
-    const fitsOutside = labelW + w + 5 + estimated <= width;
-    const value = fitsOutside
-      ? svgNode("text", { x: labelW + w + 5, y: y + barH - 3, "font-size": "11", "font-weight": "600", fill: INK })
-      : svgNode("text", { x: labelW + w - 5, y: y + barH - 3, "text-anchor": "end", "font-size": "11", "font-weight": "600", fill: "#fff" });
-    value.textContent = s.count;
-    svg.appendChild(value);
-  });
-  return svg;
-}
-
-// One horizontal 100% stacked bar for the ordered severity share, 2px surface
-// gaps between segments; the legend (mandatory at 4 series) carries identity +
-// counts — segment text never rides the fill.
-function severityStackedBar(sevCounts) {
-  const present = sevOrder(sevCounts).filter(k => (sevCounts[k] || 0) > 0);
-  const total = present.reduce((sum, k) => sum + sevCounts[k], 0);
-  if (total === 0) return null;
-  const width = 320, barH = 16, gap = 2, minW = 2;
-  // Clamp slivers to a visible minimum, then shave the overflow off the
-  // widest segment so the stack still sums to the viewBox — a tiny share must
-  // neither vanish nor push the last segment past the clip edge.
-  const plotW = width - gap * (present.length - 1);
-  const widths = present.map(k => Math.max((sevCounts[k] / total) * plotW, minW));
-  const overflow = widths.reduce((sum, w) => sum + w, 0) - plotW;
-  if (overflow > 0) widths[widths.indexOf(Math.max(...widths))] -= overflow;
-  const svg = svgNode("svg", { viewBox: `0 0 ${width} ${barH}`, role: "img" });
-  let x = 0;
-  present.forEach((k, i) => {
-    const seg = svgNode("rect", { x, y: 0, width: widths[i], height: barH, rx: 2, fill: SEV_COLORS[k] || SEV_FALLBACK, class: "bar" });
-    const tip = svgNode("title", {});
-    tip.textContent = `${sevLabel(k)} · ${sevCounts[k]}`;
-    seg.appendChild(tip);
-    svg.appendChild(seg);
-    x += widths[i] + gap;
-  });
-  return svg;
-}
-
-const sevLabel = key => (schema && schema.severityLabels?.[key]) || key;
-
-function kpiTile(label, value, warn) {
-  const tile = node("div", "kpi");
-  tile.appendChild(node("div", "kpi-label", label));
-  tile.appendChild(node("div", "kpi-value" + (warn ? " warn" : ""), String(value)));
-  return tile;
-}
-
-// The graphical block: KPI tiles + the two charts, built from either phase's
-// sections. Severe = the domain's two most severe declared levels.
-function renderCharts(body, sections, sevCounts, total, directionLabel) {
-  if (total === 0 || sections.length === 0) return;
-  const order = sevOrder(sevCounts);
-  // The domain declares severities least→most severe (domains.md convention),
-  // so the DECLARED tail is the severe pair; guard domains with fewer levels.
-  const declared = (schema?.severities) || Object.keys(SEV_COLORS);
-  const severeKeys = declared.slice(-Math.min(2, declared.length));
-  const severeCount = severeKeys.reduce((sum, k) => sum + (sevCounts[k] || 0), 0);
-  const flagged = sections.reduce((sum, s) => sum + (s.flagged || 0), 0);
-
-  const kpis = node("div", "kpi-row");
-  kpis.appendChild(kpiTile(L.tileEntries, total));
-  kpis.appendChild(kpiTile(severeKeys.map(sevLabel).join(" + "), severeCount, severeCount > 0));
-  kpis.appendChild(kpiTile(L.tileFlagged + " ⚠", flagged, flagged > 0));
-  if (directionLabel) kpis.appendChild(kpiTile(L.tileTrend, directionLabel));
-  body.appendChild(kpis);
-
-  const catBlock = node("div", "chart-block");
-  catBlock.appendChild(node("p", "chart-title", L.chartCategories));
-  catBlock.appendChild(categoryBarChart(sections));
-  body.appendChild(catBlock);
-
-  const sevBar = severityStackedBar(sevCounts);
-  if (sevBar) {
-    const sevBlock = node("div", "chart-block");
-    sevBlock.appendChild(node("p", "chart-title", L.chartSeverity));
-    sevBlock.appendChild(sevBar);
-    const legend = node("ul", "sev-legend");
-    for (const k of order.filter(k => (sevCounts[k] || 0) > 0)) {
-      const li = node("li");
-      const swatch = node("span", "swatch");
-      swatch.style.background = SEV_COLORS[k] || SEV_FALLBACK;
-      li.appendChild(swatch);
-      li.appendChild(document.createTextNode(`${sevLabel(k)} ${sevCounts[k]}`));
-      legend.appendChild(li);
-    }
-    sevBlock.appendChild(legend);
-    body.appendChild(sevBlock);
-  }
-}
-
 // One category section: { label, tag?, count, flagged, meta?, items:[{severity,text,timestamp}] }
 function renderSection(body, section) {
   const box = node("div", "seg-theme");
@@ -668,7 +510,14 @@ function renderSegment(report) {
   for (const section of sections)
     for (const item of section.items)
       sevCounts[item.severity] = (sevCounts[item.severity] || 0) + 1;
-  renderCharts(body, sections, sevCounts, report.totalItems, report.overall?.directionLabel);
+  FeedbackCharts.render(body, {
+    sections, sevCounts, total: report.totalItems,
+    directionLabel: report.overall?.directionLabel ?? null,
+    declaredSeverities: schema?.severities,
+    sevLabel: k => (schema && schema.severityLabels?.[k]) || k,
+    strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
+               chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+  });
 
   for (const section of sections)
     renderSection(body, section);
@@ -712,7 +561,13 @@ function renderQuick(items) {
     (demoted.includes(a.category) - demoted.includes(b.category))
     || (b.count - a.count)
     || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0));
-  renderCharts(body, sections, sevCounts, items.length, null);
+  FeedbackCharts.render(body, {
+    sections, sevCounts, total: items.length, directionLabel: null,
+    declaredSeverities: schema?.severities,
+    sevLabel: k => (schema && schema.severityLabels?.[k]) || k,
+    strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
+               chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+  });
   for (const section of sections)
     renderSection(body, section);
 }

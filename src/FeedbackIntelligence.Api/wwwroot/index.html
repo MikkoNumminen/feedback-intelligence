@@ -67,6 +67,7 @@
 </dialog>
 
 <script src="./config.js"></script>
+<script src="./charts.js"></script>
 <script>
 "use strict";
 // Same-origin locally; on the static host, config.js (written at publish
@@ -92,6 +93,8 @@ const STR = {
     dropped: "perustelematonta väitettä hylätty", actionDropped: "ohjaileva kooste hylätty", fallbacks: "koostetta ilman kielimallia",
     alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
+    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma",
+    tileEntries: "Palautteita", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
     flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa", flaggedItem: "tarkistettava",
     snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
     noReport: "Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.",
@@ -109,6 +112,8 @@ const STR = {
     dropped: "ungrounded claim(s) dropped", actionDropped: "directive summary(ies) dropped", fallbacks: "summary(ies) without the model",
     alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
+    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution",
+    tileEntries: "Items", tileFlagged: "To review", tileTrend: "Trend",
     flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted", flaggedItem: "review",
     snapShown: "The server was unreachable — showing the last saved snapshot.",
     noReport: "No report and no saved snapshot found.",
@@ -236,6 +241,30 @@ function render(report, live) {
     alertCard.appendChild(abtn);
     root.appendChild(alertCard);
   }
+
+  // The graphical layer (shared charts.js — same visuals as the desk segment).
+  // Built purely from the report in hand, so it renders identically from the
+  // committed snapshot with the backend down. severityMeta's label chain works
+  // offline too (L.sev carries the labels when /schema is unreachable).
+  const chartSections = report.themes.map(t => ({
+    label: t.isEmergentTopic ? t.title : catLabel(t.category),
+    count: t.count,
+    flagged: t.flaggedCount,
+  }));
+  const chartSevCounts = {};
+  for (const t of report.themes)
+    for (const s of t.sources || [])
+      chartSevCounts[s.severity] = (chartSevCounts[s.severity] || 0) + 1;
+  const chartsBox = node("div", null, []);
+  FeedbackCharts.render(chartsBox, {
+    sections: chartSections, sevCounts: chartSevCounts, total: report.totalItems,
+    directionLabel: report.overall?.directionLabel ?? null,
+    declaredSeverities: schema?.severities,
+    sevLabel: k => severityMeta(k).label,
+    strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
+               chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+  });
+  root.appendChild(chartsBox);
 
   root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
   for (const theme of report.themes) {
