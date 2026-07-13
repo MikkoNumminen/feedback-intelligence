@@ -219,6 +219,40 @@ public class ReportServiceTests : IDisposable
         Assert.Contains("'maito vanhaa' valitti tuoreudesta", theme.Narrative);
     }
 
+    [Theory]
+    // Prefix families: the exact id must win, never its prefix bite into it.
+    [InlineData("kuten [a-12] valitti", new[] { "a-1", "a-12" }, "kuten valitti")]
+    // Word-like pure-letter ids are stripped ONLY in echo context ([...]/(...)),
+    // never bare — "on" bare is the Finnish word, not the id.
+    [InlineData("maito on vanhaa [on]", new[] { "on" }, "maito on vanhaa")]
+    // Ids never bite into longer words even when non-letter ids are bare-stripped.
+    [InlineData("10 asiakasta, kohde a-1 rikki", new[] { "a-1" }, "10 asiakasta, kohde rikki")]
+    // Multi-id brackets reduce to separator residue, which is tidied away.
+    [InlineData("valittivat [late-0, early-1] tuoreudesta", new[] { "late-0", "early-1" }, "valittivat tuoreudesta")]
+    // All-echo prose strips to empty — the caller's fallback contract.
+    [InlineData("[desk-ab12]", new[] { "desk-ab12" }, "")]
+    public void StripIdEchoes_IsBoundaryAware_AndContextual(string prose, string[] ids, string expected)
+    {
+        Assert.Equal(expected, ReportService.StripIdEchoes(prose, ids));
+    }
+
+    [Fact]
+    public async Task AllEchoTitle_FallsBackToDeterministic_NotEmptyHeading()
+    {
+        // A title that is NOTHING BUT an id echo passes the pre-strip guards but
+        // must not ship as an empty heading — it is a failed synthesis.
+        await SeedDairyAsync(2, 1);
+        var llm = new ScriptedChatClient(
+            """{"title": "[late-0]", "narrative": "Asiakkaat valittivat maidon tuoreudesta.", "citedIds": ["late-0"]}""");
+
+        var report = await CreateService(llm).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.False(theme.NarrativeFromLlm);              // deterministic fallback took over
+        Assert.False(string.IsNullOrWhiteSpace(theme.Title));
+        Assert.False(string.IsNullOrWhiteSpace(theme.Narrative));
+    }
+
     [Fact]
     public async Task GroundedNarrative_IsUsed()
     {

@@ -22,7 +22,7 @@ namespace FeedbackIntelligence.Api.Analysis;
 /// deterministic fallback and counted — the view never shows an ungrounded
 /// claim. LLM unavailability is a separate, honestly-labeled counter.
 /// </summary>
-public sealed class ReportService(
+public sealed partial class ReportService(
     FeedbackStore store,
     [FromKeyedServices(LlmServiceCollectionExtensions.SynthesisKey)] IChatClient synthesisClient,
     LlmGate llmGate,
@@ -153,16 +153,21 @@ public sealed class ReportService(
                 : new Dictionary<string, string>(StringComparer.Ordinal);
             var confirmedIds = confirmed.Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
             foreach (var item in confirmed)
-                alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), item.Text, [],
-                    // A3: the alert reason is another model-authored, manager-facing
-                    // slot. A directive one (recommend/act/verdict) falls back to the
-                    // deterministic line — an injected instruction has no slot here
-                    // either. A genuine safety reason describes the hazard, not an act.
-                    // Id echoes are stripped like every model-authored prose slot.
-                    reasons.TryGetValue(item.Id, out var r) && !string.IsNullOrWhiteSpace(r)
-                            && !NarrativeGuard.LooksActionBearing(r)
-                        ? StripIdEchoes(r, confirmedIds)
-                        : ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language)));
+            {
+                // A3: the alert reason is another model-authored, manager-facing
+                // slot. A directive one (recommend/act/verdict) falls back to the
+                // deterministic line — an injected instruction has no slot here
+                // either. A genuine safety reason describes the hazard, not an act.
+                // Id echoes are stripped like every model-authored prose slot; a
+                // reason that was ONLY echoes strips to empty and falls back too.
+                var reason = reasons.TryGetValue(item.Id, out var r) && !string.IsNullOrWhiteSpace(r)
+                        && !NarrativeGuard.LooksActionBearing(r)
+                    ? StripIdEchoes(r, confirmedIds)
+                    : "";
+                if (string.IsNullOrWhiteSpace(reason))
+                    reason = ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language);
+                alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), item.Text, [], reason));
+            }
         }
 
         // --- Layer 1: deterministic theme groups; Layer 2b: cited narratives ---
@@ -493,28 +498,63 @@ public sealed class ReportService(
             // manager-facing text reads as plain speech — presentation is
             // enforced by post-processing, like grounding is by validation,
             // never by prompt-wording (and the locked prompts stay untouched).
-            return (StripIdEchoes(titleText, providedIds), StripIdEchoes(narrativeText, providedIds));
+            // A slot that was NOTHING BUT echoes strips to empty — that is a
+            // failed synthesis, not a blank heading: fall back like any other.
+            var strippedTitle = StripIdEchoes(titleText, providedIds);
+            var strippedNarrative = StripIdEchoes(narrativeText, providedIds);
+            if (string.IsNullOrWhiteSpace(strippedTitle) || string.IsNullOrWhiteSpace(strippedNarrative))
+            {
+                state.LlmFallbacks++;
+                logger.LogWarning(
+                    "Synthesis for '{Category}' was only id echoes after stripping; deterministic fallback used.",
+                    category);
+                return null;
+            }
+            return (strippedTitle, strippedNarrative);
         }
     }
 
     /// <summary>Remove literal item-id echoes from model prose. Only ids we
-    /// actually provided are touched (never a free regex over the text), in
-    /// bracketed, parenthesized or bare form; the residue — empty brackets,
-    /// doubled spaces, space-before-punctuation — is tidied after.</summary>
+    /// actually provided are touched (never a free regex over the text). Ids are
+    /// client-chosen ([A-Za-z0-9._-]+, RequestValidator) and may be short,
+    /// word-like or prefix-families of each other, so bare substring removal
+    /// would corrupt prose ("a-1" bites into "[a-12]"; id "on" bites into
+    /// "ongelma"). Instead: bracketed/parenthesized echoes are removed for any
+    /// id; BARE echoes are removed only with id-charset boundaries on both
+    /// sides AND only for ids that aren't pure letters (a pure-letter id bare
+    /// in prose is almost certainly the ordinary word, not an echo) — with the
+    /// alternation ordered longest-first so the exact id wins over its prefix.
+    /// The residue — empty brackets, doubled spaces, space-before-punctuation —
+    /// is tidied after. May return an empty string when the prose was nothing
+    /// but echoes; callers must fall back deterministically.</summary>
     internal static string StripIdEchoes(string prose, IReadOnlyCollection<string> ids)
     {
-        foreach (var id in ids)
-        {
-            prose = prose
-                .Replace($"[{id}]", "", StringComparison.Ordinal)
-                .Replace($"({id})", "", StringComparison.Ordinal)
-                .Replace(id, "", StringComparison.Ordinal);
-        }
-        prose = System.Text.RegularExpressions.Regex.Replace(prose, @"[\[(][\s,;·]*[\])]", "");
-        prose = System.Text.RegularExpressions.Regex.Replace(prose, @"\s{2,}", " ");
-        prose = System.Text.RegularExpressions.Regex.Replace(prose, @"\s+([,.;:!?])", "$1");
+        var present = ids
+            .Where(id => prose.Contains(id, StringComparison.Ordinal))
+            .OrderByDescending(id => id.Length)
+            .Select(System.Text.RegularExpressions.Regex.Escape)
+            .ToList();
+        if (present.Count == 0)
+            return prose; // common case: clean prose pays one Contains scan, no allocations
+        var bare = present.Where(id => !id.All(char.IsLetter)).ToList();
+        var pattern = @"[\[(](?:" + string.Join("|", present) + @")[\])]";
+        if (bare.Count > 0)
+            pattern += "|(?<![A-Za-z0-9._-])(?:" + string.Join("|", bare) + ")(?![A-Za-z0-9._-])";
+        prose = System.Text.RegularExpressions.Regex.Replace(prose, pattern, "");
+        prose = EmptyBracketResidue().Replace(prose, "");
+        prose = DoubledSpaces().Replace(prose, " ");
+        prose = SpaceBeforePunctuation().Replace(prose, "$1");
         return prose.Trim();
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"[\[(][\s,;·]*[\])]")]
+    private static partial System.Text.RegularExpressions.Regex EmptyBracketResidue();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\s{2,}")]
+    private static partial System.Text.RegularExpressions.Regex DoubledSpaces();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\s+([,.;:!?])")]
+    private static partial System.Text.RegularExpressions.Regex SpaceBeforePunctuation();
 
     /// <summary>Returns the raw LLM text, or null when the model could not be
     /// reached (unavailable/busy) — which is counted as a fallback, never as a
