@@ -63,9 +63,10 @@ public sealed class ReportService(
     /// buckets) while the QUERY runs on the exact window; when omitted, the key is
     /// the window itself.</summary>
     public async Task<ManagementReport> GenerateAsync(
-        string fromIso, string toIso, CancellationToken ct, bool persistSnapshot = false, string? cacheKey = null)
+        string fromIso, string toIso, CancellationToken ct, bool persistSnapshot = false, string? cacheKey = null,
+        bool liveSummary = false)
     {
-        var key = cacheKey ?? (fromIso + "|" + toIso);
+        var key = (cacheKey ?? (fromIso + "|" + toIso)) + (liveSummary ? "|summary" : "");
         if (!cache.TryGet(key, out var report))
         {
             await _generationLock.WaitAsync(ct);
@@ -78,7 +79,7 @@ public sealed class ReportService(
                     // no-ops and the stale report is not cached — the live-desk-entry
                     // moment stays correct.
                     var epoch = cache.Epoch;
-                    report = await GenerateCoreAsync(fromIso, toIso, ct);
+                    report = await GenerateCoreAsync(fromIso, toIso, ct, liveSummary);
                     if (options.Value.ReportCacheSeconds > 0)
                         cache.Set(key, report, TimeSpan.FromSeconds(options.Value.ReportCacheSeconds), epoch);
                 }
@@ -94,7 +95,8 @@ public sealed class ReportService(
         return report;
     }
 
-    private async Task<ManagementReport> GenerateCoreAsync(string fromIso, string toIso, CancellationToken ct)
+    private async Task<ManagementReport> GenerateCoreAsync(
+        string fromIso, string toIso, CancellationToken ct, bool liveSummary = false)
     {
         var opts = options.Value;
         var items = await store.QueryAsync(fromIso, toIso, opts.MaxItemsPerWindow, ct);
@@ -181,36 +183,81 @@ public sealed class ReportService(
                 + "trend math — worsening-trend detection is degraded for this domain.",
                 string.Join(", ", unknownSeverities));
         }
-        foreach (var group in structured
-                     .GroupBy(i => i.Structure!.Category)
-                     .OrderByDescending(g => g.Count())
-                     .ThenBy(g => g.Key, StringComparer.Ordinal))
+        if (!liveSummary)
         {
-            var groupItems = group.ToList();
-            var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
-            var directionLabel = ReportText.DirectionLabel(direction, lang);
-            var ids = groupItems.Select(i => i.Id).ToList();
-            var sources = BuildSources(groupItems);
-            // Injection hardening (ADR-0021 A2): flagged items stay IN the group and
-            // trend (excluding them would be exploitable), but the count surfaces so
-            // the view can warn a manager that the group holds possibly-manipulated
-            // items driving its number/direction.
-            var flaggedCount = groupItems.Count(i => i.NeedsReview);
+            // Standard report path — byte-for-byte the pre-ADR-0026 behavior:
+            // group by category, one grounded narrative per group.
+            foreach (var group in structured
+                         .GroupBy(i => i.Structure!.Category)
+                         .OrderByDescending(g => g.Count())
+                         .ThenBy(g => g.Key, StringComparer.Ordinal))
+            {
+                var groupItems = group.ToList();
+                var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
+                var directionLabel = ReportText.DirectionLabel(direction, lang);
+                var narrative = await SynthesizeThemeAsync(group.Key, groupItems, directionLabel, state, ct);
+                themes.Add(narrative is { } ok
+                    ? BuildTheme(group.Key, ok.Title, ok.Narrative, groupItems, direction, directionLabel, fromLlm: true)
+                    : BuildTheme(group.Key, FallbackTitle(group.Key, groupItems),
+                        FallbackNarrative(groupItems, directionLabel, lang), groupItems, direction, directionLabel, fromLlm: false));
+            }
+        }
+        else
+        {
+            // Live-summary grouping (ADR-0026, the desk segment): the domain's
+            // catch-all category splits into EMERGENT TOPICS keyed on the
+            // structuring model's own free-text theme — the AI names the topic,
+            // arithmetic does the grouping (AI stays in exactly two places).
+            // Per-group prose stays deterministic; the narrative budget goes to
+            // ONE whole-window synthesis below.
+            var catchAll = activeDomain.Descriptor.CatchAllCategory;
+            foreach (var group in structured
+                         .GroupBy(i => catchAll is not null
+                             && i.Structure!.Category == catchAll
+                             && !string.IsNullOrWhiteSpace(i.Structure!.Theme)
+                                 ? (Category: catchAll, TopicKey: i.Structure!.Theme.Trim().ToLowerInvariant())
+                                 : (Category: i.Structure!.Category, TopicKey: (string?)null))
+                         .OrderByDescending(g => g.Count())
+                         .ThenBy(g => g.Key.Category, StringComparer.Ordinal)
+                         .ThenBy(g => g.Key.TopicKey, StringComparer.Ordinal))
+            {
+                var groupItems = group.ToList();
+                var isTopic = group.Key.TopicKey is not null;
+                // Emergent topic display keeps the first item's original theme casing.
+                var title = isTopic
+                    ? groupItems[0].Structure!.Theme.Trim()
+                    : FallbackTitle(group.Key.Category, groupItems);
+                var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
+                var directionLabel = ReportText.DirectionLabel(direction, lang);
+                themes.Add(BuildTheme(group.Key.Category, title,
+                    FallbackNarrative(groupItems, directionLabel, lang), groupItems, direction, directionLabel,
+                    fromLlm: false, isEmergentTopic: isTopic));
+            }
+        }
 
-            var narrative = await SynthesizeThemeAsync(group.Key, groupItems, directionLabel, state, ct);
-            themes.Add(narrative is { } ok
-                ? new ReportTheme(group.Key, ok.Title, ok.Narrative, groupItems.Count, direction, directionLabel, ids, true, sources, flaggedCount)
-                : new ReportTheme(
-                    group.Key,
-                    FallbackTitle(group.Key, groupItems),
-                    FallbackNarrative(groupItems, directionLabel, lang),
-                    groupItems.Count,
-                    direction,
-                    directionLabel,
-                    ids,
-                    false,
-                    sources,
-                    flaggedCount));
+        // Live-summary mode: ONE synthesis over the whole window, through the
+        // same locked prompt + citation grounding + action bounding as any
+        // theme narrative — the scope line in the data block is the only
+        // difference. Falls back deterministically like everything else.
+        ReportTheme? overall = null;
+        if (liveSummary && structured.Count > 0)
+        {
+            var scope = ReportText.WholeWindowScope(lang);
+            var overallDirection = ComputeDirection(structured, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
+            var overallDirectionLabel = ReportText.DirectionLabel(overallDirection, lang);
+            var synthesized = await SynthesizeThemeAsync(scope, structured, overallDirectionLabel, state, ct);
+            // Category "overall" is a REPORT-LEVEL key, deliberately outside any
+            // domain vocabulary; views render Overall by its own slot, never via
+            // a category-label lookup. Sources stay empty — the items live in
+            // the category sections.
+            overall = synthesized is { } ok
+                ? new ReportTheme("overall", ok.Title, ok.Narrative, structured.Count, overallDirection,
+                    overallDirectionLabel, structured.Select(i => i.Id).ToList(), true, [],
+                    structured.Count(i => i.NeedsReview))
+                : new ReportTheme("overall", FallbackTitle(scope, structured),
+                    FallbackNarrative(structured, overallDirectionLabel, lang), structured.Count, overallDirection,
+                    overallDirectionLabel, structured.Select(i => i.Id).ToList(), false, [],
+                    structured.Count(i => i.NeedsReview));
         }
 
         var report = new ManagementReport(
@@ -224,7 +271,8 @@ public sealed class ReportService(
             state.DroppedClaims,
             state.LlmFallbacks,
             lang,
-            state.ActionDropped);
+            state.ActionDropped,
+            overall);
 
         // Snapshot persistence moved to GenerateAsync (opt-in; applies on cache hit too).
         return report;
@@ -337,6 +385,18 @@ public sealed class ReportService(
             return false;
         }
     }
+
+    /// <summary>One theme group from its items — shared by the standard and
+    /// live-summary paths so the group's derived fields (ids, sources, and the
+    /// ADR-0021 A2 flagged count: flagged items stay IN the group and trend,
+    /// excluding them would be exploitable, but the count surfaces so the view
+    /// can warn) can never drift between the two.</summary>
+    private static ReportTheme BuildTheme(
+        string category, string title, string narrative, List<StoredFeedback> groupItems,
+        string direction, string directionLabel, bool fromLlm, bool isEmergentTopic = false) =>
+        new(category, title, narrative, groupItems.Count, direction, directionLabel,
+            groupItems.Select(i => i.Id).ToList(), fromLlm, BuildSources(groupItems),
+            groupItems.Count(i => i.NeedsReview), isEmergentTopic);
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
         string category, IReadOnlyList<StoredFeedback> groupItems, string directionLabel, GenState state, CancellationToken ct)

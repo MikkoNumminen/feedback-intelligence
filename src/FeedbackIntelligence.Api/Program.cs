@@ -248,6 +248,9 @@ app.MapGet("/schema", (IActiveDomain domain) =>
     {
         language = d.Language,
         categoryField = d.CategoryFieldLabel,
+        // The catch-all key (retail's "muu") so UIs can group its items by
+        // emergent topic without hardcoding a domain value.
+        catchAllCategory = d.CatchAllCategory,
         categories = d.CategoryLabels.Keys,
         severities = d.SeverityLabels.Keys,
         types = d.TypeLabels.Keys,
@@ -268,6 +271,27 @@ app.MapGet("/feedback", (
     [FromQuery] string? from = null,
     [FromQuery] string? to = null,
     [FromQuery] int? limit = null) => QueryEndpoint(store, options.Value, from, to, limit, ct));
+
+// Operator maintenance (ADR-0026): re-run structuring over the live channel with
+// the CURRENT domain vocabulary — a category added later re-adapts entries stored
+// under the old one. Deliberately NOT in the public /api proxy allowlist: the
+// static site can never trigger it; only direct (Funnel/localhost) callers can,
+// which matches the repo's accepted unauthenticated-operator posture (T1/T2).
+app.MapPost("/live/restructure", async (
+    [FromKeyedServices(Channels.Live)] IngestService ingest,
+    IActiveDomain domain,
+    CancellationToken ct) =>
+{
+    try
+    {
+        var (restructured, failed, skipped, total) = await ingest.RestructureAsync(domain.Descriptor, ct);
+        return Results.Ok(new { restructured, failed, skipped, total });
+    }
+    catch (LlmBusyException)
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+});
 
 // The live desk channel's item list — the desk segment's "categorized stuff".
 app.MapGet("/live/feedback", (
@@ -294,15 +318,17 @@ app.MapGet("/report", async (
     return await ReportEndpoint(reports, reportOptions.Value, from, to, snapshot, ct);
 });
 
-// The live desk channel's report — the desk segment's grounded summary. Never
-// persists a snapshot: the shared-link fallback page belongs to the demo channel.
+// The live desk channel's report — the desk segment's grounded summary view:
+// one whole-window narrative (Overall) + per-category groups with the catch-all
+// split into emergent theme topics. Never persists a snapshot: the shared-link
+// fallback page belongs to the demo channel.
 app.MapGet("/live/report", async (
     [FromKeyedServices(Channels.Live)] ReportService reports,
     IOptions<ReportOptions> reportOptions,
     CancellationToken ct,
     [FromQuery] string? from = null,
     [FromQuery] string? to = null) =>
-    await ReportEndpoint(reports, reportOptions.Value, from, to, persistSnapshot: false, ct));
+    await ReportEndpoint(reports, reportOptions.Value, from, to, persistSnapshot: false, ct, liveSummary: true));
 
 // The ongoing quality measure that replaced the cancelled model eval: per-field
 // desk correction rates over time (drift detector; the quality measure that
@@ -396,7 +422,8 @@ static async Task<IResult> QueryEndpoint(
 
 // Shared report body for /report and /live/report.
 static async Task<IResult> ReportEndpoint(
-    ReportService reports, ReportOptions options, string? from, string? to, bool persistSnapshot, CancellationToken ct)
+    ReportService reports, ReportOptions options, string? from, string? to, bool persistSnapshot, CancellationToken ct,
+    bool liveSummary = false)
 {
     if (TryBuildWindow(from, to, options, out var fromNormalized, out var toNormalized, out var fromInstant, out var toInstant) is { } badWindow)
         return badWindow;
@@ -410,7 +437,7 @@ static async Task<IResult> ReportEndpoint(
     // by ingest invalidation (a cache hit proves no ingest happened), not TTL.
     var bucket = TimeSpan.FromMinutes(10).Ticks;
     var cacheKey = $"{fromInstant.UtcTicks / bucket}|{toInstant.UtcTicks / bucket}";
-    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct, persistSnapshot, cacheKey));
+    return Results.Ok(await reports.GenerateAsync(fromNormalized, toNormalized, ct, persistSnapshot, cacheKey, liveSummary));
 }
 
 // Parse + validate a report/telemetry query window: default `to` to now and `from`

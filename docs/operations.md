@@ -88,7 +88,8 @@ demo, modelled on the sibling RAG's `ragctl`. It orchestrates docker, the
 - **`interpret "…"`** (live desk structuring, timed) · **`load` / `report` /
   `verify`** (ingest a corpus / generate + summarize a report / acceptance vs
   ground truth) · **`telemetry`** (per-field desk correction rates) ·
-  **`logs`** · **`open`**.
+  **`restructure`** (re-run structuring over the live channel with the current
+  categories — ADR-0026, after a vocabulary change) · **`logs`** · **`open`**.
 
 Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
 

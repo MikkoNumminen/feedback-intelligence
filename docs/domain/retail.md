@@ -12,14 +12,21 @@ hand-written corpus.
 
 ## Category taxonomy (`domains/retail/domain.json`)
 
-The `category` field ([../schema.md](../schema.md)). Fourteen values, each with a
+The `category` field ([../schema.md](../schema.md)). Fifteen values, each with a
 Finnish display label; `categoryFieldLabel` is `osasto`:
 
 ```
 maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | kassa_palvelu |
 piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit | sahko_lvi |
-varasto_nouto | verkkokauppa_toimitus | muu
+varasto_nouto | verkkokauppa_toimitus | asiaton | muu
 ```
+
+`asiaton` (Asiaton palaute) holds abusive/racist/harassing content with no
+feedback substance; a `categoryHints` entry explains it to the structuring
+model without lengthening the display label. `muu` is declared the
+`catchAllCategory`: the desk's live summary splits it into emergent topics
+named by the model's free-text theme
+([ADR-0026](../decisions/0026-categories-emergent-topics-live-summary.md)).
 
 Severities and types are not overridden — retail inherits the core defaults
 (`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).

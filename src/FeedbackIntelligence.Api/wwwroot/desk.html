@@ -46,6 +46,12 @@
   .seg-items .sev { font-weight:600; margin-right:.35rem; }
   .seg-items .when { color:var(--mut); margin-left:.35rem; font-size:.78rem; }
   .flagwarn { color:#8a5a00; font-weight:600; font-size:.85rem; margin:0 0 .4rem; }
+  .seg-overall { background:#f0f4f8; border:1px solid var(--line); border-radius:.5rem;
+                 padding:.6rem .8rem; margin:.4rem 0 .8rem; }
+  .seg-overall h3 { font-size:.95rem; margin:0 0 .3rem; }
+  .seg-overall .seg-meta { margin:.25rem 0 0; }
+  .seg-tag { font-size:.72rem; font-weight:400; color:var(--mut); border:1px solid var(--line);
+             border-radius:.4rem; padding:.05rem .35rem; margin-left:.45rem; vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -128,6 +134,9 @@ const STR = {
     segmentUnstructured: "ilman rakennetta (tulkinta ei onnistunut)",
     itemsWord: "palautetta",
     flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa",
+    summaryHeading: "Yhteenveto",
+    summaryPending: "Tekoäly kirjoittaa yhteenvetoa…",
+    summaryFailed: "Yhteenveto ei päivittynyt — kirjaukset näkyvät alla.",
   },
   en: {
     htmlLang: "en", locale: "en-GB", pageTitle: "Feedback — desk entry",
@@ -156,6 +165,9 @@ const STR = {
     segmentUnstructured: "without structure (interpretation failed)",
     itemsWord: "items",
     flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted",
+    summaryHeading: "Summary",
+    summaryPending: "The AI is writing the summary…",
+    summaryFailed: "The summary did not refresh — entries are shown below.",
   },
 };
 
@@ -198,6 +210,7 @@ function applyLanguage(lang) {
   // Re-render only when the language actually changed — /schema resolving to the
   // boot language must not rebuild the segment DOM a second time.
   if (lastReport && renderedL !== L) renderSegment(lastReport);
+  else if (lastItems && renderedL !== L) renderQuick(lastItems);
   // Category label is the DOMAIN's word (osasto / area) — only known once /schema lands.
   if (schema && schema.categoryField) {
     const cf = schema.categoryField;
@@ -220,6 +233,10 @@ async function loadSchema() {
     schemaLoaded = true;
     el("interpret").disabled = false;
     setStatus("status1", "", "");
+    // If phase A painted before /schema arrived, its category labels were raw
+    // keys — re-render now that labels exist (phase B repaints anyway when the
+    // report lands; this covers the window before it).
+    if (!lastReport && lastItems) renderQuick(lastItems);
   } catch {
     schemaLoaded = false;
     el("interpret").disabled = true;
@@ -382,9 +399,12 @@ function setStatus(id, kind, message) {
   node.textContent = message;
 }
 
-// ----- The live desk segment (ADR-0024) -----
-// Renders GET /live/report: theme narratives (the short summary) and each theme's
-// source items (the categorized list). All feedback text lands via textContent —
+// ----- The live desk segment (ADR-0024; summary view + emergent topics ADR-0026) -----
+// Two-phase render: the raw entry list (fast, no LLM) paints IMMEDIATELY on
+// every load so a refresh never shows an empty segment, then GET /live/report
+// (one whole-window synthesis) replaces it with the authoritative view —
+// Yhteenveto on top, category sections below, the catch-all category split
+// into the AI-named emergent topics. All feedback text lands via textContent —
 // hostile input must never reach innerHTML.
 let segmentBusy = false;
 // A refresh requested while one is in flight must RUN AGAIN after it, not be
@@ -392,6 +412,7 @@ let segmentBusy = false;
 // request would leave the fresh entry invisible until a manual refresh.
 let segmentQueued = false;
 let lastReport = null;   // re-render (not refetch) when /schema resolves the language
+let lastItems = null;    // phase-A raw items, for the summary-failed degradation path
 let renderedL = null;    // the language bundle the segment was last rendered with
 
 function node(tag, className, text) {
@@ -408,6 +429,42 @@ function shortTime(iso) {
   return isNaN(d) ? iso : d.toLocaleString(L.locale, { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+const catLabel = key => (schema && schema.categoryLabels?.[key]) || key;
+
+// One category section: { label, tag?, count, flagged, meta?, items:[{severity,text,timestamp}] }
+function renderSection(body, section) {
+  const box = node("div", "seg-theme");
+  const heading = node("h3", null, section.label);
+  if (section.tag) heading.appendChild(node("span", "seg-tag", section.tag));
+  box.appendChild(heading);
+  box.appendChild(node("p", "seg-meta",
+    `${section.count} ${L.itemsWord}` + (section.meta ? ` · ${section.meta}` : "")));
+  // ADR-0021 A2 parity with index.html: a possibly-manipulated (needs_review)
+  // item stays in the count — so the warning that it is in the mix must show
+  // here too, or the desk reads a poisoned count as clean.
+  if (section.flagged > 0)
+    box.appendChild(node("div", "flagwarn", `⚠ ${section.flagged} ${L.flaggedTheme} · ${L.flaggedHint}`));
+  const list = node("ul", "seg-items");
+  for (const item of section.items) {
+    const li = node("li");
+    const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity || "?";
+    li.appendChild(node("span", "sev", sevLabel));
+    li.appendChild(document.createTextNode(item.text));
+    li.appendChild(node("span", "when", shortTime(item.timestamp)));
+    list.appendChild(li);
+  }
+  box.appendChild(list);
+  body.appendChild(box);
+}
+
+function renderTotals(body, total, unstructured) {
+  let totalLine = `${total} ${L.segmentTotal}`;
+  if (unstructured > 0)
+    totalLine += ` · ${unstructured} ${L.segmentUnstructured}`;
+  body.appendChild(node("p", "seg-total", totalLine));
+}
+
+// Phase B: the authoritative summary view from GET /live/report.
 function renderSegment(report) {
   renderedL = L;
   const body = el("segmentBody");
@@ -416,10 +473,7 @@ function renderSegment(report) {
     body.appendChild(node("p", "seg-total", L.segmentEmpty));
     return;
   }
-  let totalLine = `${report.totalItems} ${L.segmentTotal}`;
-  if (report.structureFailedCount > 0)
-    totalLine += ` · ${report.structureFailedCount} ${L.segmentUnstructured}`;
-  body.appendChild(node("p", "seg-total", totalLine));
+  renderTotals(body, report.totalItems, report.structureFailedCount);
 
   if (report.alerts?.length) {
     body.appendChild(node("strong", null, `${L.segmentAlerts} (${report.alerts.length})`));
@@ -427,30 +481,58 @@ function renderSegment(report) {
       body.appendChild(node("div", "seg-alert", alert.textExcerpt || alert.text));
   }
 
-  for (const theme of report.themes ?? []) {
-    const box = node("div", "seg-theme");
-    box.appendChild(node("h3", null, theme.title));
-    const catLabel = (schema && schema.categoryLabels?.[theme.category]) || theme.category;
-    box.appendChild(node("p", "seg-meta",
-      `${catLabel} · ${theme.count} ${L.itemsWord} · ${theme.directionLabel}`));
-    // ADR-0021 A2 parity with index.html: a possibly-manipulated (needs_review)
-    // item stays in the count — so the warning that it is in the mix must show
-    // here too, or the desk reads a poisoned count as clean.
-    if (theme.flaggedCount > 0)
-      box.appendChild(node("div", "flagwarn", `⚠ ${theme.flaggedCount} ${L.flaggedTheme} · ${L.flaggedHint}`));
-    box.appendChild(node("p", "seg-narrative", theme.narrative));
-    const list = node("ul", "seg-items");
-    for (const item of theme.sources ?? []) {
-      const li = node("li");
-      const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity;
-      li.appendChild(node("span", "sev", sevLabel));
-      li.appendChild(document.createTextNode(item.text));
-      li.appendChild(node("span", "when", shortTime(item.timestamp)));
-      list.appendChild(li);
-    }
-    box.appendChild(list);
+  // Yhteenveto on top: the ONE whole-window narrative (ADR-0026).
+  if (report.overall) {
+    const box = node("div", "seg-overall");
+    box.appendChild(node("h3", null, `${L.summaryHeading}: ${report.overall.title}`));
+    box.appendChild(node("p", "seg-narrative", report.overall.narrative));
+    box.appendChild(node("p", "seg-meta", report.overall.directionLabel));
     body.appendChild(box);
   }
+
+  for (const theme of report.themes ?? []) {
+    // The server marks emergent topics explicitly (isEmergentTopic) — the view
+    // never re-derives the grouping rule client-side.
+    renderSection(body, {
+      label: theme.isEmergentTopic ? theme.title : catLabel(theme.category),
+      tag: theme.isEmergentTopic ? catLabel(theme.category) : null,
+      count: theme.count,
+      flagged: theme.flaggedCount,
+      meta: theme.directionLabel,
+      items: theme.sources ?? [],
+    });
+  }
+}
+
+// Phase A: instant CATEGORY-grouped list built from raw items — no LLM, so a
+// refresh always shows every stored entry within moments, for every visitor.
+// Deliberately grouped by category ONLY: the emergent-topic split is the
+// server's rule (ADR-0026) and is not re-implemented client-side — topics
+// appear when the authoritative report (phase B) lands.
+function renderQuick(items) {
+  renderedL = L;
+  const body = el("segmentBody");
+  body.replaceChildren();
+  if (items.length === 0) {
+    body.appendChild(node("p", "seg-total", L.segmentEmpty));
+    return;
+  }
+  const structured = items.filter(i => i.structure);
+  renderTotals(body, items.length, items.length - structured.length);
+  body.appendChild(node("p", "seg-meta seg-pending", L.summaryPending));
+
+  const groups = new Map();
+  for (const item of structured) {
+    const key = item.structure.category;
+    if (!groups.has(key))
+      groups.set(key, { label: catLabel(key), tag: null, count: 0, flagged: 0, items: [] });
+    const group = groups.get(key);
+    group.count++;
+    if (item.needsReview) group.flagged++;
+    group.items.push({ severity: item.structure.severity, text: item.text, timestamp: item.timestamp });
+  }
+  for (const section of [...groups.values()].sort((a, b) => (b.count - a.count) || a.label.localeCompare(b.label)))
+    renderSection(body, section);
 }
 
 async function loadSegment() {
@@ -458,14 +540,38 @@ async function loadSegment() {
   segmentBusy = true;
   el("segmentRefresh").disabled = true;
   setStatus("segmentStatus", "", L.segmentLoading);
+  // Whether THIS load painted phase A — the error message must never lean on a
+  // previous load's stale content.
+  let phaseARendered = false;
   try {
-    const res = await fetch(`${API}/live/report`);
+    // Both requests start immediately: the raw list renders as soon as it
+    // arrives, without delaying the (much slower) summary synthesis behind it.
+    const itemsPromise = fetch(`${API}/live/feedback?limit=1000`);
+    const reportPromise = fetch(`${API}/live/report`);
+    // Phase A — instant: raw items, no LLM. A refresh must never look empty.
+    try {
+      const itemsRes = await itemsPromise;
+      if (itemsRes.ok) {
+        lastItems = await itemsRes.json();
+        renderQuick(lastItems);
+        phaseARendered = true;
+      }
+    } catch { /* phase B owns the error path */ }
+    // Phase B — authoritative: the summary report (may run a synthesis).
+    const res = await reportPromise;
     if (!res.ok) throw new Error();
     lastReport = await res.json();
     renderSegment(lastReport);
     setStatus("segmentStatus", "", "");
   } catch {
-    setStatus("segmentStatus", "err", L.segmentError);
+    if (phaseARendered) {
+      // Keep this load's entry list, but the optimistic "the AI is writing the
+      // summary" line must not survive a failed synthesis.
+      el("segmentBody").querySelector(".seg-pending")?.remove();
+      setStatus("segmentStatus", "err", L.summaryFailed);
+    } else {
+      setStatus("segmentStatus", "err", L.segmentError);
+    }
   } finally {
     segmentBusy = false;
     el("segmentRefresh").disabled = false;

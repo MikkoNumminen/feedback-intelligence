@@ -69,3 +69,13 @@ operator CLI, not web-reachable, so its process-spawn surface is local-trust onl
 **Phase 1 complete. Gate:** reply **approved** to authorise Phase 2 (findings + severity +
 remediation plan), or `redo` with scope changes. No code has been or will be modified
 without that approval.
+## Addendum 2026-07-13 (ADR-0024/0025/0026)
+
+The live desk channel added endpoints after this dated snapshot:
+`POST /live/feedback`, `GET /live/feedback`, `GET /live/report` (mirror the
+main channel's posture over the separate live DB), and
+`POST /live/restructure` — unauthenticated like the rest (accepted T1/T2
+posture) but LLM-amplifying (re-runs structuring over the bounded
+live-channel scope) and deliberately NOT relayed by the public /api proxy's
+allowlist, so it is reachable only by direct Funnel/localhost callers.
+The browser path itself moved to the same-origin /api proxy (ADR-0025).

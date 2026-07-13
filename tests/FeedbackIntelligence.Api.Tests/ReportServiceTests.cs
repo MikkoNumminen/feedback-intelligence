@@ -66,6 +66,89 @@ public class ReportServiceTests : IDisposable
         new FeedbackStructure("maito_kylma", "tuotteiden tuoreus", severity, "complaint", "fi"),
         false, false, [], alerts ?? [], null);
 
+    private static StoredFeedback ItemIn(string id, string timestamp, string category, string theme, string severity = "low") => new(
+        id, "desk", $"palaute {id}", timestamp, timestamp,
+        new FeedbackStructure(category, theme, severity, "complaint", "fi"),
+        false, false, [], [], null);
+
+    [Fact]
+    public async Task SummaryMode_CatchAllCategory_SplitsIntoEmergentTopicGroups_AndSynthesizesOneOverall()
+    {
+        // retail's domain.json declares "muu" as the catch-all (ADR-0026). Items
+        // landing there split into per-theme groups keyed on the structuring
+        // model's own free-text theme (case-folded for grouping, original case for
+        // display via the group's most-recent item); a NAMED category never splits.
+        await _store.InsertAsync(ItemIn("maito-1", "2026-06-19T10:00:00.0000000+00:00", "maito_kylma", "tuoreus"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("maito-2", "2026-06-20T10:00:00.0000000+00:00", "maito_kylma", "tuoreus"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("palvelu-lower", "2026-06-21T10:00:00.0000000+00:00", "muu", "palvelu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("hinta-1", "2026-06-22T10:00:00.0000000+00:00", "muu", "Hinnoittelu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("palvelu-mid", "2026-06-25T10:00:00.0000000+00:00", "muu", "Palvelu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("palvelu-latest", "2026-06-29T10:00:00.0000000+00:00", "muu", "Palvelu"), CancellationToken.None);
+
+        var llm = new CountingScriptedChatClient(
+            """{"title": "Yleiskatsaus", "narrative": "Asiakkaat raportoivat useista aiheista.", "citedIds": ["maito-1"]}""");
+
+        var report = await CreateService(llm)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
+
+        Assert.Equal(3, report.Themes.Count);
+
+        var maitoTheme = report.Themes.Single(t => t.Category == "maito_kylma");
+        Assert.Equal(2, maitoTheme.Count);
+        Assert.False(maitoTheme.NarrativeFromLlm); // per-group narrative stays deterministic in summary mode
+        Assert.False(maitoTheme.IsEmergentTopic);  // a named category never becomes a topic
+
+        var palveluTheme = report.Themes.Single(t => t.Title == "Palvelu");
+        Assert.Equal("muu", palveluTheme.Category);
+        Assert.Equal(3, palveluTheme.Count); // "Palvelu" + "Palvelu" + "palvelu" grouped by case-folded theme
+        Assert.False(palveluTheme.NarrativeFromLlm);
+        Assert.True(palveluTheme.IsEmergentTopic); // the view keys off this flag, never re-derives the rule
+
+        var hintaTheme = report.Themes.Single(t => t.Title == "Hinnoittelu");
+        Assert.Equal("muu", hintaTheme.Category);
+        Assert.Equal(1, hintaTheme.Count);
+
+        Assert.NotNull(report.Overall);
+        Assert.True(report.Overall!.NarrativeFromLlm);
+        Assert.Equal("Yleiskatsaus", report.Overall.Title);
+        Assert.Equal("Asiakkaat raportoivat useista aiheista.", report.Overall.Narrative);
+        Assert.Equal(1, llm.Calls); // exactly one synthesis call: the whole-window Overall (nominations disabled)
+    }
+
+    [Fact]
+    public async Task StandardMode_LiveSummaryOmitted_OverallStaysNull()
+    {
+        await SeedDairyAsync(2, 3);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia")).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        Assert.Null(report.Overall);
+        Assert.Single(report.Themes);
+    }
+
+    [Fact]
+    public async Task SummaryAndStandardMode_DoNotShareACacheEntry_ForTheSameWindow()
+    {
+        await SeedDairyAsync(2, 3);
+        var llm = new CountingScriptedChatClient("ei-jsonia");
+        var service = CreateService(llm, cacheSeconds: 300);
+
+        var summaryReport = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
+        var callsAfterSummary = llm.Calls;
+        var standardReport = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: false);
+
+        Assert.NotSame(summaryReport, standardReport); // no cross-mode cache hit
+        Assert.True(llm.Calls > callsAfterSummary);     // the standard-mode call is a fresh generation
+        Assert.NotNull(summaryReport.Overall);
+        Assert.Null(standardReport.Overall);
+
+        // And each mode is itself still cached on repeat.
+        var callsAfterStandard = llm.Calls;
+        var standardReportAgain = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: false);
+        Assert.Same(standardReport, standardReportAgain);
+        Assert.Equal(callsAfterStandard, llm.Calls);
+    }
+
     [Fact]
     public async Task Direction_SignificantGrowthAndWorsening_IsWorsening()
     {
@@ -325,7 +408,7 @@ public class ReportServiceTests : IDisposable
     public async Task ZeroLlmBudget_MakesNoLlmCalls_ReportStillComplete()
     {
         await SeedDairyAsync(2, 3);
-        var llm = new CountingChatClient();
+        var llm = new CountingScriptedChatClient("ei-jsonia");
 
         var report = await CreateService(llm, nominations: true, llmBudget: 0)
             .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
@@ -339,7 +422,7 @@ public class ReportServiceTests : IDisposable
     public async Task CachedReport_IsReused_UntilInvalidated()
     {
         await SeedDairyAsync(2, 3);
-        var llm = new CountingChatClient();
+        var llm = new CountingScriptedChatClient("ei-jsonia");
         var service = CreateService(llm, cacheSeconds: 300);
 
         var first = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
@@ -422,7 +505,11 @@ public class ReportServiceTests : IDisposable
         }
     }
 
-    private sealed class CountingChatClient : IChatClient
+    // Same fixed reply on every call, but counts calls — used where a test needs
+    // BOTH a groundable JSON reply (to reach NarrativeFromLlm==true) and an exact
+    // call-count assertion. `new CountingScriptedChatClient("ei-jsonia")` covers
+    // the count-only case too (the reply just falls back deterministically).
+    private sealed class CountingScriptedChatClient(string response) : IChatClient
     {
         public int Calls { get; private set; }
 
@@ -430,7 +517,7 @@ public class ReportServiceTests : IDisposable
             IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             Calls++;
-            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "ei-jsonia")));
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, response)));
         }
 
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(

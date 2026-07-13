@@ -111,6 +111,24 @@ public sealed class ActiveDomain : IActiveDomain
         if (sources.Count == 0)
             throw new InvalidOperationException($"{sourcePath}: 'sources' must be non-empty.");
 
+        // Optional per-category hints for the STRUCTURING PROMPT only: the label
+        // stays short for UIs, the hint tells the model what belongs in a
+        // non-obvious category (e.g. "asiaton"). Hints for unknown keys are
+        // rejected — a typo would otherwise silently guide nothing.
+        var hints = ReadMap(root, "categoryHints") ?? new Dictionary<string, string>(StringComparer.Ordinal);
+        var unknownHints = hints.Keys.Where(k => !categories.ContainsKey(k)).ToList();
+        if (unknownHints.Count > 0)
+            throw new InvalidOperationException(
+                $"{sourcePath}: 'categoryHints' has key(s) not in 'categories': {string.Join(", ", unknownHints)}.");
+
+        // Optional catch-all key (retail's "muu") — must be a real category, or
+        // the live summary would silently never split emergent topics.
+        var catchAll = root.TryGetProperty("catchAllCategory", out var ca) && ca.ValueKind == JsonValueKind.String
+            ? ca.GetString() : null;
+        if (catchAll is not null && !categories.ContainsKey(catchAll))
+            throw new InvalidOperationException(
+                $"{sourcePath}: 'catchAllCategory' ('{catchAll}') is not in 'categories'.");
+
         return new DomainDescriptor
         {
             Name = name,
@@ -123,6 +141,8 @@ public sealed class ActiveDomain : IActiveDomain
             SeverityLabels = severities,
             TypeLabels = types,
             Sources = sources,
+            CategoryHints = hints,
+            CatchAllCategory = catchAll,
         };
     }
 

@@ -36,3 +36,4 @@ these ADRs relocate that reasoning into durable records.
 | [0023](0023-deploy-hardening-snapshot-and-pna.md) | Deploy hardening: always-bundle the committed snapshot + Private Network Access (amends 0016) | Accepted |
 | [0024](0024-live-desk-channel-separate-db.md) | The desk is its own live channel: separate database, own segment | Accepted |
 | [0025](0025-same-origin-api-proxy.md) | Same-origin /api proxy on the static host (Chrome LNA; amends 0016/0023) | Accepted |
+| [0026](0026-categories-emergent-topics-live-summary.md) | Asiaton category, emergent topics, and the desk summary view | Accepted |

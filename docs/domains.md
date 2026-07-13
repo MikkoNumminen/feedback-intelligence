@@ -64,6 +64,15 @@ it is templated with the active domain's taxonomy at load time via the
 
 - `categories` is **required and non-empty**. Keys are the enum values the
   structuring model must emit; values are the UI display labels.
+- `categoryHints` is **optional**: per-category guidance appended to the label
+  inside the STRUCTURING PROMPT only (never displayed), for categories whose
+  short label is not self-explanatory (retail's `asiaton`). Keys must exist in
+  `categories` — the loader rejects a typo'd hint.
+- `catchAllCategory` is **optional**: the key of the domain's catch-all
+  (retail's `muu`). Where set, the desk's live summary splits that category
+  into emergent topics named by the structuring model's free-text theme
+  ([ADR-0026](decisions/0026-categories-emergent-topics-live-summary.md));
+  it also bounds `POST /live/restructure`. Must be a key in `categories`.
 - `severities` and `types` are **optional and domain-overridable**. Omit them to
   inherit the core defaults (`low/medium/high/critical` and
   `complaint/praise/suggestion/question/other`) — most domains only author

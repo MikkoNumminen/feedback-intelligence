@@ -474,6 +474,29 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>Re-run structuring over the LIVE channel with the current domain
+    /// vocabulary (ADR-0026) — after adding a category, existing entries adapt to
+    /// it. One LLM call per stored entry; announce GPU use as usual.</summary>
+    public static async Task<int> RestructureAsync()
+    {
+        Console.WriteLine("  " + Term.C("◐", "33") + " re-structuring the live channel with the current categories …");
+        var (status, body) = await Shell.PostJsonAsync("/live/restructure", "{}", 600);
+        if (status == 503) { Console.WriteLine(Term.C("  ▲ LLM busy — try again in a moment.", "33")); return 1; }
+        if (status is < 200 or >= 300 || string.IsNullOrWhiteSpace(body))
+        {
+            Console.WriteLine(Term.C($"  ○ restructure failed (HTTP {status}) — API up?", "31"));
+            return 1;
+        }
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement;
+        Console.WriteLine("  " + Term.C("●", "32") +
+            $" {root.GetProperty("restructured").GetInt32()} restructured · " +
+            $"{root.GetProperty("failed").GetInt32()} structure_failed · " +
+            $"{root.GetProperty("skipped").GetInt32()} skipped (valid category, human audit kept) · " +
+            $"{root.GetProperty("total").GetInt32()} total");
+        return 0;
+    }
+
     public static async Task<int> LogsAsync(int n)
     {
         // Both channels (ADR-0024): desk-UI saves live in /live/feedback — a

@@ -34,6 +34,12 @@ internal static class ReportText
             : $"{count} feedback item(s) in the window. Top themes: {topThemes}. Trend: {directionLabel}. " +
               "(Automated summary — the language-model narrative was unavailable.)";
 
+    /// <summary>The whole-window scope word fed to the synthesis data block as the
+    /// category slot of the live summary's Overall narrative (ADR-0026). Lives here
+    /// with the other localized strings so a new language cannot miss it.</summary>
+    public static string WholeWindowScope(string language) =>
+        language == "fi" ? "kaikki" : "all";
+
     /// <summary>Generic reason shown for an LLM-screened safety alert when the
     /// nomination pass returns no specific one — the per-item yes/no screen has
     /// already decided it IS an alert, so the alert still shows.</summary>

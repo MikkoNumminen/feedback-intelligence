@@ -259,6 +259,85 @@ public class IngestServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task UpdateStructureAsync_ReplacesStructure_ClearsCorrectionsAndModelFailed()
+    {
+        // ADR-0026: a re-structuring pass (operator maintenance) replaces the
+        // model-derived fields wholesale; stale corrections/model_failed audited
+        // a structure that no longer exists and must not survive the update.
+        var oldStructure = new FeedbackStructure("hevi", "vanha teema", "low", "complaint", "fi");
+        var seeded = new StoredFeedback(
+            "restr-001", "email", "vanha palaute", "2026-07-01T07:00:00.0000000+00:00", "2026-07-01T07:00:00Z",
+            oldStructure, false, true, [], [], [new FieldCorrection("category", "muu", "hevi")]);
+        await _store.InsertAsync(seeded, CancellationToken.None);
+
+        var newStructure = new FeedbackStructure("asiaton", "uusi teema", "medium", "complaint", "fi");
+        await _store.UpdateStructureAsync(
+            "restr-001", newStructure, structureFailed: false,
+            salvageNotes: ["re-structured"], needsReview: false, reviewFlags: [], CancellationToken.None);
+
+        var updated = await _store.GetAsync("restr-001", CancellationToken.None);
+        Assert.NotNull(updated);
+        Assert.Equal(newStructure, updated!.Structure);
+        Assert.Null(updated.Corrections);
+        Assert.False(updated.ModelFailed);
+        Assert.False(updated.StructureFailed);
+        Assert.False(updated.NeedsReview);
+        Assert.Empty(updated.ReviewFlags!);
+        Assert.Single(updated.SalvageNotes);
+    }
+
+    [Fact]
+    public async Task Restructure_BoundedScope_AdaptsStaleAndCatchAll_SkipsValidCategories()
+    {
+        // ADR-0026 bounded pass: a removed-category item and a catch-all item are
+        // re-structured (corrections cleared); an item in a still-valid named
+        // category is SKIPPED — its human audit must survive the pass.
+        await _store.InsertAsync(new StoredFeedback(
+            "r-1", "email", "eka vanha palaute", "2026-07-01T07:00:00.0000000+00:00", "2026-07-01T07:00:00Z",
+            new FeedbackStructure("vanha_osasto", "vanha teema", "low", "complaint", "fi"),
+            false, false, [], [], [new FieldCorrection("category", "muu", "vanha_osasto")]), CancellationToken.None);
+        await _store.InsertAsync(new StoredFeedback(
+            "r-2", "web_form", "toka vanha palaute", "2026-07-01T08:00:00.0000000+00:00", "2026-07-01T08:00:00Z",
+            new FeedbackStructure("muu", "sekalainen", "low", "complaint", "fi"),
+            false, false, [], [], null), CancellationToken.None);
+        var validStructure = new FeedbackStructure("hevi", "hedelmien tuoreus", "low", "complaint", "fi");
+        var validCorrections = new[] { new FieldCorrection("severity", "medium", "low") };
+        await _store.InsertAsync(new StoredFeedback(
+            "r-3", "desk", "hevi palaute", "2026-07-01T09:00:00.0000000+00:00", "2026-07-01T09:00:00Z",
+            validStructure, false, false, [], [], validCorrections), CancellationToken.None);
+
+        var newStructure = new FeedbackStructure("asiaton", "uusi teema", "high", "complaint", "fi");
+        var structuring = new FakeStructuring(new StructuringResult(newStructure, "{}", false, false, false, []));
+        var cache = new Analysis.ReportCache();
+        var epochBefore = cache.Epoch;
+        var service = new IngestService(
+            _store, structuring, new LlmGate(_options),
+            new AlertKeywordSet
+            {
+                Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
+            },
+            cache, NullLogger<IngestService>.Instance);
+
+        var (restructured, failed, skipped, total) =
+            await service.RestructureAsync(TestDomains.Retail(), CancellationToken.None);
+
+        Assert.Equal(2, restructured);
+        Assert.Equal(0, failed);
+        Assert.Equal(1, skipped);
+        Assert.Equal(3, total);
+        Assert.NotEqual(epochBefore, cache.Epoch); // live report cache invalidated
+
+        var r1 = await _store.GetAsync("r-1", CancellationToken.None);
+        var r2 = await _store.GetAsync("r-2", CancellationToken.None);
+        var r3 = await _store.GetAsync("r-3", CancellationToken.None);
+        Assert.Equal(newStructure, r1!.Structure);
+        Assert.Equal(newStructure, r2!.Structure);
+        Assert.Null(r1.Corrections);                    // stale correction cleared by the store update
+        Assert.Equal(validStructure, r3!.Structure);    // valid-category item untouched...
+        Assert.NotNull(r3.Corrections);                 // ...human audit preserved
+    }
+
     private IngestService CreateService2(IStructuringService structuring) => new(
         _store,
         structuring,

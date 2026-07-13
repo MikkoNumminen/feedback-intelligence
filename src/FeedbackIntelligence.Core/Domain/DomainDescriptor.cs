@@ -33,4 +33,19 @@ public sealed class DomainDescriptor
     /// domain-specific, so the ingest layer accepts exactly these; the generator
     /// draws a channel from this list when a noise item declares none.</summary>
     public required IReadOnlyList<string> Sources { get; init; }
+
+    /// <summary>Optional per-category guidance shown ONLY to the structuring
+    /// model (appended to the label inside the prompt's category list). Lets a
+    /// non-obvious category (e.g. retail's "asiaton") carry an explanation
+    /// without bloating the short display label UIs render. Empty by default;
+    /// keys are validated against <see cref="Categories"/> at load.</summary>
+    public IReadOnlyDictionary<string, string> CategoryHints { get; init; } =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>Optional key of the domain's catch-all category (retail's
+    /// "muu"). Where set, the live-summary view splits that category into
+    /// emergent topics keyed on the structuring model's free-text theme — the
+    /// AI names the topic, arithmetic does the grouping. Null = no splitting.
+    /// Validated against <see cref="Categories"/> at load.</summary>
+    public string? CatchAllCategory { get; init; }
 }
