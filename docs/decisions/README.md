@@ -38,3 +38,4 @@ these ADRs relocate that reasoning into durable records.
 | [0025](0025-same-origin-api-proxy.md) | Same-origin /api proxy on the static host (Chrome LNA; amends 0016/0023) | Accepted |
 | [0026](0026-categories-emergent-topics-live-summary.md) | Asiaton category, emergent topics, and the desk summary view | Accepted |
 | [0027](0027-racism-recognition-alert-lexicon.md) | Racist-comment recognition: a category, forced by a deterministic lexicon | Accepted |
+| [0028](0028-categorization-accuracy-makeiset-theme-normalization.md) | Categorization accuracy: `makeiset` department, disambiguating hints, normalized emergent-topic keys | Accepted |

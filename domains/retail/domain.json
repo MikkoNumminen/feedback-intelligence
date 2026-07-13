@@ -8,6 +8,7 @@
     "kuiva_elintarvike": "Kuivat elintarvikkeet",
     "liha_kala": "Liha & kala",
     "leipa": "Leipä",
+    "makeiset": "Makeiset",
     "kassa_palvelu": "Kassa & palvelu",
     "piha_puutarha": "Piha & puutarha",
     "rakennustarvike": "Rakennustarvikkeet",
@@ -21,6 +22,8 @@
     "muu": "Muu"
   },
   "categoryHints": {
+    "kuiva_elintarvike": "jauhot, pasta, riisi, säilykkeet, kahvi — EI makeisia eikä irtokarkkeja",
+    "makeiset": "karkkipussit, irtokarkit, suklaa, purukumi, pastillit",
     "rasismi": "VAIN kun teksti kohdistuu etniseen ryhmään, kansallisuuteen, uskontoon tai ihonväriin — pelkkä kiroilu ei riitä",
     "asiaton": "loukkaava, uhkaava tai kiroileva sisältö ilman asiakaspalauteasiaa ja ilman etnistä kohdetta",
     "muu": "asiallinen palaute, joka ei sovi mihinkään osastoon"

@@ -12,14 +12,19 @@ hand-written corpus.
 
 ## Category taxonomy (`domains/retail/domain.json`)
 
-The `category` field ([../schema.md](../schema.md)). Sixteen values, each with a
+The `category` field ([../schema.md](../schema.md)). Seventeen values, each with a
 Finnish display label; `categoryFieldLabel` is `osasto`:
 
 ```
-maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | kassa_palvelu |
-piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit | sahko_lvi |
-varasto_nouto | verkkokauppa_toimitus | rasismi | asiaton | muu
+maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | makeiset |
+kassa_palvelu | piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit |
+sahko_lvi | varasto_nouto | verkkokauppa_toimitus | rasismi | asiaton | muu
 ```
+
+`makeiset` (Makeiset) is the sweets department (karkkipussit, irtokarkit,
+suklaa, purukumi, pastillit); it and `kuiva_elintarvike` carry `categoryHints`
+that draw the boundary between them explicitly, so candy no longer falls into
+"Kuivat elintarvikkeet" ([ADR-0028](../decisions/0028-categorization-accuracy-makeiset-theme-normalization.md)).
 
 `rasismi` (Rasistinen palaute) names racist content per comment — flagged and
 KEPT, never dropped. Blunt racist vocabulary forces the category
