@@ -48,4 +48,10 @@ public sealed class DomainDescriptor
     /// AI names the topic, arithmetic does the grouping. Null = no splitting.
     /// Validated against <see cref="Categories"/> at load.</summary>
     public string? CatchAllCategory { get; init; }
+
+    /// <summary>Optional categories views should sort LAST regardless of count
+    /// (retail demotes "asiaton": hostile content must not lead the page).
+    /// Presentation-only — counts, trends and alerts are unaffected.
+    /// Validated against <see cref="Categories"/> at load.</summary>
+    public IReadOnlyList<string> DemotedCategories { get; init; } = [];
 }

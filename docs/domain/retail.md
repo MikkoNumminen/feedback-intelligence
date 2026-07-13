@@ -23,7 +23,8 @@ varasto_nouto | verkkokauppa_toimitus | asiaton | muu
 
 `asiaton` (Asiaton palaute) holds abusive/racist/harassing content with no
 feedback substance; a `categoryHints` entry explains it to the structuring
-model without lengthening the display label. `muu` is declared the
+model without lengthening the display label, and `demotedCategories` sorts it
+LAST in the desk view so hostile content never leads the page. `muu` is declared the
 `catchAllCategory`: the desk's live summary splits it into emergent topics
 named by the model's free-text theme
 ([ADR-0026](../decisions/0026-categories-emergent-topics-live-summary.md)).

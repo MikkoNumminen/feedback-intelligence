@@ -251,6 +251,8 @@ app.MapGet("/schema", (IActiveDomain domain) =>
         // The catch-all key (retail's "muu") so UIs can group its items by
         // emergent topic without hardcoding a domain value.
         catchAllCategory = d.CatchAllCategory,
+        // Categories views sort LAST (retail's "asiaton") — presentation only.
+        demotedCategories = d.DemotedCategories,
         categories = d.CategoryLabels.Keys,
         severities = d.SeverityLabels.Keys,
         types = d.TypeLabels.Keys,

@@ -52,6 +52,19 @@
   .seg-overall .seg-meta { margin:.25rem 0 0; }
   .seg-tag { font-size:.72rem; font-weight:400; color:var(--mut); border:1px solid var(--line);
              border-radius:.4rem; padding:.05rem .35rem; margin-left:.45rem; vertical-align:middle; }
+  /* Charts (dataviz specs: thin marks, recessive chrome, text in ink not series color) */
+  .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(6.5rem, 1fr)); gap:.5rem; margin:.6rem 0; }
+  .kpi { background:#f7f9fb; border:1px solid var(--line); border-radius:.5rem; padding:.45rem .6rem; }
+  .kpi .kpi-label { font-size:.72rem; color:var(--mut); }
+  .kpi .kpi-value { font-size:1.35rem; font-weight:700; line-height:1.2; }
+  .kpi .kpi-value.warn { color:var(--warn); }
+  .chart-block { margin:.7rem 0; }
+  .chart-title { font-size:.8rem; color:var(--mut); margin:0 0 .3rem; }
+  .chart-block svg { display:block; width:100%; height:auto; }
+  .chart-block .bar { transition:opacity .12s; }
+  .chart-block .bar:hover { opacity:.75; }
+  .sev-legend { display:flex; flex-wrap:wrap; gap:.4rem .9rem; margin:.3rem 0 0; padding:0; list-style:none; font-size:.78rem; color:var(--mut); }
+  .sev-legend .swatch { display:inline-block; width:.62rem; height:.62rem; border-radius:.15rem; margin-right:.3rem; vertical-align:-.05rem; }
 </style>
 </head>
 <body>
@@ -137,6 +150,8 @@ const STR = {
     summaryHeading: "Yhteenveto",
     summaryPending: "Tekoäly kirjoittaa yhteenvetoa…",
     summaryFailed: "Yhteenveto ei päivittynyt — kirjaukset näkyvät alla.",
+    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma",
+    tileEntries: "Kirjauksia", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
   },
   en: {
     htmlLang: "en", locale: "en-GB", pageTitle: "Feedback — desk entry",
@@ -168,6 +183,8 @@ const STR = {
     summaryHeading: "Summary",
     summaryPending: "The AI is writing the summary…",
     summaryFailed: "The summary did not refresh — entries are shown below.",
+    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution",
+    tileEntries: "Entries", tileFlagged: "To review", tileTrend: "Trend",
   },
 };
 
@@ -431,6 +448,123 @@ function shortTime(iso) {
 
 const catLabel = key => (schema && schema.categoryLabels?.[key]) || key;
 
+// ----- Charts (ADR-0026 view; specs and palette per the dataviz method) -----
+// Severity status palette, validated (lightness band, chroma floor, CVD
+// separation, contrast vs white) with the palette validator — do not eyeball
+// replacements. Keys follow the core severity enum; unknown keys read neutral.
+const SEV_COLORS = { low: "#4e8ac8", medium: "#d97706", high: "#ef5350", critical: "#a02c2c" };
+const SEV_FALLBACK = "#9aa4af";
+const BAR_HUE = "#0b5fa5"; // the page accent — single-hue magnitude bars
+
+const svgNode = (tag, attrs) => {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+  return n;
+};
+
+// Rounded at the DATA end only (right), square at the baseline (left).
+const barPath = (x, y, w, h) => {
+  const r = Math.min(4, w);
+  return `M${x},${y} L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} L${x},${y + h} Z`;
+};
+
+// Horizontal single-hue bar chart: entries per section. Direct value labels at
+// the bar tips (small N), category names in text ink, native tooltips on marks.
+function categoryBarChart(sections) {
+  const width = 320, rowH = 26, barH = 14, labelW = 118, valueW = 26;
+  const max = Math.max(...sections.map(s => s.count), 1);
+  const plotW = width - labelW - valueW;
+  const svg = svgNode("svg", { viewBox: `0 0 ${width} ${sections.length * rowH}`, role: "img" });
+  sections.forEach((s, i) => {
+    const y = i * rowH + (rowH - barH) / 2;
+    const w = Math.max((s.count / max) * plotW, 3);
+    const name = svgNode("text", { x: labelW - 6, y: y + barH - 3, "text-anchor": "end", "font-size": "11", fill: "#66707d" });
+    name.textContent = s.label.length > 18 ? s.label.slice(0, 17) + "…" : s.label;
+    svg.appendChild(name);
+    const bar = svgNode("path", { d: barPath(labelW, y, w, barH), fill: BAR_HUE, class: "bar" });
+    const tip = svgNode("title", {});
+    tip.textContent = `${s.label} · ${s.count}`;
+    bar.appendChild(tip);
+    svg.appendChild(bar);
+    const value = svgNode("text", { x: labelW + w + 5, y: y + barH - 3, "font-size": "11", "font-weight": "600", fill: "#1c2430" });
+    value.textContent = s.count;
+    svg.appendChild(value);
+  });
+  return svg;
+}
+
+// One horizontal 100% stacked bar for the ordered severity share, 2px surface
+// gaps between segments; the legend (mandatory at 4 series) carries identity +
+// counts — segment text never rides the fill.
+function severityStackedBar(sevCounts) {
+  const order = (schema?.severities) || Object.keys(SEV_COLORS);
+  const present = order.filter(k => (sevCounts[k] || 0) > 0);
+  const total = present.reduce((sum, k) => sum + sevCounts[k], 0);
+  if (total === 0) return null;
+  const width = 320, barH = 16, gap = 2;
+  const svg = svgNode("svg", { viewBox: `0 0 ${width} ${barH}`, role: "img" });
+  let x = 0;
+  present.forEach((k, i) => {
+    const w = (sevCounts[k] / total) * (width - gap * (present.length - 1));
+    const seg = svgNode("rect", { x, y: 0, width: Math.max(w, 2), height: barH, rx: 2, fill: SEV_COLORS[k] || SEV_FALLBACK, class: "bar" });
+    const tip = svgNode("title", {});
+    tip.textContent = `${sevLabel(k)} · ${sevCounts[k]}`;
+    seg.appendChild(tip);
+    svg.appendChild(seg);
+    x += w + gap;
+  });
+  return svg;
+}
+
+const sevLabel = key => (schema && schema.severityLabels?.[key]) || key;
+
+function kpiTile(label, value, warn) {
+  const tile = node("div", "kpi");
+  tile.appendChild(node("div", "kpi-label", label));
+  tile.appendChild(node("div", "kpi-value" + (warn ? " warn" : ""), String(value)));
+  return tile;
+}
+
+// The graphical block: KPI tiles + the two charts, built from either phase's
+// sections. Severe = the domain's two most severe declared levels.
+function renderCharts(body, sections, sevCounts, total, directionLabel) {
+  if (total === 0 || sections.length === 0) return;
+  const order = (schema?.severities) || Object.keys(SEV_COLORS);
+  const severeKeys = order.slice(-2);
+  const severeCount = severeKeys.reduce((sum, k) => sum + (sevCounts[k] || 0), 0);
+  const flagged = sections.reduce((sum, s) => sum + (s.flagged || 0), 0);
+
+  const kpis = node("div", "kpi-row");
+  kpis.appendChild(kpiTile(L.tileEntries, total));
+  kpis.appendChild(kpiTile(severeKeys.map(sevLabel).join(" + "), severeCount, severeCount > 0));
+  kpis.appendChild(kpiTile(L.tileFlagged + " ⚠", flagged, flagged > 0));
+  if (directionLabel) kpis.appendChild(kpiTile(L.tileTrend, directionLabel));
+  body.appendChild(kpis);
+
+  const catBlock = node("div", "chart-block");
+  catBlock.appendChild(node("p", "chart-title", L.chartCategories));
+  catBlock.appendChild(categoryBarChart(sections));
+  body.appendChild(catBlock);
+
+  const sevBar = severityStackedBar(sevCounts);
+  if (sevBar) {
+    const sevBlock = node("div", "chart-block");
+    sevBlock.appendChild(node("p", "chart-title", L.chartSeverity));
+    sevBlock.appendChild(sevBar);
+    const legend = node("ul", "sev-legend");
+    for (const k of order.filter(k => (sevCounts[k] || 0) > 0)) {
+      const li = node("li");
+      const swatch = node("span", "swatch");
+      swatch.style.background = SEV_COLORS[k] || SEV_FALLBACK;
+      li.appendChild(swatch);
+      li.appendChild(document.createTextNode(`${sevLabel(k)} ${sevCounts[k]}`));
+      legend.appendChild(li);
+    }
+    sevBlock.appendChild(legend);
+    body.appendChild(sevBlock);
+  }
+}
+
 // One category section: { label, tag?, count, flagged, meta?, items:[{severity,text,timestamp}] }
 function renderSection(body, section) {
   const box = node("div", "seg-theme");
@@ -490,18 +624,25 @@ function renderSegment(report) {
     body.appendChild(box);
   }
 
-  for (const theme of report.themes ?? []) {
-    // The server marks emergent topics explicitly (isEmergentTopic) — the view
-    // never re-derives the grouping rule client-side.
-    renderSection(body, {
-      label: theme.isEmergentTopic ? theme.title : catLabel(theme.category),
-      tag: theme.isEmergentTopic ? catLabel(theme.category) : null,
-      count: theme.count,
-      flagged: theme.flaggedCount,
-      meta: theme.directionLabel,
-      items: theme.sources ?? [],
-    });
-  }
+  // The server marks emergent topics explicitly (isEmergentTopic) and already
+  // orders sections (demoted categories last) — the view never re-derives
+  // grouping or ordering client-side.
+  const sections = (report.themes ?? []).map(theme => ({
+    label: theme.isEmergentTopic ? theme.title : catLabel(theme.category),
+    tag: theme.isEmergentTopic ? catLabel(theme.category) : null,
+    count: theme.count,
+    flagged: theme.flaggedCount,
+    meta: theme.directionLabel,
+    items: theme.sources ?? [],
+  }));
+  const sevCounts = {};
+  for (const section of sections)
+    for (const item of section.items)
+      sevCounts[item.severity] = (sevCounts[item.severity] || 0) + 1;
+  renderCharts(body, sections, sevCounts, report.totalItems, report.overall?.directionLabel);
+
+  for (const section of sections)
+    renderSection(body, section);
 }
 
 // Phase A: instant CATEGORY-grouped list built from raw items — no LLM, so a
@@ -522,16 +663,25 @@ function renderQuick(items) {
   body.appendChild(node("p", "seg-meta seg-pending", L.summaryPending));
 
   const groups = new Map();
+  const sevCounts = {};
   for (const item of structured) {
     const key = item.structure.category;
     if (!groups.has(key))
-      groups.set(key, { label: catLabel(key), tag: null, count: 0, flagged: 0, items: [] });
+      groups.set(key, { category: key, label: catLabel(key), tag: null, count: 0, flagged: 0, items: [] });
     const group = groups.get(key);
     group.count++;
     if (item.needsReview) group.flagged++;
     group.items.push({ severity: item.structure.severity, text: item.text, timestamp: item.timestamp });
+    sevCounts[item.structure.severity] = (sevCounts[item.structure.severity] || 0) + 1;
   }
-  for (const section of [...groups.values()].sort((a, b) => (b.count - a.count) || a.label.localeCompare(b.label)))
+  // Same ordering rule as the server: demoted categories (schema) last, then
+  // count, then label — so phase B doesn't visibly reshuffle the page.
+  const demoted = schema?.demotedCategories || [];
+  const sections = [...groups.values()].sort((a, b) =>
+    (demoted.includes(a.category) - demoted.includes(b.category))
+    || (b.count - a.count) || a.label.localeCompare(b.label));
+  renderCharts(body, sections, sevCounts, items.length, null);
+  for (const section of sections)
     renderSection(body, section);
 }
 

@@ -211,13 +211,17 @@ public sealed class ReportService(
             // Per-group prose stays deterministic; the narrative budget goes to
             // ONE whole-window synthesis below.
             var catchAll = activeDomain.Descriptor.CatchAllCategory;
+            var demoted = activeDomain.Descriptor.DemotedCategories;
             foreach (var group in structured
                          .GroupBy(i => catchAll is not null
                              && i.Structure!.Category == catchAll
                              && !string.IsNullOrWhiteSpace(i.Structure!.Theme)
                                  ? (Category: catchAll, TopicKey: i.Structure!.Theme.Trim().ToLowerInvariant())
                                  : (Category: i.Structure!.Category, TopicKey: (string?)null))
-                         .OrderByDescending(g => g.Count())
+                         // Demoted categories (retail's "asiaton") sort LAST no
+                         // matter their count — hostile content must not lead.
+                         .OrderBy(g => demoted.Contains(g.Key.Category) ? 1 : 0)
+                         .ThenByDescending(g => g.Count())
                          .ThenBy(g => g.Key.Category, StringComparer.Ordinal)
                          .ThenBy(g => g.Key.TopicKey, StringComparer.Ordinal))
             {
