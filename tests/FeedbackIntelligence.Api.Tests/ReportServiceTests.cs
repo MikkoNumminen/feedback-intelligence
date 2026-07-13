@@ -116,6 +116,41 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SummaryMode_EmergentTopicKey_MergesUnderscoreAndWhitespaceVariants_WithCleanTitle()
+    {
+        // ADR-0028: the emergent-topic key normalizes separators, so the structuring
+        // model's spelling drift for ONE topic ("tuotteiden_laatu" / "tuotteiden
+        // laatu" / "tuotteiden  laatu") collapses into a single group instead of
+        // fragmenting into three thin ones. The displayed title shows plain spaces,
+        // never an underscore or a doubled space. A genuinely different theme
+        // ("hinnoittelu") stays its own topic — the normalization only fuses
+        // separator/case variants, it never over-merges. (Case-folding into the
+        // title is already covered by the "Palvelu" case above.)
+        await _store.InsertAsync(ItemIn("laatu-us", "2026-06-19T10:00:00.0000000+00:00", "muu", "tuotteiden_laatu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("laatu-sp", "2026-06-20T10:00:00.0000000+00:00", "muu", "tuotteiden laatu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("laatu-dbl", "2026-06-21T10:00:00.0000000+00:00", "muu", "tuotteiden  laatu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("hinta-1", "2026-06-22T10:00:00.0000000+00:00", "muu", "hinnoittelu"), CancellationToken.None);
+
+        var llm = new CountingScriptedChatClient(
+            """{"title": "Yleiskatsaus", "narrative": "Asiakkaat raportoivat useista aiheista.", "citedIds": ["laatu-us"]}""");
+
+        var report = await CreateService(llm)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
+
+        Assert.Equal(2, report.Themes.Count); // three laatu variants merged into one; hinnoittelu separate
+
+        var laatu = report.Themes.Single(t => t.Count == 3);
+        Assert.Equal("muu", laatu.Category);
+        Assert.True(laatu.IsEmergentTopic);
+        Assert.Equal("tuotteiden laatu", laatu.Title); // underscore + doubled space normalized to plain spaces
+        Assert.DoesNotContain("_", laatu.Title);
+        Assert.DoesNotContain("  ", laatu.Title);
+
+        var hinta = report.Themes.Single(t => t.Title == "hinnoittelu");
+        Assert.Equal(1, hinta.Count); // distinct topic never absorbed by the merge
+    }
+
+    [Fact]
     public async Task StandardMode_LiveSummaryOmitted_OverallStaysNull()
     {
         await SeedDairyAsync(2, 3);

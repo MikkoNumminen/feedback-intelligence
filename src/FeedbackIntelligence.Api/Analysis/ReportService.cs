@@ -230,11 +230,18 @@ public sealed partial class ReportService(
                 return -1;
             }
             foreach (var group in structured
-                         .GroupBy(i => catchAll is not null
-                             && i.Structure!.Category == catchAll
-                             && !string.IsNullOrWhiteSpace(i.Structure!.Theme)
-                                 ? (Category: catchAll, TopicKey: i.Structure!.Theme.Trim().ToLowerInvariant())
-                                 : (Category: i.Structure!.Category, TopicKey: (string?)null))
+                         .GroupBy(i =>
+                         {
+                             // Emergent topic only when this is the catch-all AND the
+                             // theme normalizes to a non-empty key (ADR-0028); anything
+                             // else groups by its own category.
+                             var key = catchAll is not null && i.Structure!.Category == catchAll
+                                 ? ThemeGroupKey(i.Structure!.Theme)
+                                 : "";
+                             return key.Length > 0
+                                 ? (Category: catchAll!, TopicKey: (string?)key)
+                                 : (Category: i.Structure!.Category, TopicKey: (string?)null);
+                         })
                          // Demoted categories (retail's "rasismi", "asiaton") sort
                          // LAST no matter their count — hostile content must not
                          // lead — in their declared order among themselves.
@@ -245,9 +252,10 @@ public sealed partial class ReportService(
             {
                 var groupItems = group.ToList();
                 var isTopic = group.Key.TopicKey is not null;
-                // Emergent topic display keeps the first item's original theme casing.
+                // Emergent topic display keeps the first item's theme casing, with
+                // separators normalized to match how the group key was formed.
                 var title = isTopic
-                    ? groupItems[0].Structure!.Theme.Trim()
+                    ? CleanTheme(groupItems[0].Structure!.Theme)
                     : FallbackTitle(group.Key.Category, groupItems);
                 var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
                 var directionLabel = ReportText.DirectionLabel(direction, lang);
@@ -704,6 +712,26 @@ public sealed partial class ReportService(
             .First().Key;
         return $"{category}: {topTheme}";
     }
+
+    /// <summary>Normalize a free-text theme for emergent-topic DISPLAY (ADR-0028):
+    /// treat underscores as word separators and collapse whitespace runs, so
+    /// "tuotteiden_laatu" and "tuotteiden  laatu" render identically. Casing is
+    /// preserved. Returns empty when the theme was only separators.</summary>
+    private static string CleanTheme(string? theme) =>
+        string.IsNullOrEmpty(theme)
+            ? ""
+            : DoubledSpaces().Replace(theme.Replace('_', ' ').Trim(), " ").Trim();
+
+    /// <summary>The GROUPING key for emergent topics: <see cref="CleanTheme"/>
+    /// lowercased. Collapses the exact spelling variants the structuring prompt
+    /// asks the model to avoid — underscores-as-separators, stray casing, doubled
+    /// spaces — into one topic for when the model drifts anyway. Finnish
+    /// morphology (laatu/laatua) is deliberately NOT merged: that needs a
+    /// lemmatizer, and an occasional near-duplicate topic is acceptable while
+    /// over-merging two genuinely distinct topics is not. Empty (theme was only
+    /// separators) routes the item to its category bucket, not a nameless
+    /// topic.</summary>
+    private static string ThemeGroupKey(string? theme) => CleanTheme(theme).ToLowerInvariant();
 
     private string FallbackNarrative(IReadOnlyList<StoredFeedback> groupItems, string directionLabel, string language)
     {
