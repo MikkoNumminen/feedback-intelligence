@@ -45,6 +45,16 @@ public static class Commands
     public static async Task<int> UpAsync(bool load, bool supervise = false)
     {
         Console.WriteLine(Term.Bold("\n  bringing the demo up …\n"));
+        // Everything below rides on the docker engine (the ollama container, and the
+        // shared-RAG guard's `docker ps`). Without it the board carries no ollama row
+        // and `up` used to die on a bare LINQ "Sequence contains no matching element"
+        // — refuse with the actual reason instead.
+        if (Shell.Run("docker", ["info"], 8000).Code != 0)
+        {
+            Console.WriteLine("  " + Term.C("○ REFUSED", "31") +
+                " — docker engine unreachable. Start Docker Desktop, then re-run `feedctl up`.");
+            return 1;
+        }
         if (Board.SharedRagUp())
         {
             Console.WriteLine("  " + Term.C("○ REFUSED", "31") +
@@ -57,7 +67,9 @@ public static class Commands
         Console.WriteLine("  " + Term.C("◐", "33") + " starting isolated ollama …");
         if (Shell.Run("docker", ["start", Config.OllamaContainer], 30000).Code != 0)
             Shell.Run("docker", ["compose", "up", "-d", "ollama"], 120000);
-        if (!await WaitAsync(async () => (await Board.GatherAsync()).First(r => r.Label.StartsWith("ollama")).State == Term.State.Ok, 60))
+        // FirstOrDefault: if docker dies mid-wait the board loses its ollama row —
+        // that must read as "not ok yet", never throw out of the wait loop.
+        if (!await WaitAsync(async () => (await Board.GatherAsync()).FirstOrDefault(r => r.Label.StartsWith("ollama"))?.State == Term.State.Ok, 60))
             Console.WriteLine("  " + Term.C("▲ ollama slow to report healthy — continuing", "33"));
 
         if (!ApiHost.IsRunning())
