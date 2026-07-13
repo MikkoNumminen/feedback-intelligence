@@ -39,3 +39,4 @@ these ADRs relocate that reasoning into durable records.
 | [0026](0026-categories-emergent-topics-live-summary.md) | Asiaton category, emergent topics, and the desk summary view | Accepted |
 | [0027](0027-racism-recognition-alert-lexicon.md) | Racist-comment recognition: a category, forced by a deterministic lexicon | Accepted |
 | [0028](0028-categorization-accuracy-makeiset-theme-normalization.md) | Categorization accuracy: `makeiset` department, disambiguating hints, normalized emergent-topic keys | Accepted |
+| [0029](0029-complete-retail-taxonomy-hypermarket.md) | Complete the retail department taxonomy to a full hybrid hypermarket (17 → 30) | Accepted |
