@@ -31,7 +31,10 @@
   .msgmeta { display:flex; align-items:center; gap:.45rem; font-size:.8rem; color:var(--mut); }
   .msgtext { margin:.35rem 0 0; white-space:pre-wrap; }
   .sevdot { width:.7rem; height:.7rem; border-radius:50%; display:inline-block; flex:none; background:#8a94a0; }
-  .sev-medium { background:#c99a3b; } .sev-high { background:#b3541e; } .sev-critical { background:#b3261e; }
+  /* Severity identity: the SAME validated palette as charts.js SEV_COLORS, so
+     a message dot always matches the chart legend/segments on this page. */
+  .sev-low { background:#4e8ac8; }
+  .sev-medium { background:#d97706; } .sev-high { background:#ef5350; } .sev-critical { background:#a02c2c; }
   .flagwarn { color:#8a5a00; font-weight:600; }
   .flagtag { font-size:.72rem; color:#8a5a00; border:1px solid #d9b877; border-radius:.5rem; padding:0 .3rem; margin-left:.35rem; }
   dialog { border:1px solid var(--line); border-radius:.7rem; max-width:42rem; width:92vw; padding:1rem; }
@@ -67,6 +70,7 @@
 </dialog>
 
 <script src="./config.js"></script>
+<script src="./charts.js"></script>
 <script>
 "use strict";
 // Same-origin locally; on the static host, config.js (written at publish
@@ -92,6 +96,8 @@ const STR = {
     dropped: "perustelematonta väitettä hylätty", actionDropped: "ohjaileva kooste hylätty", fallbacks: "koostetta ilman kielimallia",
     alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
+    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma",
+    tileEntries: "Palautteita", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
     flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa", flaggedItem: "tarkistettava",
     snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
     noReport: "Raporttia ei saatu eikä tallennettua tilannekuvaa löytynyt.",
@@ -109,6 +115,8 @@ const STR = {
     dropped: "ungrounded claim(s) dropped", actionDropped: "directive summary(ies) dropped", fallbacks: "summary(ies) without the model",
     alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
+    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution",
+    tileEntries: "Items", tileFlagged: "To review", tileTrend: "Trend",
     flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted", flaggedItem: "review",
     snapShown: "The server was unreachable — showing the last saved snapshot.",
     noReport: "No report and no saved snapshot found.",
@@ -237,6 +245,34 @@ function render(report, live) {
     root.appendChild(alertCard);
   }
 
+  // The graphical layer (shared charts.js — same visuals as the desk segment).
+  // Built purely from the report in hand, so it renders identically from the
+  // committed snapshot with the backend down. severityMeta's label chain works
+  // offline too (L.sev carries the labels when /schema is unreachable).
+  const chartSections = report.themes.map(t => ({
+    label: t.isEmergentTopic ? t.title : catLabel(t.category),
+    count: t.count,
+    flagged: t.flaggedCount,
+  }));
+  const chartSevCounts = {};
+  for (const t of report.themes)
+    for (const s of t.sources || [])
+      chartSevCounts[s.severity] = (chartSevCounts[s.severity] || 0) + 1;
+  // Guarded: a missing/failed charts.js degrades to a chartless report page
+  // instead of a ReferenceError wiping the theme cards below. The entries
+  // tile counts STRUCTURED items so it reconciles with what the bars sum to;
+  // the unstructured remainder is already reported in the header line above.
+  if (window.FeedbackCharts)
+    FeedbackCharts.render(root, {
+      sections: chartSections, sevCounts: chartSevCounts,
+      total: report.totalItems - (report.structureFailedCount || 0),
+      directionLabel: report.overall?.directionLabel,
+      declaredSeverities: schema?.severities,
+      sevLabel: k => severityMeta(k).label,
+      strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
+                 chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+    });
+
   root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
   for (const theme of report.themes) {
     const card = node("div", "card", [
@@ -261,7 +297,7 @@ function render(report, live) {
 
 function severityMeta(sev) {
   const label = (schema && schema.severityLabels && schema.severityLabels[sev]) || (L.sev && L.sev[sev]) || sev;
-  const cls = ["medium", "high", "critical"].includes(sev) ? "sev-" + sev : "";
+  const cls = ["low", "medium", "high", "critical"].includes(sev) ? "sev-" + sev : "";
   return { label, cls };
 }
 
