@@ -76,3 +76,13 @@ telemetry. The report cache is invalidated even if the pass aborts mid-way.
   report-cache epoch) is the change tick every open view polls, so the segment
   adapts to every feedback received; pages baseline the tick BEFORE requesting
   the report, so ingests landing during a long synthesis are never swallowed.
+- **Amendment (shared chart module, 2026-07-13):** the graphical layer became
+  ONE implementation — `wwwroot/charts.js` (`window.FeedbackCharts.render`) —
+  consumed by both the desk segment and the demo/management view, ending the
+  demo page's view-code freeze for exactly this layer (its report DATA remains
+  the frozen committed snapshot). The module owns the validated severity
+  palette, KPI tiles, category bars and severity distribution; pages pass only
+  labels/strings. Page-side severity CSS (index.html's message-dialog dots)
+  mirrors the module's `SEV_COLORS` values — change them together. Render
+  calls are guarded (`window.FeedbackCharts` check): a failed script asset
+  degrades to a chartless page, never a dead one.

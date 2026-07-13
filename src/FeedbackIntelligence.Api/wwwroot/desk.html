@@ -510,17 +510,30 @@ function renderSegment(report) {
   for (const section of sections)
     for (const item of section.items)
       sevCounts[item.severity] = (sevCounts[item.severity] || 0) + 1;
+  // Charts cover STRUCTURED items only, so the entries tile counts the same
+  // set the bars sum to — the unstructured remainder is reported in the
+  // totals line above, never silently absorbed into a mismatching KPI.
+  renderChartLayer(body, sections, sevCounts,
+    report.totalItems - (report.structureFailedCount || 0),
+    report.overall?.directionLabel);
+
+  for (const section of sections)
+    renderSection(body, section);
+}
+
+// ONE adapter for both render phases: identical strings and label chain so
+// phase B can never relabel what phase A painted — and guarded, so a missing
+// or failed charts.js degrades to a chartless summary instead of a
+// ReferenceError killing every section below it.
+function renderChartLayer(body, sections, sevCounts, total, directionLabel) {
+  if (!window.FeedbackCharts) return;
   FeedbackCharts.render(body, {
-    sections, sevCounts, total: report.totalItems,
-    directionLabel: report.overall?.directionLabel ?? null,
+    sections, sevCounts, total, directionLabel,
     declaredSeverities: schema?.severities,
     sevLabel: k => (schema && schema.severityLabels?.[k]) || k,
     strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
                chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
   });
-
-  for (const section of sections)
-    renderSection(body, section);
 }
 
 // Phase A: instant CATEGORY-grouped list built from raw items — no LLM, so a
@@ -561,13 +574,7 @@ function renderQuick(items) {
     (demoted.includes(a.category) - demoted.includes(b.category))
     || (b.count - a.count)
     || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0));
-  FeedbackCharts.render(body, {
-    sections, sevCounts, total: items.length, directionLabel: null,
-    declaredSeverities: schema?.severities,
-    sevLabel: k => (schema && schema.severityLabels?.[k]) || k,
-    strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
-               chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
-  });
+  renderChartLayer(body, sections, sevCounts, structured.length, null);
   for (const section of sections)
     renderSection(body, section);
 }
