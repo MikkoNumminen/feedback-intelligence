@@ -67,3 +67,12 @@ telemetry. The report cache is invalidated even if the pass aborts mid-way.
   Human-accepted items in still-valid categories are never touched.
 - `categoryHints`/`catchAllCategory` are optional domain data: the game domain
   is untouched and compiles into identical behavior.
+- **Amendment (charts + adaptivity, same day):** `demotedCategories` joined the
+  domain data — presentation-only ordering (retail demotes `asiaton`: hostile
+  content must not lead the page). The rule deliberately lives in the domain
+  descriptor and is applied by the SERVER in summary ordering, with the desk's
+  instant phase mirroring it via /schema — removing either side as "apparent
+  duplication" regresses hostile-content-first. `GET /live/version` (the
+  report-cache epoch) is the change tick every open view polls, so the segment
+  adapts to every feedback received; pages baseline the tick BEFORE requesting
+  the report, so ingests landing during a long synthesis are never swallowed.

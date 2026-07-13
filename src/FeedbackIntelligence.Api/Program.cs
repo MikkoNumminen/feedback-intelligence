@@ -251,6 +251,8 @@ app.MapGet("/schema", (IActiveDomain domain) =>
         // The catch-all key (retail's "muu") so UIs can group its items by
         // emergent topic without hardcoding a domain value.
         catchAllCategory = d.CatchAllCategory,
+        // Categories views sort LAST (retail's "asiaton") — presentation only.
+        demotedCategories = d.DemotedCategories,
         categories = d.CategoryLabels.Keys,
         severities = d.SeverityLabels.Keys,
         types = d.TypeLabels.Keys,
@@ -292,6 +294,13 @@ app.MapPost("/live/restructure", async (
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
     }
 });
+
+// The live channel's change tick: the report-cache epoch, bumped by every
+// ingest and restructure. Pages poll this (tiny, in-memory, no DB/LLM work)
+// and refresh the segment when it moves — every open desk view adapts to
+// every feedback received, whoever submitted it.
+app.MapGet("/live/version", ([FromKeyedServices(Channels.Live)] ReportCache cache) =>
+    Results.Ok(new { version = cache.Epoch }));
 
 // The live desk channel's item list — the desk segment's "categorized stuff".
 app.MapGet("/live/feedback", (

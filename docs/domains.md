@@ -73,10 +73,15 @@ it is templated with the active domain's taxonomy at load time via the
   into emergent topics named by the structuring model's free-text theme
   ([ADR-0026](decisions/0026-categories-emergent-topics-live-summary.md));
   it also bounds `POST /live/restructure`. Must be a key in `categories`.
+- `demotedCategories` is **optional**: category keys views sort LAST regardless
+  of count (retail demotes `asiaton` — hostile content must not lead the page).
+  Presentation-only; keys must exist in `categories`.
 - `severities` and `types` are **optional and domain-overridable**. Omit them to
   inherit the core defaults (`low/medium/high/critical` and
   `complaint/praise/suggestion/question/other`) — most domains only author
-  `categories`.
+  `categories`. **Declare severities least→most severe**: the declaration order
+  is load-bearing — views render the distribution in it and treat the last two
+  levels as the "severe" headline pair.
 - `sources` is **required and non-empty** — the ingest channels the domain
   accepts as `source` values (a game studio's `steam_review`/`discord`/…, a
   retailer's `google_review`/`email`/…). `POST /feedback` rejects a source not in

@@ -20,7 +20,7 @@ const BACKEND = "https://paskamyrsky.tail6ed53b.ts.net";
 // actually use are relayed, so a future backend endpoint never becomes
 // publicly proxied merely by shipping. A prefix covers the exact path and any
 // subpath — "report" covers /report?from=… and /report/snapshot.
-const ALLOWED_PREFIXES = ["health", "schema", "interpret", "report", "live/feedback", "live/report"];
+const ALLOWED_PREFIXES = ["health", "schema", "interpret", "report", "live/feedback", "live/report", "live/version"];
 
 app.http("proxy", {
   methods: ["GET", "POST"],

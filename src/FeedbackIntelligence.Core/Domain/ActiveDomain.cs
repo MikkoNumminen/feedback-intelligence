@@ -129,6 +129,14 @@ public sealed class ActiveDomain : IActiveDomain
             throw new InvalidOperationException(
                 $"{sourcePath}: 'catchAllCategory' ('{catchAll}') is not in 'categories'.");
 
+        // Optional presentation demotion (views sort these last); a typo'd key
+        // would silently demote nothing, so reject it like the hints above.
+        var demoted = ReadStringArray(root, "demotedCategories") ?? [];
+        var unknownDemoted = demoted.Where(k => !categories.ContainsKey(k)).ToList();
+        if (unknownDemoted.Count > 0)
+            throw new InvalidOperationException(
+                $"{sourcePath}: 'demotedCategories' has key(s) not in 'categories': {string.Join(", ", unknownDemoted)}.");
+
         return new DomainDescriptor
         {
             Name = name,
@@ -143,6 +151,7 @@ public sealed class ActiveDomain : IActiveDomain
             Sources = sources,
             CategoryHints = hints,
             CatchAllCategory = catchAll,
+            DemotedCategories = demoted,
         };
     }
 
