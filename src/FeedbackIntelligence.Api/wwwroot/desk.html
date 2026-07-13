@@ -454,7 +454,21 @@ const catLabel = key => (schema && schema.categoryLabels?.[key]) || key;
 // replacements. Keys follow the core severity enum; unknown keys read neutral.
 const SEV_COLORS = { low: "#4e8ac8", medium: "#d97706", high: "#ef5350", critical: "#a02c2c" };
 const SEV_FALLBACK = "#9aa4af";
-const BAR_HUE = "#0b5fa5"; // the page accent — single-hue magnitude bars
+// Magnitude bars and chart text reference the page's OWN tokens — retheming
+// :root must not strand the charts on stale copies. (The severity palette
+// above stays literal: it is chart-specific and validator-pinned, not a theme
+// token.)
+const BAR_HUE = "var(--acc)";
+const INK = "var(--ink)", MUT = "var(--mut)";
+
+// Severity display order: the domain declares severities least→most severe
+// (the documented domain.json convention); appended after them, any severity
+// present in the data but missing from the schema — those items must never
+// vanish from the distribution (the degraded case is the one to see).
+function sevOrder(sevCounts) {
+  const declared = (schema?.severities) || Object.keys(SEV_COLORS);
+  return [...declared, ...Object.keys(sevCounts).filter(k => !declared.includes(k))];
+}
 
 const svgNode = (tag, attrs) => {
   const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -478,7 +492,7 @@ function categoryBarChart(sections) {
   sections.forEach((s, i) => {
     const y = i * rowH + (rowH - barH) / 2;
     const w = Math.max((s.count / max) * plotW, 3);
-    const name = svgNode("text", { x: labelW - 6, y: y + barH - 3, "text-anchor": "end", "font-size": "11", fill: "#66707d" });
+    const name = svgNode("text", { x: labelW - 6, y: y + barH - 3, "text-anchor": "end", "font-size": "11", fill: MUT });
     name.textContent = s.label.length > 18 ? s.label.slice(0, 17) + "…" : s.label;
     svg.appendChild(name);
     const bar = svgNode("path", { d: barPath(labelW, y, w, barH), fill: BAR_HUE, class: "bar" });
@@ -486,7 +500,14 @@ function categoryBarChart(sections) {
     tip.textContent = `${s.label} · ${s.count}`;
     bar.appendChild(tip);
     svg.appendChild(bar);
-    const value = svgNode("text", { x: labelW + w + 5, y: y + barH - 3, "font-size": "11", "font-weight": "600", fill: "#1c2430" });
+    // Value at the tip when it fits inside the plot; otherwise INSIDE the bar
+    // end in white (never clipped by the viewBox — the biggest bar is exactly
+    // the one whose number must stay readable).
+    const estimated = String(s.count).length * 7 + 4;
+    const fitsOutside = labelW + w + 5 + estimated <= width;
+    const value = fitsOutside
+      ? svgNode("text", { x: labelW + w + 5, y: y + barH - 3, "font-size": "11", "font-weight": "600", fill: INK })
+      : svgNode("text", { x: labelW + w - 5, y: y + barH - 3, "text-anchor": "end", "font-size": "11", "font-weight": "600", fill: "#fff" });
     value.textContent = s.count;
     svg.appendChild(value);
   });
@@ -497,21 +518,26 @@ function categoryBarChart(sections) {
 // gaps between segments; the legend (mandatory at 4 series) carries identity +
 // counts — segment text never rides the fill.
 function severityStackedBar(sevCounts) {
-  const order = (schema?.severities) || Object.keys(SEV_COLORS);
-  const present = order.filter(k => (sevCounts[k] || 0) > 0);
+  const present = sevOrder(sevCounts).filter(k => (sevCounts[k] || 0) > 0);
   const total = present.reduce((sum, k) => sum + sevCounts[k], 0);
   if (total === 0) return null;
-  const width = 320, barH = 16, gap = 2;
+  const width = 320, barH = 16, gap = 2, minW = 2;
+  // Clamp slivers to a visible minimum, then shave the overflow off the
+  // widest segment so the stack still sums to the viewBox — a tiny share must
+  // neither vanish nor push the last segment past the clip edge.
+  const plotW = width - gap * (present.length - 1);
+  const widths = present.map(k => Math.max((sevCounts[k] / total) * plotW, minW));
+  const overflow = widths.reduce((sum, w) => sum + w, 0) - plotW;
+  if (overflow > 0) widths[widths.indexOf(Math.max(...widths))] -= overflow;
   const svg = svgNode("svg", { viewBox: `0 0 ${width} ${barH}`, role: "img" });
   let x = 0;
   present.forEach((k, i) => {
-    const w = (sevCounts[k] / total) * (width - gap * (present.length - 1));
-    const seg = svgNode("rect", { x, y: 0, width: Math.max(w, 2), height: barH, rx: 2, fill: SEV_COLORS[k] || SEV_FALLBACK, class: "bar" });
+    const seg = svgNode("rect", { x, y: 0, width: widths[i], height: barH, rx: 2, fill: SEV_COLORS[k] || SEV_FALLBACK, class: "bar" });
     const tip = svgNode("title", {});
     tip.textContent = `${sevLabel(k)} · ${sevCounts[k]}`;
     seg.appendChild(tip);
     svg.appendChild(seg);
-    x += w + gap;
+    x += widths[i] + gap;
   });
   return svg;
 }
@@ -529,8 +555,11 @@ function kpiTile(label, value, warn) {
 // sections. Severe = the domain's two most severe declared levels.
 function renderCharts(body, sections, sevCounts, total, directionLabel) {
   if (total === 0 || sections.length === 0) return;
-  const order = (schema?.severities) || Object.keys(SEV_COLORS);
-  const severeKeys = order.slice(-2);
+  const order = sevOrder(sevCounts);
+  // The domain declares severities least→most severe (domains.md convention),
+  // so the DECLARED tail is the severe pair; guard domains with fewer levels.
+  const declared = (schema?.severities) || Object.keys(SEV_COLORS);
+  const severeKeys = declared.slice(-Math.min(2, declared.length));
   const severeCount = severeKeys.reduce((sum, k) => sum + (sevCounts[k] || 0), 0);
   const flagged = sections.reduce((sum, s) => sum + (s.flagged || 0), 0);
 
@@ -674,12 +703,15 @@ function renderQuick(items) {
     group.items.push({ severity: item.structure.severity, text: item.text, timestamp: item.timestamp });
     sevCounts[item.structure.severity] = (sevCounts[item.structure.severity] || 0) + 1;
   }
-  // Same ordering rule as the server: demoted categories (schema) last, then
-  // count, then label — so phase B doesn't visibly reshuffle the page.
+  // Same ordering rule as the server, INCLUDING the tiebreak: demoted
+  // categories (schema) last, then count, then category KEY (ordinal — the
+  // server's StringComparer.Ordinal, not a locale label sort) — so phase B
+  // never visibly reshuffles the page, even on equal counts.
   const demoted = schema?.demotedCategories || [];
   const sections = [...groups.values()].sort((a, b) =>
     (demoted.includes(a.category) - demoted.includes(b.category))
-    || (b.count - a.count) || a.label.localeCompare(b.label));
+    || (b.count - a.count)
+    || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0));
   renderCharts(body, sections, sevCounts, items.length, null);
   for (const section of sections)
     renderSection(body, section);
@@ -694,8 +726,12 @@ async function loadSegment() {
   // previous load's stale content.
   let phaseARendered = false;
   try {
-    // Both requests start immediately: the raw list renders as soon as it
-    // arrives, without delaying the (much slower) summary synthesis behind it.
+    // All three requests start immediately. The version tick is captured
+    // BEFORE the report request: baselining to a pre-synthesis tick is
+    // conservative — any ingest landing DURING the (possibly long) synthesis
+    // still moves the epoch past the baseline, so the next poll refreshes.
+    // Reading the tick afterwards would swallow exactly those ingests.
+    const versionPromise = fetch(`${API}/live/version`);
     const itemsPromise = fetch(`${API}/live/feedback?limit=1000`);
     const reportPromise = fetch(`${API}/live/report`);
     // Phase A — instant: raw items, no LLM. A refresh must never look empty.
@@ -713,8 +749,12 @@ async function loadSegment() {
     lastReport = await res.json();
     renderSegment(lastReport);
     setStatus("segmentStatus", "", "");
-    rebaselineVersion(); // this refresh consumed the current tick
-
+    // This refresh consumed the pre-report tick; an own save that bumped the
+    // epoch before this load started is therefore never double-refreshed.
+    try {
+      const versionRes = await versionPromise;
+      if (versionRes.ok) liveVersion = (await versionRes.json()).version;
+    } catch { /* transient — the poll re-baselines */ }
   } catch {
     if (phaseARendered) {
       // Keep this load's entry list, but the optimistic "the AI is writing the
@@ -741,16 +781,6 @@ el("segmentRefresh").addEventListener("click", loadSegment);
 // pauses while the tab is hidden and re-checks immediately on return.
 let liveVersion = null;
 
-// Re-baseline without triggering a refresh — called after loadSegment so an
-// own save (which bumps the epoch AND refreshes) doesn't double-refresh on
-// the next poll tick.
-async function rebaselineVersion() {
-  try {
-    const res = await fetch(`${API}/live/version`);
-    if (res.ok) liveVersion = (await res.json()).version;
-  } catch { /* transient */ }
-}
-
 async function checkLiveVersion() {
   if (document.visibilityState === "hidden" || segmentBusy) return;
   try {
@@ -759,13 +789,19 @@ async function checkLiveVersion() {
     const { version } = await res.json();
     const changed = liveVersion !== null && version !== liveVersion;
     liveVersion = version;
-    // Refresh on change — and also when the backend just came back after the
-    // segment failed to load at all (every open page recovers by itself).
-    if (changed || (!lastReport && !lastItems)) loadSegment();
+    // Refresh on change — and whenever the authoritative summary has never
+    // rendered on this page (first load failed, or phase B failed while the
+    // entry list painted): the page keeps retrying itself until it is whole.
+    if (changed || !lastReport) loadSegment();
   } catch { /* transient — the next tick retries */ }
 }
 
-setInterval(checkLiveVersion, 25000);
+// Self-scheduling with ±20% jitter: many open views must not synchronize
+// their polls (or their post-save refresh bursts) against the shared proxy
+// rate ceiling.
+(function scheduleTick() {
+  setTimeout(async () => { await checkLiveVersion(); scheduleTick(); }, 20000 + Math.random() * 10000);
+})();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") checkLiveVersion();
 });
