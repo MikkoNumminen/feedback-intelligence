@@ -186,3 +186,17 @@ re-running A4.
   the ongoing detectors.
 - Defenses live in `FeedbackIntelligence.Core`; a new domain inherits them without
   re-implementing security in prompt prose.
+
+## Amendment (2026-07-13): presentation post-processing on model prose slots
+
+The A3 slot discipline gained a presentation sibling: every model-authored,
+manager-facing prose slot (theme title, narrative, alert reason) is passed
+through a deterministic id-echo strip (`ReportService.StripIdEchoes`) before it
+ships. The rule is the same as grounding-by-validation: **presentation is
+enforced by post-processing, never by prompt-wording** — the locked prompts
+(ADR-0022) stay untouched, and only ids we actually provided are stripped
+(bracketed/parenthesized echoes for any id; bare echoes only with id-charset
+boundaries and only for non-pure-letter ids, so a word-like id can never bite
+into ordinary Finnish prose). A slot that was nothing but echoes strips to
+empty and takes the same deterministic fallback path as an A3 drop — a blank
+heading or reason has no output slot either.
