@@ -188,6 +188,20 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options, string? dbPat
         return await command.ExecuteNonQueryAsync(ct);
     }
 
+    /// <summary>Re-stamp the deterministic alert hits after a lexicon change
+    /// (ADR-0027). Alerts are rule-computed from the raw text — no human ever
+    /// edits them — so re-stamping is always safe, unlike a structure update.
+    /// Returns the affected row count.</summary>
+    public async Task<int> UpdateAlertsAsync(string id, IReadOnlyList<AlertHit> alerts, CancellationToken ct)
+    {
+        await using var connection = await OpenConnectionAsync(ct);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE feedback SET alerts_json = $alerts WHERE id = $id";
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$alerts", JsonSerializer.Serialize(alerts, Json));
+        return await command.ExecuteNonQueryAsync(ct);
+    }
+
     /// <summary>Open a connection with a bounded busy wait. SQLite's default is to
     /// fail IMMEDIATELY with SQLITE_BUSY (error 5) when another writer holds the lock;
     /// a 5 s busy_timeout lets a brief concurrent writer — or an ingest overlapping a

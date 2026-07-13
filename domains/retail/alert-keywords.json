@@ -33,6 +33,15 @@
       "laskutusvirhe",
       "maksu ei onnistu"
     ],
+    "rasismi": [
+      "neeker",
+      "nekru",
+      "rättipää",
+      "vinosilm",
+      "mutakuono",
+      "ryssä",
+      "sieg heil"
+    ],
     "legal_threat": [
       "kuluttajansuoja",
       "kuluttajariita",
@@ -52,6 +61,7 @@
     "'sattu/sattui' — dominant Finnish sense is tapahtua ('ei sattunut pahemmin'); as a keyword it floods false positives. The injury sense belongs to the LLM layer.",
     "structural-failure verbs (sortua, pettää, irrota, antaa periksi, romahtaa) — deliberately NOT keywords: they are exactly the no-keyword safety story's vocabulary, detectable only by understanding. Putting them here would make the demo's centerpiece trivially rule-detectable.",
     "'reklamaatio' — routine retail vocabulary, not a legal threat.",
-    "'home/homehtunut' — a quality complaint whose severity assessment belongs to the LLM layer, not an instant alert."
+    "'home/homehtunut' — a quality complaint whose severity assessment belongs to the LLM layer, not an instant alert.",
+    "rasismi stems: 'matu' is excluded ('maturiteetti' false-positives) and 'ryss' is written as the full 'ryssä' ('Bryssel' contains 'ryss'); 'mamu', 'manne', 'hurri' are excluded as contextual/ambiguous — novel or contextual racism belongs to the LLM layer (the 'rasismi' categoryHint routes it), which is exactly why both layers exist. NOTE: 'rasismi' is also a declared structuring category, so a hit here FORCES the item's category deterministically (ADR-0027)."
   ]
 }

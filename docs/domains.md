@@ -74,8 +74,16 @@ it is templated with the active domain's taxonomy at load time via the
   ([ADR-0026](decisions/0026-categories-emergent-topics-live-summary.md));
   it also bounds `POST /live/restructure`. Must be a key in `categories`.
 - `demotedCategories` is **optional**: category keys views sort LAST regardless
-  of count (retail demotes `asiaton` — hostile content must not lead the page).
+  of count (retail demotes `rasismi` and `asiaton` — hostile content must not
+  lead the page). **The list order is load-bearing**: demoted sections render
+  in declared order among themselves, so the last key lands at the very bottom.
   Presentation-only; keys must exist in `categories`.
+- **Category-alert override** ([ADR-0027](decisions/0027-racism-recognition-alert-lexicon.md)):
+  an alert-lexicon category (in the module's `alert-keywords.json`) whose name
+  IS a declared `categories` key categorizes the item **deterministically** —
+  the forced category outranks the structuring model and desk acceptance alike
+  (retail's `rasismi`). Alert-only lexicon categories (e.g. `injury_safety`)
+  are unaffected.
 - `severities` and `types` are **optional and domain-overridable**. Omit them to
   inherit the core defaults (`low/medium/high/critical` and
   `complaint/praise/suggestion/question/other`) — most domains only author

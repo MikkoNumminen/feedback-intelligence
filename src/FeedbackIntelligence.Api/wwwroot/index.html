@@ -316,6 +316,9 @@ function openMessages(theme) {
       node("span", null, [`${s.source} · ${short(s.timestamp)} · ${sm.label}`]),
     ];
     if (s.needsReview) metaKids.push(node("span", "flagtag", [`⚠ ${L.flaggedItem}`]));
+    // Deterministic alert-lexicon recognition per message (ADR-0027).
+    if (s.alertCategories && s.alertCategories.length)
+      metaKids.push(node("span", "flagtag", [`⚑ ${s.alertCategories.join(", ")}`]));
     list.appendChild(node("div", "msgrow", [node("div", "msgmeta", metaKids), node("p", "msgtext", [s.text])]));
   }
   body.appendChild(list);

@@ -9,6 +9,7 @@ using FeedbackIntelligence.Api.Alerts;
 using FeedbackIntelligence.Api.Analysis;
 using FeedbackIntelligence.Api.Ingest;
 using FeedbackIntelligence.Api.Storage;
+using FeedbackIntelligence.Core.Alerts;
 using FeedbackIntelligence.Core.Domain;
 using FeedbackIntelligence.Llm;
 using FeedbackIntelligence.Llm.Structuring;
@@ -53,6 +54,7 @@ builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) => new IngestService(
     sp.GetRequiredService<IStructuringService>(),
     sp.GetRequiredService<LlmGate>(),
     sp.GetRequiredService<AlertKeywordSet>(),
+    sp.GetRequiredService<IActiveDomain>(),
     sp.GetRequiredKeyedService<ReportCache>(Channels.Live),
     sp.GetRequiredService<ILogger<IngestService>>()));
 builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) => new ReportService(
@@ -202,6 +204,8 @@ app.MapPost("/interpret", async (
     IStructuringService structuring,
     LlmGate gate,
     IOptions<IngestOptions> options,
+    AlertKeywordSet keywords,
+    IActiveDomain domain,
     ILoggerFactory loggerFactory,
     CancellationToken ct) =>
 {
@@ -211,12 +215,18 @@ app.MapPost("/interpret", async (
     try
     {
         var result = await gate.RunAsync(innerCt => structuring.StructureAsync(request.Text, innerCt), ct);
+        // ADR-0027: the preview shows the same category-alert override ingest
+        // will enforce, so the human accepts what actually gets stored.
+        var alerts = AlertMatcher.Match(request.Text, keywords.Categories);
+        var structure = AlertMatcher.ApplyCategoryOverride(
+            result.Structure, AlertMatcher.CategoryOverride(alerts, domain.Descriptor.Categories));
         return Results.Ok(new
         {
-            structure = result.Structure,
+            structure,
             failed = result.Failed,
             salvaged = result.Salvaged,
             notes = result.Notes,
+            alertCategories = AlertMatcher.DistinctCategories(alerts),
         });
     }
     catch (LlmBusyException)
@@ -286,8 +296,8 @@ app.MapPost("/live/restructure", async (
 {
     try
     {
-        var (restructured, failed, skipped, total) = await ingest.RestructureAsync(domain.Descriptor, ct);
-        return Results.Ok(new { restructured, failed, skipped, total });
+        var (restructured, failed, skipped, alertsUpdated, total) = await ingest.RestructureAsync(domain.Descriptor, ct);
+        return Results.Ok(new { restructured, failed, skipped, alertsUpdated, total });
     }
     catch (LlmBusyException)
     {

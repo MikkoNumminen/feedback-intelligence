@@ -40,6 +40,19 @@ public class IngestServiceTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        TestDomains.RetailActive(),
+        new Analysis.ReportCache(),
+        NullLogger<IngestService>.Instance);
+
+    /// <summary>Service over the COMMITTED retail lexicon + domain, for the
+    /// ADR-0027 category-alert tests ("rasismi" is both an alert category and a
+    /// declared structuring category).</summary>
+    private IngestService CreateServiceRealLexicon(IStructuringService structuring) => new(
+        _store,
+        structuring,
+        new LlmGate(_options),
+        TestDomains.RetailKeywords(),
+        TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
 
@@ -317,14 +330,16 @@ public class IngestServiceTests : IDisposable
             {
                 Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
             },
+            TestDomains.RetailActive(),
             cache, NullLogger<IngestService>.Instance);
 
-        var (restructured, failed, skipped, total) =
+        var (restructured, failed, skipped, alertsUpdated, total) =
             await service.RestructureAsync(TestDomains.Retail(), CancellationToken.None);
 
         Assert.Equal(2, restructured);
         Assert.Equal(0, failed);
         Assert.Equal(1, skipped);
+        Assert.Equal(0, alertsUpdated); // no lexicon hits in these texts — nothing re-stamped
         Assert.Equal(3, total);
         Assert.NotEqual(epochBefore, cache.Epoch); // live report cache invalidated
 
@@ -338,6 +353,82 @@ public class IngestServiceTests : IDisposable
         Assert.NotNull(r3.Corrections);                 // ...human audit preserved
     }
 
+    [Fact]
+    public async Task CategoryAlert_ForcesCategory_OverModelStructure()
+    {
+        // ADR-0027: the lexicon's "rasismi" hit categorizes deterministically —
+        // whatever the model said, the item lands in the rasismi category and
+        // carries the alert. Flagged and KEPT: nothing is dropped or hidden.
+        var structuring = new FakeStructuring(Success()); // model says maito_kylma
+        var request = new FeedbackRequest(
+            "ras-1", "web_form", "Onko olemassa neekereitä?", "2026-07-01T10:00:00+03:00", null, null);
+
+        var stored = await CreateServiceRealLexicon(structuring).IngestAsync(request, CancellationToken.None);
+
+        Assert.Contains(stored.Alerts, a => a.Category == "rasismi");
+        Assert.Equal("rasismi", stored.Structure!.Category);
+        Assert.Equal(ValidStructure.Theme, stored.Structure.Theme); // only the category is forced
+        Assert.NotNull(await _store.GetAsync("ras-1", CancellationToken.None)); // kept, never dropped
+    }
+
+    [Fact]
+    public async Task CategoryAlert_ForcesCategory_OverDeskAcceptedStructure_AndDropsStaleCategoryAudit()
+    {
+        // The override outranks desk acceptance too: /interpret previews the
+        // forced category, so a mismatch here means it was edited away — the
+        // deterministic rule re-asserts it at save time. The clerk's CATEGORY
+        // correction then audits a choice the rule discarded and must not be
+        // stored (telemetry would count it); other-field audits still describe
+        // the stored structure and are kept.
+        var structuring = new FakeStructuring(Success());
+        var accepted = new FeedbackStructure("hevi", "hedelmät", "low", "complaint", "fi");
+        var corrections = new List<FieldCorrection>
+        {
+            new("category", "rasismi", "hevi"),   // edited the forced preview away
+            new("severity", "medium", "low"),      // unrelated audit — kept
+        };
+        var request = new FeedbackRequest(
+            "ras-2", "desk", "Hedelmät on pilaantuneita ja kassalla joku mutakuono", "2026-07-01T10:00:00+03:00",
+            accepted, corrections);
+
+        var stored = await CreateServiceRealLexicon(structuring).IngestAsync(request, CancellationToken.None);
+
+        Assert.Equal(0, structuring.Calls); // still the no-second-LLM-pass desk path
+        Assert.Equal("rasismi", stored.Structure!.Category);
+        Assert.DoesNotContain(stored.Corrections!, c => c.Field == "category");
+        Assert.Contains(stored.Corrections!, c => c.Field == "severity");
+    }
+
+    [Fact]
+    public async Task Restructure_ReStampsAlerts_AndForcesCategory_WithoutLlm()
+    {
+        // ADR-0027 adoption path: an item stored BEFORE the rasismi lexicon
+        // category existed (no alerts, valid category) is re-recognized by the
+        // restructure pass deterministically — alerts re-stamped and the
+        // category forced, with ZERO LLM calls.
+        var preLexicon = new FeedbackStructure("kassa_palvelu", "asiakaspalvelu", "low", "complaint", "fi");
+        await _store.InsertAsync(new StoredFeedback(
+            "ras-3", "desk", "Kassalla huudettiin sieg heil", "2026-07-01T09:00:00.0000000+00:00",
+            "2026-07-01T09:00:00Z", preLexicon, false, false, [], [], null), CancellationToken.None);
+
+        var structuring = new FakeStructuring(Success());
+        var service = CreateServiceRealLexicon(structuring);
+
+        var (restructured, failed, skipped, alertsUpdated, total) =
+            await service.RestructureAsync(TestDomains.Retail(), CancellationToken.None);
+
+        Assert.Equal(0, structuring.Calls);   // deterministic pass only
+        Assert.Equal(1, restructured);
+        Assert.Equal(0, failed);
+        Assert.Equal(0, skipped);
+        Assert.Equal(1, alertsUpdated);
+        Assert.Equal(1, total);
+        var updated = await _store.GetAsync("ras-3", CancellationToken.None);
+        Assert.Contains(updated!.Alerts, a => a.Category == "rasismi");
+        Assert.Equal("rasismi", updated.Structure!.Category);
+        Assert.Equal(preLexicon.Severity, updated.Structure.Severity); // rest carried over
+    }
+
     private IngestService CreateService2(IStructuringService structuring) => new(
         _store,
         structuring,
@@ -346,6 +437,7 @@ public class IngestServiceTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
 

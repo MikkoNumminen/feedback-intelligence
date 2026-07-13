@@ -219,15 +219,26 @@ public sealed partial class ReportService(
             // ONE whole-window synthesis below.
             var catchAll = activeDomain.Descriptor.CatchAllCategory;
             var demoted = activeDomain.Descriptor.DemotedCategories;
+            // Non-demoted rank -1 (first); demoted rank = position in the
+            // declared list, so the domain controls the bottom-of-page order
+            // (retail: "rasismi" above "asiaton", "asiaton" always last).
+            int DemotedRank(string category)
+            {
+                for (var i = 0; i < demoted.Count; i++)
+                    if (demoted[i] == category)
+                        return i;
+                return -1;
+            }
             foreach (var group in structured
                          .GroupBy(i => catchAll is not null
                              && i.Structure!.Category == catchAll
                              && !string.IsNullOrWhiteSpace(i.Structure!.Theme)
                                  ? (Category: catchAll, TopicKey: i.Structure!.Theme.Trim().ToLowerInvariant())
                                  : (Category: i.Structure!.Category, TopicKey: (string?)null))
-                         // Demoted categories (retail's "asiaton") sort LAST no
-                         // matter their count — hostile content must not lead.
-                         .OrderBy(g => demoted.Contains(g.Key.Category) ? 1 : 0)
+                         // Demoted categories (retail's "rasismi", "asiaton") sort
+                         // LAST no matter their count — hostile content must not
+                         // lead — in their declared order among themselves.
+                         .OrderBy(g => DemotedRank(g.Key.Category))
                          .ThenByDescending(g => g.Count())
                          .ThenBy(g => g.Key.Category, StringComparer.Ordinal)
                          .ThenBy(g => g.Key.TopicKey, StringComparer.Ordinal))
@@ -677,7 +688,10 @@ public sealed partial class ReportService(
             .OrderByDescending(i => SeverityRank(i.Structure?.Severity))
             .ThenByDescending(i => i.Timestamp, StringComparer.Ordinal)
             .Select(i => new ReportSourceItem(
-                i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview))
+                i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview,
+                i.Alerts.Count > 0
+                    ? Core.Alerts.AlertMatcher.DistinctCategories(i.Alerts)
+                    : null))
             .ToList();
 
     private static int SeverityRank(string? severity) => RankOf(severity);
