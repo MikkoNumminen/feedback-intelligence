@@ -78,8 +78,12 @@ builder.Services.AddRateLimiter(limiter =>
     limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
         var ip = context.Connection.RemoteIpAddress;
-        // ForwardedHeaders runs before this, so tunneled clients carry their
-        // REAL IP here and stay limited; only genuine local callers are exempt.
+        // ForwardedHeaders runs before this; only genuine local callers are exempt.
+        // DIRECT Funnel callers carry their real IP here. On the browser path
+        // (same-origin /api proxy, ADR-0025) every visitor arrives as the proxy's
+        // Azure egress IP, so the limit is a SHARED audience ceiling, not
+        // per-visitor — sized accordingly (Ingest:RateLimitRequests); GPU work is
+        // independently bounded by the LlmGate and the input caps.
         if (ingestConfig.RateLimitExemptLoopback && ip is not null && System.Net.IPAddress.IsLoopback(ip))
             return RateLimitPartition.GetNoLimiter("loopback");
         return RateLimitPartition.GetFixedWindowLimiter(

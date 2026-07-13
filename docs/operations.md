@@ -131,9 +131,12 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
 
 ### Deploying the frontend to Azure ($0, one-time setup)
 
-**Cost model:** one Static Web App on the **Free** SKU, static-only — no managed
-API, no Functions, no App Service. $0 with no time limit. Guardrails and the
-"why not Readlog's App Service" reconciliation are in
+**Cost model:** one Static Web App on the **Free** SKU: the static bundle plus
+ONE Free-tier managed function — the same-origin `/api` proxy
+([ADR-0025](decisions/0025-same-origin-api-proxy.md)); no App Service, no
+separate Functions plan. Still $0 with no time limit (managed functions are
+included in the Free SKU). Guardrails and the "why not Readlog's App Service"
+reconciliation are in
 [ADR-0016](decisions/0016-zero-cost-static-web-apps-deploy.md).
 
 CI does the deploy: `.github/workflows/azure-static-web-apps.yml` builds `dist/`
@@ -147,16 +150,22 @@ repo settings:
    az group create -n rg-feedback-intelligence -l westeurope
    az staticwebapp create -n feedback-intelligence -g rg-feedback-intelligence -l westeurope --sku Free
    ```
-2. **Deployment token → GitHub secret; Funnel URL → GitHub variable.** Pipe the
-   token straight into `gh` so it never lands in shell history. Set **both** — the
-   workflow gates on the variable, but the deploy step needs the token too:
+2. **Deployment token → GitHub secret; deploy-enable flag → GitHub variable.**
+   Pipe the token straight into `gh` so it never lands in shell history. The
+   `FUNNEL_API_BASE` variable is now ONLY the deploy on/off gate (job-level `if`
+   cannot read secrets) — its **value is no longer consumed**: the pages call
+   same-origin `/api`, and the Funnel hostname lives in `api/src/index.js`
+   (`BACKEND`, with the board-probe origin in feedctl's `Config.PublicSiteUrl`).
+   To rotate the Funnel host, edit those two constants — NOT this variable:
    ```bash
    az staticwebapp secrets list -n feedback-intelligence -g rg-feedback-intelligence --query "properties.apiKey" -o tsv \
      | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN -R <owner>/feedback-intelligence --body-file -
-   gh variable set FUNNEL_API_BASE -R <owner>/feedback-intelligence -b "https://<machine>.<tailnet>.ts.net"
+   gh variable set FUNNEL_API_BASE -R <owner>/feedback-intelligence -b "enabled"
    ```
-3. **CORS round-trip (LOCAL machine)** — the deploy succeeds but every API call is
-   blocked until this is done. Get the SWA host, add it to the API, restart:
+3. **CORS allowlist (LOCAL machine, optional under ADR-0025)** — the browser
+   path is same-origin `/api` and needs NO CORS; this allowlist only matters
+   for DIRECT cross-origin calls against the Funnel (ops tooling, back-compat).
+   If setting it, get the SWA host:
    ```bash
    az staticwebapp show -n feedback-intelligence -g rg-feedback-intelligence --query defaultHostname -o tsv
    ```

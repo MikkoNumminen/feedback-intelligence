@@ -51,11 +51,17 @@ function** as the edge proxy:
   access only** (ops tooling, back-compat); the browser path no longer
   exercises them. They stay: removing working hardening to save lines would
   be false economy.
-- **Per-visitor rate limiting is lost on the proxied path**: requests reach
-  the API from Azure egress IPs (and the Funnel's proxy rewrites
-  X-Forwarded-For anyway — the sibling repo hit the same). The GPU remains
-  protected by the LlmGate concurrency bound, the input caps, and the report
-  cache; accepted, as in mikkonumminen.dev's ADR-0012.
+- **The rate limit becomes a shared audience ceiling on the proxied path**:
+  every visitor reaches the API as the proxy's Azure egress IP, so the
+  "per-IP" fixed window is collectively shared by the entire public audience —
+  a small audience could exhaust a per-visitor-sized window together.
+  `Ingest:RateLimitRequests` is sized for that reality (240/60s); the GPU
+  remains protected by the LlmGate concurrency bound, the input caps, and the
+  report cache, as in mikkonumminen.dev's ADR-0012. Direct-Funnel callers
+  still get true per-IP limiting.
+- The proxy relays only an explicit path-prefix allowlist (health, schema,
+  interpret, report, live/feedback, live/report): a future backend endpoint
+  must be added deliberately, never exposed by default.
 - A cold managed function adds seconds to the first API call after idle.
   The snapshot-first render absorbs this on the management view; the desk
   page's first interpret after a long idle may feel slow once.

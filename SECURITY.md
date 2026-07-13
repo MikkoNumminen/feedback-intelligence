@@ -36,12 +36,12 @@ Everything below is written for the demo assumption. If you change it, revisit S
 
 | Surface | Control | Where |
 |---|---|---|
-| Request volume | Per-IP fixed-window rate limit (loopback exemptible); tunneled clients keep their real IP via forwarded headers | `Program.cs` rate limiter |
+| Request volume | Fixed-window rate limit (loopback exemptible). On the browser path (same-origin `/api` proxy, ADR-0025) every visitor arrives as the proxy's egress IP, so the limit is a **shared audience ceiling**, not per-visitor; direct-Funnel callers still carry their real IP via forwarded headers. GPU work is independently bounded by `LlmGate` + input caps | `Program.cs` rate limiter |
 | Request size | Kestrel body cap (`Ingest:MaxBodyBytes`) + text length cap (`Ingest:InputMaxChars`) enforced **before** any LLM work | `Program.cs`, `RequestValidator` |
 | Model-call exhaustion | Concurrency gate (`LlmGate`, shed-not-queue) **and** a server-side per-call timeout (`Ingest:LlmCallTimeoutMs`) so a hung generation can't hold a slot | `LlmGate` |
 | Prompt injection | Six-layer defense-in-depth at every prompt splice (neutralize · symptom-flag · authority-bound · citation-ground · deterministic-anchor · red-team fixture) | `Core/Security/*`, `Alerts/AlertMatcher`, `ReportService`, ADR-0021 |
 | SQL | Every statement fully parameterized (`SqliteParameter`); no string-built SQL from input | `Storage/FeedbackStore` |
-| Cross-origin | Explicit CORS Origin allowlist (`Ingest:AllowedCorsOrigins`), `GET`/`POST` + `Content-Type` only, **no** credentials; Private-Network-Access preflight granted only to an allowlisted Origin | `Program.cs` |
+| Cross-origin | The browser path is **same-origin** via the `/api` proxy (ADR-0025) and exercises no CORS. The explicit CORS Origin allowlist (`Ingest:AllowedCorsOrigins`, `GET`/`POST` + `Content-Type` only, **no** credentials) and the Private-Network-Access preflight grant remain as defense for DIRECT Funnel access only | `Program.cs`, `api/src/index.js` |
 | Path handling | File paths derive only from config/domain descriptors, never from request input; `/feedback/{id}` uses the id only as a SQL parameter | `AppPathResolver`, `FeedbackStore` |
 | Secrets | None in source or config — local Ollama (no API key), SQLite file (no credentials) | — |
 

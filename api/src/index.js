@@ -9,24 +9,43 @@ const { app } = require("@azure/functions");
 // machine (MagicDNS). Mirrors the mikkonumminen.dev same-origin proxy
 // decision (that repo's ADR-0012).
 //
-// The Funnel URL is public knowledge (it was previously baked into config.js
-// and sits in the API's CORS allowlist), so hardcoding it here adds no
-// exposure and keeps the function free of portal-managed configuration.
+// The Funnel URL is public knowledge (it is announced by the Funnel's own TLS
+// certificate and was previously baked into config.js), so hardcoding it here
+// adds no exposure and keeps the function free of portal-managed
+// configuration. Rotating the Funnel host means editing THIS constant — see
+// docs/operations.md setup step 2 for the rotation checklist.
 const BACKEND = "https://paskamyrsky.tail6ed53b.ts.net";
+
+// Fail closed: only the path prefixes the pages (and feedctl's board probe)
+// actually use are relayed, so a future backend endpoint never becomes
+// publicly proxied merely by shipping. A prefix covers the exact path and any
+// subpath — "report" covers /report?from=… and /report/snapshot.
+const ALLOWED_PREFIXES = ["health", "schema", "interpret", "report", "live/feedback", "live/report"];
 
 app.http("proxy", {
   methods: ["GET", "POST"],
   authLevel: "anonymous",
   route: "{*path}",
   handler: async (request, context) => {
-    const search = new URL(request.url).search;
-    const target = `${BACKEND}/${request.params.path ?? ""}${search}`;
+    // Path from the RAW request URL, not request.params.path: route params
+    // arrive URL-decoded, and re-interpolating a decoded '#' or '/' into the
+    // fetch URL would truncate or re-split the forwarded path. The pathname
+    // keeps the original percent-encoding; the /api prefix is stripped if the
+    // host passes it through.
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/^\/api(?=\/|$)/, "").replace(/^\//, "");
+    if (!ALLOWED_PREFIXES.some(p => path === p || path.startsWith(p + "/")))
+      return { status: 404, jsonBody: { error: "not proxied" } };
+
     const init = { method: request.method, headers: {}, redirect: "manual" };
     const contentType = request.headers.get("content-type");
     if (contentType) init.headers["content-type"] = contentType;
     if (request.method === "POST") init.body = Buffer.from(await request.arrayBuffer());
     try {
-      const res = await fetch(target, init);
+      // No artificial timeout: a first live report legitimately runs MANY
+      // sequential gated LLM calls (far past any single-call bound), so the
+      // platform's own gateway limit is the effective ceiling here.
+      const res = await fetch(`${BACKEND}/${path}${url.search}`, init);
       const headers = { "cache-control": "no-store" };
       const resType = res.headers.get("content-type");
       if (resType) headers["content-type"] = resType;
@@ -34,7 +53,7 @@ app.http("proxy", {
     } catch (err) {
       // Backend down is a NORMAL state for this demo (snapshot-first design):
       // answer with a clean 502 the pages already treat as "server offline".
-      context.warn(`proxy: ${target} unreachable: ${err.message}`);
+      context.warn(`proxy: ${path} unreachable: ${err.message}`);
       return { status: 502, jsonBody: { error: "backend unreachable" } };
     }
   },
