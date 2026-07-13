@@ -50,6 +50,7 @@
                  padding:.6rem .8rem; margin:.4rem 0 .8rem; }
   .seg-overall h3 { font-size:.95rem; margin:0 0 .3rem; }
   .seg-overall .seg-meta { margin:.25rem 0 0; }
+  .itemtag { color:var(--err); font-weight:600; font-size:.75rem; margin-left:.35rem; white-space:nowrap; }
   .seg-tag { font-size:.72rem; font-weight:400; color:var(--mut); border:1px solid var(--line);
              border-radius:.4rem; padding:.05rem .35rem; margin-left:.45rem; vertical-align:middle; }
   /* Charts (dataviz specs: thin marks, recessive chrome, text in ink not series color) */
@@ -80,7 +81,7 @@
   </div>
 
   <div class="card" id="interpret-card">
-    <strong id="interpretHeading"></strong>
+    <strong id="interpretHeading"></strong><span class="itemtag" id="interpretFlags"></span>
     <label for="category" id="categoryLabel"></label>
     <select id="category"></select>
     <label for="theme" id="themeLabel"></label>
@@ -280,6 +281,10 @@ el("interpret").addEventListener("click", async () => {
     if (!res.ok) { setStatus("status1", "err", L.interpretFailed); return; }
     const data = await res.json();
     startEntry(text);
+    // Deterministic lexicon hits (ADR-0027) — shown on the preview whether or
+    // not the model succeeded, so the clerk sees the flag before saving.
+    el("interpretFlags").textContent = data.alertCategories?.length
+      ? `⚑ ${data.alertCategories.join(", ")}` : "";
     if (data.failed || !data.structure) {
       // Model failed: human authors the structure; the failure is recorded
       // (modelInterpretationFailed) so telemetry never mistakes this for a
@@ -613,6 +618,10 @@ function renderSection(body, section) {
     const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity || "?";
     li.appendChild(node("span", "sev", sevLabel));
     li.appendChild(document.createTextNode(item.text));
+    // Deterministic alert-lexicon recognition, visible per comment (ADR-0027):
+    // e.g. a racist comment carries its "rasismi" tag right on the row.
+    if (item.alertCategories?.length)
+      li.appendChild(node("span", "itemtag", `⚑ ${item.alertCategories.join(", ")}`));
     li.appendChild(node("span", "when", shortTime(item.timestamp)));
     list.appendChild(li);
   }
@@ -640,8 +649,11 @@ function renderSegment(report) {
 
   if (report.alerts?.length) {
     body.appendChild(node("strong", null, `${L.segmentAlerts} (${report.alerts.length})`));
-    for (const alert of report.alerts)
-      body.appendChild(node("div", "seg-alert", alert.textExcerpt || alert.text));
+    for (const alert of report.alerts) {
+      const hitCategories = [...new Set((alert.deterministicHits || []).map(h => h.category))];
+      body.appendChild(node("div", "seg-alert",
+        (hitCategories.length ? hitCategories.join(", ") + ": " : "") + (alert.textExcerpt || alert.text)));
+    }
   }
 
   // Yhteenveto on top: the ONE whole-window narrative (ADR-0026).
@@ -700,16 +712,21 @@ function renderQuick(items) {
     const group = groups.get(key);
     group.count++;
     if (item.needsReview) group.flagged++;
-    group.items.push({ severity: item.structure.severity, text: item.text, timestamp: item.timestamp });
+    group.items.push({
+      severity: item.structure.severity, text: item.text, timestamp: item.timestamp,
+      alertCategories: item.alerts?.length
+        ? [...new Set(item.alerts.map(a => a.category))] : null,
+    });
     sevCounts[item.structure.severity] = (sevCounts[item.structure.severity] || 0) + 1;
   }
   // Same ordering rule as the server, INCLUDING the tiebreak: demoted
-  // categories (schema) last, then count, then category KEY (ordinal — the
-  // server's StringComparer.Ordinal, not a locale label sort) — so phase B
-  // never visibly reshuffles the page, even on equal counts.
+  // categories (schema) last IN DECLARED ORDER (indexOf; non-demoted rank -1),
+  // then count, then category KEY (ordinal — the server's
+  // StringComparer.Ordinal, not a locale label sort) — so phase B never
+  // visibly reshuffles the page, even on equal counts.
   const demoted = schema?.demotedCategories || [];
   const sections = [...groups.values()].sort((a, b) =>
-    (demoted.includes(a.category) - demoted.includes(b.category))
+    (demoted.indexOf(a.category) - demoted.indexOf(b.category))
     || (b.count - a.count)
     || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0));
   renderCharts(body, sections, sevCounts, items.length, null);

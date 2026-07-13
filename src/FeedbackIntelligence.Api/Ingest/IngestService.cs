@@ -19,6 +19,7 @@ public sealed class IngestService(
     IStructuringService structuringService,
     LlmGate llmGate,
     AlertKeywordSet keywords,
+    Core.Domain.IActiveDomain activeDomain,
     Analysis.ReportCache reportCache,
     ILogger<IngestService> logger)
 {
@@ -50,6 +51,18 @@ public sealed class IngestService(
         else
         {
             (structure, failed, notes) = await StructureViaGateAsync(request.Text, "ingest", ct);
+        }
+
+        // ADR-0027: a category-alert (lexicon category that IS a declared
+        // structuring category, e.g. retail's "rasismi") categorizes the item
+        // deterministically. It outranks the model AND the desk-accepted
+        // structure: /interpret already previews the forced category, so a
+        // mismatch here means it was edited away — the rule re-asserts it.
+        var overrideCategory = AlertMatcher.CategoryOverride(alerts, activeDomain.Descriptor.Categories);
+        if (overrideCategory is not null && structure is not null && structure.Category != overrideCategory)
+        {
+            logger.LogInformation("Category-alert override: {Old} -> {New}", structure.Category, overrideCategory);
+            structure = structure with { Category = overrideCategory };
         }
 
         // Injection hardening (ADR-0021 A2): a deterministic scan of the raw text for
@@ -106,7 +119,7 @@ public sealed class IngestService(
     /// structure_failed and moves on — feedback is never lost. The cache is
     /// invalidated even when the pass aborts mid-way, so a partial pass can never
     /// leave a stale report over half-updated rows.</summary>
-    public async Task<(int Restructured, int Failed, int Skipped, int Total)> RestructureAsync(
+    public async Task<(int Restructured, int Failed, int Skipped, int AlertsUpdated, int Total)> RestructureAsync(
         Core.Domain.DomainDescriptor domain, CancellationToken ct)
     {
         // Newest-first cap of 500: far above any live-channel population; the
@@ -114,18 +127,57 @@ public sealed class IngestService(
         var items = await store.QueryAsync(null, null, 500, ct);
         var restructured = 0;
         var failed = 0;
+        var alertsUpdated = 0;
         var updatedAny = false;
         try
         {
             foreach (var item in items)
             {
+                // Alerts re-stamp for EVERY item, not just the bounded structure
+                // scope: the lexicon is deterministic rule data no human edits, so
+                // a new category (retail's "rasismi", ADR-0027) must recognize
+                // already-stored comments too — cheap, no LLM.
+                var currentAlerts = AlertMatcher.Match(item.Text, keywords.Categories);
+                var alertsChanged = currentAlerts.Count != item.Alerts.Count
+                    || currentAlerts.Zip(item.Alerts).Any(pair =>
+                        pair.First.Category != pair.Second.Category || pair.First.Pattern != pair.Second.Pattern);
+                if (alertsChanged && await store.UpdateAlertsAsync(item.Id, currentAlerts, ct) > 0)
+                {
+                    alertsUpdated++;
+                    updatedAny = true;
+                }
+
+                var overrideCategory = AlertMatcher.CategoryOverride(currentAlerts, domain.Categories);
                 var needsPass = item.Structure is null
                     || item.Structure.Category == domain.CatchAllCategory
                     || !domain.Categories.Contains(item.Structure.Category);
                 if (!needsPass)
+                {
+                    // A category-alert (ADR-0027) re-categorizes even an item the
+                    // bounded scope would skip — deterministic, no LLM, and it
+                    // outranks the human audit for the same reason it outranks
+                    // desk acceptance at ingest. Everything but the category
+                    // (incl. review flags) is carried over unchanged; the store
+                    // update clears corrections like any restructure, since they
+                    // audited a categorization that no longer stands.
+                    if (overrideCategory is not null && item.Structure!.Category != overrideCategory)
+                    {
+                        var forced = item.Structure with { Category = overrideCategory };
+                        var forcedRows = await store.UpdateStructureAsync(
+                            item.Id, forced, item.StructureFailed, item.SalvageNotes,
+                            item.NeedsReview, item.ReviewFlags ?? [], ct);
+                        if (forcedRows > 0)
+                        {
+                            restructured++;
+                            updatedAny = true;
+                        }
+                    }
                     continue;
+                }
 
                 var (structure, itemFailed, notes) = await StructureViaGateAsync(item.Text, $"restructure of {item.Id}", ct);
+                if (overrideCategory is not null && structure is not null && structure.Category != overrideCategory)
+                    structure = structure with { Category = overrideCategory };
                 var reviewFlags = BuildReviewFlags(item.Text, structure);
                 var updatedRows = await store.UpdateStructureAsync(
                     item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);
@@ -143,9 +195,10 @@ public sealed class IngestService(
                 reportCache.Invalidate();
         }
         var skipped = items.Count - restructured - failed;
-        logger.LogInformation("Restructure pass: {Ok} restructured, {Failed} failed, {Skipped} skipped, {Total} total.",
-            restructured, failed, skipped, items.Count);
-        return (restructured, failed, skipped, items.Count);
+        logger.LogInformation(
+            "Restructure pass: {Ok} restructured, {Failed} failed, {Skipped} skipped, {Alerts} alert re-stamps, {Total} total.",
+            restructured, failed, skipped, alertsUpdated, items.Count);
+        return (restructured, failed, skipped, alertsUpdated, items.Count);
     }
 
     /// <summary>The gated structuring call with the ingest error contract, shared

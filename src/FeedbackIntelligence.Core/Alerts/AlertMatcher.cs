@@ -20,4 +20,18 @@ public static class AlertMatcher
                     hits.Add(new AlertHit(category, pattern));
         return hits;
     }
+
+    /// <summary>ADR-0027: an alert-lexicon category whose name IS a declared
+    /// structuring category (retail's "rasismi") categorizes the item
+    /// deterministically — the forced category outranks the model and desk
+    /// acceptance alike, because the lexicon is precision-tuned rule data no
+    /// human edits and recognition must not depend on either. First hit whose
+    /// category the domain declares wins; null means no override.</summary>
+    public static string? CategoryOverride(IReadOnlyList<AlertHit> alerts, IReadOnlySet<string> declaredCategories)
+    {
+        foreach (var hit in alerts)
+            if (declaredCategories.Contains(hit.Category))
+                return hit.Category;
+        return null;
+    }
 }

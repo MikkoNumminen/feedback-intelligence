@@ -75,6 +75,47 @@ public class AlertMatcherTests
         Assert.All(hits, h => Assert.Equal("injury_safety", h.Category));
     }
 
+    [Theory]
+    [InlineData("Jumalauta, NEEKERIT sikiää täällä")]
+    [InlineData("Näin rättipään teidän kassalla")]
+    [InlineData("Kassalla huudettiin sieg heil")]
+    public void RealKeywordConfig_RasismiStems_MatchInflectedForms(string text)
+    {
+        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
+
+        var hits = AlertMatcher.Match(text, keywords.Categories);
+
+        Assert.Contains(hits, h => h.Category == "rasismi");
+    }
+
+    /// <summary>The lexicon's documented precision calls (deliberateExclusions):
+    /// stems that would false-positive on ordinary Finnish are NOT in the list.</summary>
+    [Theory]
+    [InlineData("Kävin Brysselissä lomalla, tuliaiset ostin teiltä")]     // 'ryss' inside Bryssel — excluded stem shape
+    [InlineData("Yrityksen maturiteetti on korkealla tasolla")]           // 'matu' — deliberately excluded
+    public void RealKeywordConfig_RasismiStems_DoNotFireOnDocumentedExclusions(string text)
+    {
+        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
+
+        var hits = AlertMatcher.Match(text, keywords.Categories);
+
+        Assert.DoesNotContain(hits, h => h.Category == "rasismi");
+    }
+
+    [Fact]
+    public void CategoryOverride_ReturnsFirstAlertThatIsADeclaredCategory()
+    {
+        var retail = TestDomains.Retail();
+        var alerts = new List<AlertHit> { new("injury_safety", "loukkaantu"), new("rasismi", "neeker") };
+
+        // "injury_safety" is alert-only vocabulary, not a structuring category —
+        // the override skips past it to "rasismi", which is both (ADR-0027).
+        Assert.Equal("rasismi", AlertMatcher.CategoryOverride(alerts, retail.Categories));
+        Assert.Null(AlertMatcher.CategoryOverride(
+            [new AlertHit("injury_safety", "loukkaantu")], retail.Categories));
+        Assert.Null(AlertMatcher.CategoryOverride([], retail.Categories));
+    }
+
     internal static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

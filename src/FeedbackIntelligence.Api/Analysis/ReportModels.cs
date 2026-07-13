@@ -27,7 +27,10 @@ public sealed record ReportSourceItem(
     // flagged needs_review at ingest. It is NOT excluded from the group/trend —
     // excluding it would be exploitable (append injection phrases to a real critical
     // to get it suppressed) — so instead the influence is made VISIBLE here.
-    bool NeedsReview = false);
+    bool NeedsReview = false,
+    // Deterministic alert-lexicon hits on this item (e.g. retail's "rasismi",
+    // ADR-0027) — the views tag the row so recognition is visible per comment.
+    IReadOnlyList<string>? AlertCategories = null);
 
 /// <summary>One theme group. Count, direction and the feedback IDs are computed
 /// deterministically; only Title/Narrative come from the synthesis model, and

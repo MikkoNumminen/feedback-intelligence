@@ -493,6 +493,7 @@ public static class Commands
             $" {root.GetProperty("restructured").GetInt32()} restructured · " +
             $"{root.GetProperty("failed").GetInt32()} structure_failed · " +
             $"{root.GetProperty("skipped").GetInt32()} skipped (valid category, human audit kept) · " +
+            $"{root.GetProperty("alertsUpdated").GetInt32()} alert re-stamps · " +
             $"{root.GetProperty("total").GetInt32()} total");
         return 0;
     }

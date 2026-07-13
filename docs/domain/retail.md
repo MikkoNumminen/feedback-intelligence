@@ -12,21 +12,27 @@ hand-written corpus.
 
 ## Category taxonomy (`domains/retail/domain.json`)
 
-The `category` field ([../schema.md](../schema.md)). Fifteen values, each with a
+The `category` field ([../schema.md](../schema.md)). Sixteen values, each with a
 Finnish display label; `categoryFieldLabel` is `osasto`:
 
 ```
 maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | kassa_palvelu |
 piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit | sahko_lvi |
-varasto_nouto | verkkokauppa_toimitus | asiaton | muu
+varasto_nouto | verkkokauppa_toimitus | rasismi | asiaton | muu
 ```
 
-`asiaton` (Asiaton palaute) holds abusive/racist/harassing content with no
-feedback substance; a `categoryHints` entry explains it to the structuring
-model without lengthening the display label, and `demotedCategories` sorts it
-LAST in the desk view so hostile content never leads the page. `muu` is declared the
-`catchAllCategory`: the desk's live summary splits it into emergent topics
-named by the model's free-text theme
+`rasismi` (Rasistinen palaute) names racist content per comment — flagged and
+KEPT, never dropped. Blunt racist vocabulary forces the category
+deterministically via the alert lexicon (the `rasismi` lexicon category is
+also a declared structuring category, so a hit overrides the model and desk
+acceptance — [ADR-0027](../decisions/0027-racism-recognition-alert-lexicon.md));
+novel or contextual racism reaches the same category through its
+`categoryHints` entry — the wordlist is the precision layer, the LLM the
+recall net. `asiaton` (Asiaton palaute) holds other abusive/harassing content
+with no feedback substance. `demotedCategories` (`rasismi`, then `asiaton`)
+sorts both LAST in that declared order, so hostile content never leads the
+page. `muu` is declared the `catchAllCategory`: the desk's live summary splits
+it into emergent topics named by the model's free-text theme
 ([ADR-0026](../decisions/0026-categories-emergent-topics-live-summary.md)).
 
 Severities and types are not overridden — retail inherits the core defaults
@@ -49,8 +55,8 @@ engine code** — the boundary gap ADR-0007 flagged is closed (ADR-0012).
 ## Alert keywords (`domains/retail/alert-keywords.json`)
 
 Loaded and validated at startup. Case-insensitive substring match over the raw
-feedback text, Finnish stems, in three categories: injury/safety, payment,
-legal-threat. The file also records **deliberate exclusions** — structural-failure
+feedback text, Finnish stems, in four categories: injury/safety, payment,
+racism, legal-threat. The file also records **deliberate exclusions** — structural-failure
 verbs (pettää, sortua, irrota, antaa periksi, romahtaa) are *non-keywords on
 purpose*: they are the no-keyword safety story's vocabulary, which must be
 detectable only by understanding
