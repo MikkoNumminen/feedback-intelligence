@@ -98,6 +98,34 @@ public class LlmStructuringServiceTests : IDisposable
         Assert.Single(client.Prompts);
     }
 
+    [Fact]
+    public async Task CategoryTemplate_WithHint_RendersLabelDashHint()
+    {
+        // The real retail domain declares a hint for "muu" (ADR-0026): the
+        // structuring prompt's {{categories}} block must render it as
+        // "key" (Label — hint), not just the bare label.
+        File.WriteAllText(_promptPath, "Classify:\n{{categories}}\n{{text}}");
+        var client = new ScriptedChatClient(ValidJson);
+
+        await CreateService(client).StructureAsync("maito oli vanhaa");
+
+        Assert.Contains("\"muu\" (Muu — asiallinen palaute, joka ei sovi mihinkään osastoon)", client.Prompts[0]);
+    }
+
+    [Fact]
+    public async Task CategoryTemplate_WithoutHint_RendersPlainLabel()
+    {
+        // A category with no domain.json hint renders as a bare "key" (Label) —
+        // no dash, no hint text.
+        File.WriteAllText(_promptPath, "Classify:\n{{categories}}\n{{text}}");
+        var client = new ScriptedChatClient(ValidJson);
+
+        await CreateService(client).StructureAsync("maito oli vanhaa");
+
+        Assert.Contains("\"maito_kylma\" (Maito & kylmä)", client.Prompts[0]);
+        Assert.DoesNotContain("\"maito_kylma\" (Maito & kylmä —", client.Prompts[0]);
+    }
+
     private sealed class StubDomain(DomainDescriptor descriptor) : IActiveDomain
     {
         public DomainDescriptor Descriptor { get; } = descriptor;

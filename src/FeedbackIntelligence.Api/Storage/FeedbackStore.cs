@@ -153,6 +153,39 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options, string? dbPat
         }
     }
 
+    /// <summary>Replace a row's model-derived fields after a re-structuring pass
+    /// (ADR-0026): a vocabulary change (e.g. a new category) re-adapts stored
+    /// entries. Raw text, source, timestamps and the deterministic alerts stay
+    /// untouched. Old corrections are CLEARED — they audited a structure that no
+    /// longer exists, and stale audits must not feed the correction telemetry —
+    /// and model_failed resets: the new structure is a fresh model output.</summary>
+    public async Task UpdateStructureAsync(
+        string id, FeedbackStructure? structure, bool structureFailed,
+        IReadOnlyList<string> salvageNotes, bool needsReview, IReadOnlyList<string> reviewFlags, CancellationToken ct)
+    {
+        await using var connection = await OpenConnectionAsync(ct);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE feedback SET
+                structure_json = $structure,
+                structure_failed = $failed,
+                model_failed = 0,
+                salvage_notes_json = $notes,
+                corrections_json = NULL,
+                needs_review = $needsReview,
+                review_flags_json = $reviewFlags
+            WHERE id = $id
+            """;
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$structure",
+            structure is null ? DBNull.Value : JsonSerializer.Serialize(structure, Json));
+        command.Parameters.AddWithValue("$failed", structureFailed ? 1 : 0);
+        command.Parameters.AddWithValue("$notes", JsonSerializer.Serialize(salvageNotes, Json));
+        command.Parameters.AddWithValue("$needsReview", needsReview ? 1 : 0);
+        command.Parameters.AddWithValue("$reviewFlags", JsonSerializer.Serialize(reviewFlags, Json));
+        await command.ExecuteNonQueryAsync(ct);
+    }
+
     /// <summary>Open a connection with a bounded busy wait. SQLite's default is to
     /// fail IMMEDIATELY with SQLITE_BUSY (error 5) when another writer holds the lock;
     /// a 5 s busy_timeout lets a brief concurrent writer — or an ingest overlapping a

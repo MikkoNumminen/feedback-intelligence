@@ -72,4 +72,10 @@ public sealed record ManagementReport(
     // Injection hardening (ADR-0021 A3): narratives dropped to the deterministic
     // fallback because they turned directive (recommend/act/verdict) instead of
     // describing — distinct from DroppedClaimCount (ungrounded citations).
-    int ActionDroppedCount = 0);
+    int ActionDroppedCount = 0,
+    // Live-summary mode only (the desk segment): ONE whole-window narrative
+    // synthesized over all items, rendered above the per-category sections.
+    // Null on the standard report path. Reuses the ReportTheme shape (title,
+    // narrative, count, direction, flagged count); its Sources stay empty —
+    // the items live in the category sections.
+    ReportTheme? Overall = null);

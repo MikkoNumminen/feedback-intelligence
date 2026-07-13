@@ -61,8 +61,11 @@ Other endpoints: `POST /interpret` (desk preview, stores nothing),
 `GET /feedback/{id}`, `GET /feedback?from&to&limit`, `GET /live/feedback`
 (the live channel’s list), `GET /schema` (enum sets
 for UIs, single source is the schema), `GET /report` (`?snapshot=true` persists
-the render), `GET /live/report` (the desk segment’s report over the live
-channel; never persists a snapshot), `GET /report/snapshot(.html)`,
+the render), `GET /live/report` (the desk segment’s summary view over the live
+channel — one whole-window narrative + per-category groups with the catch-all
+split into emergent theme topics, ADR-0026; never persists a snapshot),
+`POST /live/restructure` (operator: re-run structuring with the current
+vocabulary), `GET /report/snapshot(.html)`,
 `GET /telemetry/corrections` (reads BOTH channels — desk corrections live in
 the live channel), `GET /health` (a 1-token *real* completion, not a
 liveness ping).

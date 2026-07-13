@@ -125,4 +125,63 @@ public sealed class IngestService(
         reportCache.Invalidate();
         return stored;
     }
+
+    /// <summary>Operator maintenance (ADR-0026): re-run the structuring model over
+    /// every stored item with the CURRENT domain vocabulary, so a category added
+    /// later (retail's "asiaton") re-adapts entries stored under the old one.
+    /// Every result is model-assigned: the A2 injection-symptom scan applies to
+    /// each item, and stale human corrections are cleared by the store update so
+    /// the correction telemetry never counts audits of a structure that no longer
+    /// exists. Sheds LlmBusy to the caller (the operator retries); a per-item LLM
+    /// failure stores structure_failed and moves on — feedback is never lost.</summary>
+    public async Task<(int Restructured, int Failed, int Total)> RestructureAllAsync(CancellationToken ct)
+    {
+        // Newest-first cap of 500: far above any live-channel population; the
+        // main channel's corpus would re-run the generator instead.
+        var items = await store.QueryAsync(null, null, 500, ct);
+        var restructured = 0;
+        var failed = 0;
+        foreach (var item in items)
+        {
+            FeedbackStructure? structure;
+            var itemFailed = false;
+            IReadOnlyList<string> notes = [];
+            try
+            {
+                var result = await llmGate.RunAsync(
+                    innerCt => structuringService.StructureAsync(item.Text, innerCt), ct);
+                structure = result.Structure;
+                itemFailed = result.Failed;
+                notes = result.Notes;
+            }
+            catch (LlmBusyException)
+            {
+                throw;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "LLM unavailable during restructure of {Id}; storing structure_failed.", item.Id);
+                structure = null;
+                itemFailed = true;
+                notes = [$"llm call failed: {ex.Message}"];
+            }
+
+            var reviewFlags = new List<string>(InjectionSignals.Detect(item.Text));
+            if (reviewFlags.Count > 0
+                && structure is not null
+                && InjectionSignals.SevereSeverities.Contains(structure.Severity))
+                reviewFlags.Add(InjectionSignals.SevereRatingFlag);
+
+            await store.UpdateStructureAsync(item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);
+            if (itemFailed) failed++; else restructured++;
+        }
+        reportCache.Invalidate();
+        logger.LogInformation("Restructure pass: {Ok} restructured, {Failed} failed, {Total} total.",
+            restructured, failed, items.Count);
+        return (restructured, failed, items.Count);
+    }
 }

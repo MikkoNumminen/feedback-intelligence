@@ -98,7 +98,7 @@ public sealed class LlmStructuringService(
         // prompt names no categories itself; the active domain supplies them.
         var d = activeDomain.Descriptor;
         template = template
-            .Replace("{{categories}}", RenderLabelledKeys(d.CategoryLabels), StringComparison.Ordinal)
+            .Replace("{{categories}}", RenderLabelledKeys(d.CategoryLabels, d.CategoryHints), StringComparison.Ordinal)
             .Replace("{{severities}}", RenderJsonArray(d.SeverityLabels.Keys), StringComparison.Ordinal)
             .Replace("{{types}}", RenderJsonArray(d.TypeLabels.Keys), StringComparison.Ordinal);
 
@@ -113,8 +113,13 @@ public sealed class LlmStructuringService(
     /// enum key. Bare keys made Poro misread "runkopuu/lankku" as liha_kala; the
     /// Finnish label ("Rakennustarvikkeet") is the disambiguating signal. The
     /// quoted key is still the exact value to return; the parenthetical is a hint.
-    /// Domain-neutral: labels come from the active domain, so a new domain (e.g.
-    /// game) supplies its own without touching this code.</summary>
-    private static string RenderLabelledKeys(IReadOnlyDictionary<string, string> labels) =>
-        string.Join("\n  ", labels.Select(kv => $"{JsonSerializer.Serialize(kv.Key)} ({kv.Value})"));
+    /// An optional domain hint (DomainDescriptor.CategoryHints) extends the
+    /// parenthetical for non-obvious categories (retail's "asiaton") without
+    /// bloating the short label UIs display. Domain-neutral: labels and hints
+    /// come from the active domain, so a new domain supplies its own without
+    /// touching this code.</summary>
+    private static string RenderLabelledKeys(
+        IReadOnlyDictionary<string, string> labels, IReadOnlyDictionary<string, string> hints) =>
+        string.Join("\n  ", labels.Select(kv =>
+            $"{JsonSerializer.Serialize(kv.Key)} ({kv.Value}{(hints.TryGetValue(kv.Key, out var hint) ? " — " + hint : "")})"));
 }
