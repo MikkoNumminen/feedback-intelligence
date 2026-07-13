@@ -36,14 +36,15 @@ public static class Board
         var health = CheckHealthAsync();
         var data = CheckDataAsync();
         var funnel = Task.Run(CheckFunnel);
+        var publicProxy = CheckPublicProxyAsync();
         var snapshot = Task.Run(CheckSnapshot);
 
-        await Task.WhenAll(rag, ollama, model, gpu, api, health, data, funnel, snapshot);
+        await Task.WhenAll(rag, ollama, model, gpu, api, health, data, funnel, publicProxy, snapshot);
         return
         [
             docker,
             rag.Result, ollama.Result, model.Result, gpu.Result,
-            api.Result, await health, await data, funnel.Result, snapshot.Result,
+            api.Result, await health, await data, funnel.Result, await publicProxy, snapshot.Result,
         ];
     }
 
@@ -171,6 +172,22 @@ public static class Board
             };
         }
         catch { return null; /* best effort — provenance tag is cosmetic; unreadable dataset file reads as "unknown" */ }
+    }
+
+    /// <summary>The path every browser actually takes: public site → /api managed
+    /// function → Funnel → API (ADR-0025). A direct Funnel probe can be green while
+    /// this is dead (proxy misdeployed), and vice versa — probe what the audience uses.
+    /// Non-gating: the local demo is fully usable without the public site.</summary>
+    private static async Task<Row> CheckPublicProxyAsync()
+    {
+        // A cold managed function can take a few seconds — allow for it.
+        var body = await Shell.GetJsonAbsoluteAsync(Config.PublicSiteUrl + "/api/health", 20);
+        if (body is null)
+            return Row2("public site → backend", Term.State.Warn, "/api proxy not answering (site down, proxy missing, or backend off)", false);
+        var status = body.Value.TryGetProperty("status", out var s) ? s.GetString() : null;
+        return status == "ok"
+            ? Row2("public site → backend", Term.State.Ok, "proxied /api/health ok", false)
+            : Row2("public site → backend", Term.State.Warn, $"proxy up, backend {status ?? "?"}", false);
     }
 
     private static Row CheckSnapshot() =>

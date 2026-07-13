@@ -29,6 +29,11 @@ public static class Config
 
     public const string SnapshotJson = "data/snapshots/report-latest.json";
 
+    /// <summary>The public demo site (Azure SWA). Its /api managed function is the
+    /// same-origin proxy every browser uses to reach the backend (ADR-0025) — the
+    /// board probes it so "works on my curl" can never mask a dead public path.</summary>
+    public const string PublicSiteUrl = "https://red-ground-0bacf9c03.7.azurestaticapps.net";
+
     /// <summary>The real, evidential seeded corpus (`data` demo mode).</summary>
     public const string RealCorpus = "data/corpus/generated-42.jsonl";
 

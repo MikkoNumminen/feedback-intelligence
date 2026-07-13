@@ -22,3 +22,4 @@ dist/
 
 # feedctl operator-CLI runtime state (pid file, API log)
 .feedctl/
+node_modules/

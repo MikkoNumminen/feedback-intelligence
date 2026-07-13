@@ -94,10 +94,14 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
 
 ## Deploy topology (Phase 5)
 
-- **Frontend → Azure Static Web Apps** (free tier). The two pages read
-  `window.API_BASE` from a publish-time `config.js` (same-origin locally; the
-  Funnel URL on the static host). `tools/publish-frontend.ps1 -ApiBase <url>`
-  assembles `dist/` with both pages, `deploy/staticwebapp.config.json`, and the
+- **Frontend → Azure Static Web Apps** (free tier). The pages read
+  `window.API_BASE` from a publish-time `config.js` (same-origin locally; on
+  the static host it is `/api` — the same-origin managed-function proxy that
+  forwards server-side to the Funnel,
+  [ADR-0025](decisions/0025-same-origin-api-proxy.md); the browser never makes
+  a cross-origin or local-network request). `tools/publish-frontend.ps1
+  -ApiBase '/api'` assembles `dist/` with the pages (index, desk, and the
+  demo.html alias), `deploy/staticwebapp.config.json`, and the
   report snapshot (JSON + HTML) so a shared link renders a situational view even
   with the backend down. **CI always bundles the committed, provenance-verified
   seed-42 snapshot** (`deploy/snapshot/`), so the shared link is never a 404; the
@@ -105,15 +109,17 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
   snapshot, whose provenance must be verified against
   [mock-data-register.md](mock-data-register.md) before deploying.
 - **Backend → Tailscale Funnel**, owned by feedctl (`up` exposes it on port 443
-  → the API's `:5088`, `down` frees 443). The API's CORS allowlist
-  (`Ingest:AllowedCorsOrigins`, empty = same-origin only) must include the SWA
-  origin (no trailing slash — it is validated at startup). ForwardedHeaders runs
-  before the rate limiter so tunneled clients carry their real IP. Because the
-  SWA is a **public** origin calling a **private-range** Funnel target, the API
-  also answers the CORS preflight with `Access-Control-Allow-Private-Network:
-  true` (a Chrome Private Network Access requirement,
-  [ADR-0023](decisions/0023-deploy-hardening-snapshot-and-pna.md)); the CORS
-  allowlist still gates the actual request.
+  → the API's `:5088`, `down` frees 443). Browser traffic reaches the Funnel
+  only via the SWA's `/api` proxy (ADR-0025); the proxied path involves no
+  CORS. The API's CORS allowlist (`Ingest:AllowedCorsOrigins`) and the
+  `Access-Control-Allow-Private-Network` preflight answer
+  ([ADR-0023](decisions/0023-deploy-hardening-snapshot-and-pna.md)) remain as
+  defense for DIRECT Funnel access only — Chrome's 2026 Local Network Access
+  permission made the direct browser→Funnel path unusable on Tailscale-running
+  machines regardless of those headers. ForwardedHeaders runs before the rate
+  limiter; note the proxied path arrives from Azure egress IPs, so per-visitor
+  rate limiting is coarse there (the LlmGate concurrency bound and input caps
+  are the real GPU protection, per ADR-0025).
 - **Coexistence with the sibling RAG (`ragctl`).** Both projects are
   single-tenant on TWO shared resources: the one GPU, and the Funnel's public
   port 443 (ragctl funnels its `:8000` backend; feedctl funnels the API on
