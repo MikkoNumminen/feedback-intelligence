@@ -53,6 +53,10 @@ invariant true or update this file with the ADR that changes it. These are the
 - **INV-11 — Cross-origin and private-network access are allowlisted.** CORS uses an
   explicit Origin allowlist with no credentials; the PNA preflight grants access
   only to an allowlisted Origin (not unconditionally — hardened this PR).
+  Since ADR-0025 the browser path is same-origin via the `/api` proxy and never
+  exercises CORS/PNA — this invariant guards DIRECT Funnel access only, so a
+  CORS/PNA change cannot break the browser demo, and a passing browser demo
+  proves nothing about this invariant.
   *Guard:* `IngestOptionsValidator` (origin shape) + `Program.cs` PNA middleware.
 
 ## Posture (documented, not a code invariant)

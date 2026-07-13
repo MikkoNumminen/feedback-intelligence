@@ -94,10 +94,14 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
 
 ## Deploy topology (Phase 5)
 
-- **Frontend → Azure Static Web Apps** (free tier). The two pages read
-  `window.API_BASE` from a publish-time `config.js` (same-origin locally; the
-  Funnel URL on the static host). `tools/publish-frontend.ps1 -ApiBase <url>`
-  assembles `dist/` with both pages, `deploy/staticwebapp.config.json`, and the
+- **Frontend → Azure Static Web Apps** (free tier). The pages read
+  `window.API_BASE` from a publish-time `config.js` (same-origin locally; on
+  the static host it is `/api` — the same-origin managed-function proxy that
+  forwards server-side to the Funnel,
+  [ADR-0025](decisions/0025-same-origin-api-proxy.md); the browser never makes
+  a cross-origin or local-network request). `tools/publish-frontend.ps1
+  -ApiBase '/api'` assembles `dist/` with the pages (index, desk, and the
+  demo.html alias), `deploy/staticwebapp.config.json`, and the
   report snapshot (JSON + HTML) so a shared link renders a situational view even
   with the backend down. **CI always bundles the committed, provenance-verified
   seed-42 snapshot** (`deploy/snapshot/`), so the shared link is never a 404; the
@@ -105,15 +109,17 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
   snapshot, whose provenance must be verified against
   [mock-data-register.md](mock-data-register.md) before deploying.
 - **Backend → Tailscale Funnel**, owned by feedctl (`up` exposes it on port 443
-  → the API's `:5088`, `down` frees 443). The API's CORS allowlist
-  (`Ingest:AllowedCorsOrigins`, empty = same-origin only) must include the SWA
-  origin (no trailing slash — it is validated at startup). ForwardedHeaders runs
-  before the rate limiter so tunneled clients carry their real IP. Because the
-  SWA is a **public** origin calling a **private-range** Funnel target, the API
-  also answers the CORS preflight with `Access-Control-Allow-Private-Network:
-  true` (a Chrome Private Network Access requirement,
-  [ADR-0023](decisions/0023-deploy-hardening-snapshot-and-pna.md)); the CORS
-  allowlist still gates the actual request.
+  → the API's `:5088`, `down` frees 443). Browser traffic reaches the Funnel
+  only via the SWA's `/api` proxy (ADR-0025); the proxied path involves no
+  CORS. The API's CORS allowlist (`Ingest:AllowedCorsOrigins`) and the
+  `Access-Control-Allow-Private-Network` preflight answer
+  ([ADR-0023](decisions/0023-deploy-hardening-snapshot-and-pna.md)) remain as
+  defense for DIRECT Funnel access only — Chrome's 2026 Local Network Access
+  permission made the direct browser→Funnel path unusable on Tailscale-running
+  machines regardless of those headers. ForwardedHeaders runs before the rate
+  limiter; note the proxied path arrives from Azure egress IPs, so per-visitor
+  rate limiting is coarse there (the LlmGate concurrency bound and input caps
+  are the real GPU protection, per ADR-0025).
 - **Coexistence with the sibling RAG (`ragctl`).** Both projects are
   single-tenant on TWO shared resources: the one GPU, and the Funnel's public
   port 443 (ragctl funnels its `:8000` backend; feedctl funnels the API on
@@ -125,9 +131,12 @@ Runtime state (PID file, API log) lives in a gitignored `.feedctl/`.
 
 ### Deploying the frontend to Azure ($0, one-time setup)
 
-**Cost model:** one Static Web App on the **Free** SKU, static-only — no managed
-API, no Functions, no App Service. $0 with no time limit. Guardrails and the
-"why not Readlog's App Service" reconciliation are in
+**Cost model:** one Static Web App on the **Free** SKU: the static bundle plus
+ONE Free-tier managed function — the same-origin `/api` proxy
+([ADR-0025](decisions/0025-same-origin-api-proxy.md)); no App Service, no
+separate Functions plan. Still $0 with no time limit (managed functions are
+included in the Free SKU). Guardrails and the "why not Readlog's App Service"
+reconciliation are in
 [ADR-0016](decisions/0016-zero-cost-static-web-apps-deploy.md).
 
 CI does the deploy: `.github/workflows/azure-static-web-apps.yml` builds `dist/`
@@ -141,16 +150,22 @@ repo settings:
    az group create -n rg-feedback-intelligence -l westeurope
    az staticwebapp create -n feedback-intelligence -g rg-feedback-intelligence -l westeurope --sku Free
    ```
-2. **Deployment token → GitHub secret; Funnel URL → GitHub variable.** Pipe the
-   token straight into `gh` so it never lands in shell history. Set **both** — the
-   workflow gates on the variable, but the deploy step needs the token too:
+2. **Deployment token → GitHub secret; deploy-enable flag → GitHub variable.**
+   Pipe the token straight into `gh` so it never lands in shell history. The
+   `FUNNEL_API_BASE` variable is now ONLY the deploy on/off gate (job-level `if`
+   cannot read secrets) — its **value is no longer consumed**: the pages call
+   same-origin `/api`, and the Funnel hostname lives in `api/src/index.js`
+   (`BACKEND`, with the board-probe origin in feedctl's `Config.PublicSiteUrl`).
+   To rotate the Funnel host, edit those two constants — NOT this variable:
    ```bash
    az staticwebapp secrets list -n feedback-intelligence -g rg-feedback-intelligence --query "properties.apiKey" -o tsv \
      | gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN -R <owner>/feedback-intelligence --body-file -
-   gh variable set FUNNEL_API_BASE -R <owner>/feedback-intelligence -b "https://<machine>.<tailnet>.ts.net"
+   gh variable set FUNNEL_API_BASE -R <owner>/feedback-intelligence -b "enabled"
    ```
-3. **CORS round-trip (LOCAL machine)** — the deploy succeeds but every API call is
-   blocked until this is done. Get the SWA host, add it to the API, restart:
+3. **CORS allowlist (LOCAL machine, optional under ADR-0025)** — the browser
+   path is same-origin `/api` and needs NO CORS; this allowlist only matters
+   for DIRECT cross-origin calls against the Funnel (ops tooling, back-compat).
+   If setting it, get the SWA host:
    ```bash
    az staticwebapp show -n feedback-intelligence -g rg-feedback-intelligence --query defaultHostname -o tsv
    ```

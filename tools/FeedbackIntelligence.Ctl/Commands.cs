@@ -102,6 +102,8 @@ public static class Commands
         Console.WriteLine(Board.Render(await Board.GatherAsync()));
         Console.WriteLine("  open " + Term.C(Config.BaseUrl + "/", "36") + " (management view) · " +
             Term.C(Config.BaseUrl + "/desk.html", "36") + " (desk entry)");
+        Console.WriteLine("  show " + Term.C(Config.PublicSiteUrl + "/demo.html", "36") + " · " +
+            Term.C(Config.PublicSiteUrl + "/desk.html", "36") + " (public, via the /api proxy)");
         if (supervise) return await SuperviseAsync();
         return 0;
     }

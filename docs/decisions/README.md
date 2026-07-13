@@ -35,3 +35,4 @@ these ADRs relocate that reasoning into durable records.
 | [0022](0022-lock-poro-prompts-v0.md) | Lock the retail Poro prompts at v0 (a change is gated by re-checks, not forbidden) | Accepted |
 | [0023](0023-deploy-hardening-snapshot-and-pna.md) | Deploy hardening: always-bundle the committed snapshot + Private Network Access (amends 0016) | Accepted |
 | [0024](0024-live-desk-channel-separate-db.md) | The desk is its own live channel: separate database, own segment | Accepted |
+| [0025](0025-same-origin-api-proxy.md) | Same-origin /api proxy on the static host (Chrome LNA; amends 0016/0023) | Accepted |

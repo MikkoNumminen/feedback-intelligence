@@ -1,15 +1,20 @@
 name: Deploy static frontend (Azure SWA Free)
 
-# Static-only deploy: builds dist/ from tools/publish-frontend.ps1 and uploads it
-# to a FREE-tier Azure Static Web App. The backend is NOT in Azure - the browser
-# calls the Tailscale Funnel URL baked into config.js. No managed API, no Azure
-# Functions, no App Service => $0. See docs/decisions/0016-zero-cost-static-web-apps-deploy.md.
+# Deploys dist/ (built by tools/publish-frontend.ps1) plus the api/ managed
+# function to a FREE-tier Azure Static Web App. The backend itself is NOT in
+# Azure: the pages call same-origin /api/*, and the managed function forwards
+# server-side to the Tailscale Funnel (ADR-0025) - the browser never makes a
+# cross-origin or public-to-local request, which Chrome's Local Network Access
+# permission would block on the operator's own machine. Managed functions are
+# included in the Free tier => still $0.
+# See docs/decisions/0016-zero-cost-static-web-apps-deploy.md + ADR-0025.
 on:
   push:
     branches: [master]
     paths:
       - 'src/FeedbackIntelligence.Api/wwwroot/index.html'
       - 'src/FeedbackIntelligence.Api/wwwroot/desk.html'
+      - 'api/**'
       - 'deploy/staticwebapp.config.json'
       - 'deploy/snapshot/report-latest.json'
       - 'deploy/snapshot/report-latest.html'
@@ -29,25 +34,26 @@ jobs:
   build-and-deploy:
     name: build dist/ + deploy to SWA Free
     runs-on: ubuntu-latest
-    # Skip cleanly (neutral, not a red failure) until the owner configures the
-    # Funnel URL variable and the deployment-token secret. See operations.md.
+    # Deploy on/off gate. The variable's VALUE is no longer consumed (the pages
+    # call same-origin /api and the Funnel host lives in api/src/index.js) — its
+    # PRESENCE is the switch, kept as a variable because job-level `if` cannot
+    # read secrets. Unset it to pause deploys; do NOT delete it as "unused
+    # cleanup" or every deploy silently skips. See operations.md setup step 2.
     if: ${{ vars.FUNNEL_API_BASE != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build dist/ (config.js points at the Funnel backend)
+      - name: Build dist/ (config.js points at the same-origin /api proxy)
         shell: pwsh
-        env:
-          FUNNEL_API_BASE: ${{ vars.FUNNEL_API_BASE }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:FUNNEL_API_BASE)) {
-            throw "Repo variable FUNNEL_API_BASE is not set - cannot build config.js."
-          }
+          # ApiBase '/api': the pages call their own origin; the managed function
+          # (api/) forwards to the Funnel server-side (ADR-0025). The Funnel URL
+          # itself lives in api/src/index.js, not in config.js, anymore.
           # A committed demo snapshot (deploy/snapshot) exists, so ALWAYS bundle it —
           # otherwise a push deploy would leave the SWA with no offline fallback (404),
           # and the shared link goes blank whenever the live backend is unreachable.
-          $splat = @{ ApiBase = $env:FUNNEL_API_BASE; PublishSnapshot = $true }
+          $splat = @{ ApiBase = '/api'; PublishSnapshot = $true }
           ./tools/publish-frontend.ps1 @splat
           Write-Host "dist/ contents:"
           Get-ChildItem ./dist | Select-Object Name, Length | Format-Table -AutoSize
@@ -57,8 +63,9 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
-          # Pre-built folder uploaded verbatim: no Oryx build, no managed API => stays $0.
+          # App folder uploaded verbatim (pre-built); the api/ managed function IS
+          # built by the action (Node). Managed functions ride the Free tier => $0.
           app_location: "dist"
-          api_location: ""
+          api_location: "api"
           output_location: ""
           skip_app_build: true

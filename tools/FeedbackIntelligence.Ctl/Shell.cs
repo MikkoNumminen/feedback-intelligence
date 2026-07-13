@@ -57,13 +57,18 @@ public static class Shell
     // CTS below (the report's live synthesis can take 20s+, well past a default).
     private static readonly HttpClient Http = new() { Timeout = Timeout.InfiniteTimeSpan };
 
-    public static async Task<JsonElement?> GetJsonAsync(string path, int timeoutSeconds = 10, CancellationToken ct = default)
+    public static Task<JsonElement?> GetJsonAsync(string path, int timeoutSeconds = 10, CancellationToken ct = default) =>
+        GetJsonAbsoluteAsync(Config.BaseUrl + path, timeoutSeconds, ct);
+
+    // Absolute-URL variant for probes outside the local API — e.g. the public
+    // site's /api proxy (ADR-0025).
+    public static async Task<JsonElement?> GetJsonAbsoluteAsync(string url, int timeoutSeconds = 10, CancellationToken ct = default)
     {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-            var doc = await Http.GetFromJsonAsync<JsonElement>(Config.BaseUrl + path, cts.Token);
+            var doc = await Http.GetFromJsonAsync<JsonElement>(url, cts.Token);
             return doc;
         }
         catch

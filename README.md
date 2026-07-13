@@ -122,9 +122,13 @@ eval harness: `tools/FeedbackIntelligence.StructuringEval`.
   stand-in for it.
 
 The hosting is deliberately minimal: a static bundle on Azure Static Web Apps
-Free, with the browser calling the operator's local API + Ollama through a
-Tailscale Funnel — no cloud inference, no managed API, $0 hosting
-([ADR-0016](docs/decisions/0016-zero-cost-static-web-apps-deploy.md),
+Free, whose pages call a same-origin `/api` proxy (a Free-tier managed
+function) that forwards server-side to the operator's local API + Ollama
+through a Tailscale Funnel — no cloud inference, $0 hosting, and the browser
+never makes a cross-origin or local-network request (Chrome's 2026 Local
+Network Access permission made that mandatory —
+[ADR-0025](docs/decisions/0025-same-origin-api-proxy.md); deploy shape:
+[ADR-0016](docs/decisions/0016-zero-cost-static-web-apps-deploy.md),
 [ADR-0023](docs/decisions/0023-deploy-hardening-snapshot-and-pna.md)).
 
 ## Design & docs

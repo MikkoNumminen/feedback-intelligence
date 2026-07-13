@@ -36,14 +36,15 @@ public static class Board
         var health = CheckHealthAsync();
         var data = CheckDataAsync();
         var funnel = Task.Run(CheckFunnel);
+        var publicProxy = CheckPublicProxyAsync();
         var snapshot = Task.Run(CheckSnapshot);
 
-        await Task.WhenAll(rag, ollama, model, gpu, api, health, data, funnel, snapshot);
+        await Task.WhenAll(rag, ollama, model, gpu, api, health, data, funnel, publicProxy, snapshot);
         return
         [
             docker,
             rag.Result, ollama.Result, model.Result, gpu.Result,
-            api.Result, await health, await data, funnel.Result, snapshot.Result,
+            api.Result, await health, await data, funnel.Result, await publicProxy, snapshot.Result,
         ];
     }
 
@@ -127,15 +128,23 @@ public static class Board
         return Row2("API process", Term.State.Down, "not running — `up`", true);
     }
 
+    /// <summary>One reading of a /health body, shared by the local and public
+    /// probes so the ready sentinel ("ok") can never drift between them.</summary>
+    private static (bool Answered, bool Ok, string? Status) ParseHealth(JsonElement? body)
+    {
+        if (body is null) return (false, false, null);
+        var status = body.Value.TryGetProperty("status", out var s) ? s.GetString() : null;
+        return (true, status == "ok", status);
+    }
+
     private static async Task<Row> CheckHealthAsync()
     {
-        var body = await Shell.GetJsonAsync("/health", 12);
-        if (body is null)
+        var health = ParseHealth(await Shell.GetJsonAsync("/health", 12));
+        if (!health.Answered)
             return Row2("API /health", Term.State.Down, "not answering", true);
-        var status = body.Value.TryGetProperty("status", out var s) ? s.GetString() : null;
-        return status == "ok"
+        return health.Ok
             ? Row2("API /health", Term.State.Ok, "llm ready (1-token completion)", true)
-            : Row2("API /health", Term.State.Warn, $"{status ?? "?"} (warming?)", true);
+            : Row2("API /health", Term.State.Warn, $"{health.Status ?? "?"} (warming?)", true);
     }
 
     private static async Task<Row> CheckDataAsync()
@@ -171,6 +180,36 @@ public static class Board
             };
         }
         catch { return null; /* best effort — provenance tag is cosmetic; unreadable dataset file reads as "unknown" */ }
+    }
+
+    // The public probe result is CACHED: GatherAsync runs on watch's 2 s loop and
+    // inside up's readiness polls, and this is the one check that (a) leaves the
+    // machine, (b) can stall on a cold managed function, and (c) consumes the
+    // SAME shared rate-limit bucket every real visitor uses (ADR-0025) — polled
+    // uncached it would freeze the board and throttle the audience it monitors.
+    private static readonly TimeSpan PublicProbeTtl = TimeSpan.FromSeconds(60);
+    private static Row? _publicProbeCache;
+    private static DateTimeOffset _publicProbeAt = DateTimeOffset.MinValue;
+
+    /// <summary>The path every browser actually takes: public site → /api managed
+    /// function → Funnel → API (ADR-0025). A direct Funnel probe can be green while
+    /// this is dead (proxy misdeployed), and vice versa — probe what the audience uses.
+    /// Non-gating: the local demo is fully usable without the public site.</summary>
+    private static async Task<Row> CheckPublicProxyAsync()
+    {
+        if (_publicProbeCache is { } cached && DateTimeOffset.UtcNow - _publicProbeAt < PublicProbeTtl)
+            return cached;
+        // 8 s covers a typical cold start; an unusually cold one shows a one-off
+        // Warn on a non-gating row and self-corrects on the next uncached probe.
+        var health = ParseHealth(await Shell.GetJsonAbsoluteAsync(Config.PublicSiteUrl + "/api/health", 8));
+        var row = !health.Answered
+            ? Row2("public site → backend", Term.State.Warn, "/api proxy not answering (site down, proxy missing, or backend off)", false)
+            : health.Ok
+                ? Row2("public site → backend", Term.State.Ok, "proxied /api/health ok", false)
+                : Row2("public site → backend", Term.State.Warn, $"proxy up, backend {health.Status ?? "?"}", false);
+        _publicProbeCache = row;
+        _publicProbeAt = DateTimeOffset.UtcNow;
+        return row;
     }
 
     private static Row CheckSnapshot() =>

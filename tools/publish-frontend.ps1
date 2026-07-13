@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
 Assembles the static frontend bundle for Azure Static Web Apps: the two UI
-pages, a config.js pointing at the Tailscale Funnel backend, and the SWA
+pages (plus demo.html, the demo view's stable alias), a config.js with the
+API base (CI passes '/api' - the same-origin managed-function proxy per
+ADR-0025; a direct backend URL still works for non-SWA hosting), and the SWA
 config. With -PublishSnapshot it also bundles the latest report snapshot so a
 shared link renders a situational view even with the backend completely down.
 
@@ -19,7 +21,7 @@ ANSI, and e.g. an em dash decodes into a CP1252 smart quote that PS parses as
 a real quote character.
 
 .EXAMPLE
-.\tools\publish-frontend.ps1 -ApiBase "https://machine.tailnet.ts.net" -PublishSnapshot
+.\tools\publish-frontend.ps1 -ApiBase "/api" -PublishSnapshot
 Then deploy the dist/ folder with the SWA CLI or the Azure portal.
 Re-run (and re-deploy) to refresh the published snapshot.
 #>
@@ -78,4 +80,5 @@ if ($PublishSnapshot) {
 }
 
 Write-Host "Bundle ready in $OutDir - deploy with: swa deploy $OutDir --env production (or the Azure portal)."
-Write-Host "Remember: the API's Ingest:AllowedCorsOrigins must include the SWA origin (no trailing slash)."
+Write-Host "With ApiBase '/api' (same-origin proxy, ADR-0025) CORS is not involved; for a direct"
+Write-Host "backend ApiBase, the API's Ingest:AllowedCorsOrigins must include the SWA origin (no trailing slash)."
