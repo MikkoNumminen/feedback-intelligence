@@ -713,6 +713,8 @@ async function loadSegment() {
     lastReport = await res.json();
     renderSegment(lastReport);
     setStatus("segmentStatus", "", "");
+    rebaselineVersion(); // this refresh consumed the current tick
+
   } catch {
     if (phaseARendered) {
       // Keep this load's entry list, but the optimistic "the AI is writing the
@@ -731,10 +733,47 @@ async function loadSegment() {
 
 el("segmentRefresh").addEventListener("click", loadSegment);
 
+// ----- Live adaptivity: the segment follows EVERY feedback received -----
+// /live/version is the live channel's change tick (the report-cache epoch,
+// bumped by every ingest/restructure, served from memory — no DB or LLM
+// work). Polling it costs almost nothing, so every open desk view refreshes
+// within one poll interval of ANYONE's save, not only its own. The poll
+// pauses while the tab is hidden and re-checks immediately on return.
+let liveVersion = null;
+
+// Re-baseline without triggering a refresh — called after loadSegment so an
+// own save (which bumps the epoch AND refreshes) doesn't double-refresh on
+// the next poll tick.
+async function rebaselineVersion() {
+  try {
+    const res = await fetch(`${API}/live/version`);
+    if (res.ok) liveVersion = (await res.json()).version;
+  } catch { /* transient */ }
+}
+
+async function checkLiveVersion() {
+  if (document.visibilityState === "hidden" || segmentBusy) return;
+  try {
+    const res = await fetch(`${API}/live/version`);
+    if (!res.ok) return;
+    const { version } = await res.json();
+    const changed = liveVersion !== null && version !== liveVersion;
+    liveVersion = version;
+    // Refresh on change — and also when the backend just came back after the
+    // segment failed to load at all (every open page recovers by itself).
+    if (changed || (!lastReport && !lastItems)) loadSegment();
+  } catch { /* transient — the next tick retries */ }
+}
+
+setInterval(checkLiveVersion, 25000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkLiveVersion();
+});
+
 applyLanguage();                 // en chrome immediately (resolves on /schema)
 setStatus("status1", "", L.connecting);
 loadSchema();
-loadSegment();
+loadSegment();                   // its success re-baselines the version tick
 </script>
 </body>
 </html>

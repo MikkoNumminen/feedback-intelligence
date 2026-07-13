@@ -65,7 +65,8 @@ the render), `GET /live/report` (the desk segment’s summary view over the live
 channel — one whole-window narrative + per-category groups with the catch-all
 split into emergent theme topics, ADR-0026; never persists a snapshot),
 `POST /live/restructure` (operator: re-run structuring with the current
-vocabulary), `GET /report/snapshot(.html)`,
+vocabulary), `GET /live/version` (the live channel’s change tick — pages poll
+it to refresh the desk segment on every ingest), `GET /report/snapshot(.html)`,
 `GET /telemetry/corrections` (reads BOTH channels — desk corrections live in
 the live channel), `GET /health` (a 1-token *real* completion, not a
 liveness ping).

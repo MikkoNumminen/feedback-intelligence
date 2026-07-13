@@ -295,6 +295,13 @@ app.MapPost("/live/restructure", async (
     }
 });
 
+// The live channel's change tick: the report-cache epoch, bumped by every
+// ingest and restructure. Pages poll this (tiny, in-memory, no DB/LLM work)
+// and refresh the segment when it moves — every open desk view adapts to
+// every feedback received, whoever submitted it.
+app.MapGet("/live/version", ([FromKeyedServices(Channels.Live)] ReportCache cache) =>
+    Results.Ok(new { version = cache.Epoch }));
+
 // The live desk channel's item list — the desk segment's "categorized stuff".
 app.MapGet("/live/feedback", (
     [FromKeyedServices(Channels.Live)] FeedbackStore store,
