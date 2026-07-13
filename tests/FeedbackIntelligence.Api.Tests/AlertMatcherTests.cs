@@ -57,7 +57,7 @@ public class AlertMatcherTests
     [InlineData("Keväällä ostetuista laudoista tehty terassi sortui osittain viikonloppuna.")]
     public void RealKeywordConfig_DoesNotFireOnNoKeywordSafetyTexts(string safetyText)
     {
-        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
+        var keywords = TestDomains.RetailKeywords();
 
         var hits = AlertMatcher.Match(safetyText, keywords.Categories);
 
@@ -67,7 +67,7 @@ public class AlertMatcherTests
     [Fact]
     public void RealKeywordConfig_FiresOnInjuryVocabulary()
     {
-        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
+        var keywords = TestDomains.RetailKeywords();
 
         var hits = AlertMatcher.Match("Kaaduin märällä lattialla ja jouduin ensiapuun", keywords.Categories);
 
@@ -81,7 +81,7 @@ public class AlertMatcherTests
     [InlineData("Kassalla huudettiin sieg heil")]
     public void RealKeywordConfig_RasismiStems_MatchInflectedForms(string text)
     {
-        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
+        var keywords = TestDomains.RetailKeywords();
 
         var hits = AlertMatcher.Match(text, keywords.Categories);
 
@@ -95,7 +95,7 @@ public class AlertMatcherTests
     [InlineData("Yrityksen maturiteetti on korkealla tasolla")]           // 'matu' — deliberately excluded
     public void RealKeywordConfig_RasismiStems_DoNotFireOnDocumentedExclusions(string text)
     {
-        var keywords = AlertKeywordSet.LoadFrom(Path.Combine(FindRepoRoot(), "domains", "retail", "alert-keywords.json"));
+        var keywords = TestDomains.RetailKeywords();
 
         var hits = AlertMatcher.Match(text, keywords.Categories);
 
@@ -116,11 +116,4 @@ public class AlertMatcherTests
         Assert.Null(AlertMatcher.CategoryOverride([], retail.Categories));
     }
 
-    internal static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "FeedbackIntelligence.sln")))
-            dir = dir.Parent;
-        return dir?.FullName ?? throw new InvalidOperationException("repo root not found from test bin");
-    }
 }

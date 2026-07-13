@@ -1,3 +1,5 @@
+using FeedbackIntelligence.Core.Structuring;
+
 namespace FeedbackIntelligence.Core.Alerts;
 
 public sealed record AlertHit(string Category, string Pattern);
@@ -34,4 +36,20 @@ public static class AlertMatcher
                 return hit.Category;
         return null;
     }
+
+    /// <summary>The ONE enforcement of <see cref="CategoryOverride"/> on a
+    /// structure, shared by ingest, /interpret and both restructure paths so
+    /// the preview can never drift from what gets stored: a null structure or
+    /// no override returns the input unchanged; otherwise the category is
+    /// rewritten (same instance back when it already matches, so callers can
+    /// detect "nothing changed" by reference).</summary>
+    public static FeedbackStructure? ApplyCategoryOverride(FeedbackStructure? structure, string? overrideCategory) =>
+        overrideCategory is not null && structure is not null && structure.Category != overrideCategory
+            ? structure with { Category = overrideCategory }
+            : structure;
+
+    /// <summary>The distinct alert categories of a hit list, in first-hit order
+    /// — the one definition views and reports tag comments with.</summary>
+    public static IReadOnlyList<string> DistinctCategories(IEnumerable<AlertHit> alerts) =>
+        alerts.Select(a => a.Category).Distinct(StringComparer.Ordinal).ToList();
 }

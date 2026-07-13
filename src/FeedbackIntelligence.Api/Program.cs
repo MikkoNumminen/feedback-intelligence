@@ -218,17 +218,15 @@ app.MapPost("/interpret", async (
         // ADR-0027: the preview shows the same category-alert override ingest
         // will enforce, so the human accepts what actually gets stored.
         var alerts = AlertMatcher.Match(request.Text, keywords.Categories);
-        var structure = result.Structure;
-        var overrideCategory = AlertMatcher.CategoryOverride(alerts, domain.Descriptor.Categories);
-        if (overrideCategory is not null && structure is not null && structure.Category != overrideCategory)
-            structure = structure with { Category = overrideCategory };
+        var structure = AlertMatcher.ApplyCategoryOverride(
+            result.Structure, AlertMatcher.CategoryOverride(alerts, domain.Descriptor.Categories));
         return Results.Ok(new
         {
             structure,
             failed = result.Failed,
             salvaged = result.Salvaged,
             notes = result.Notes,
-            alertCategories = alerts.Select(a => a.Category).Distinct(StringComparer.Ordinal),
+            alertCategories = AlertMatcher.DistinctCategories(alerts),
         });
     }
     catch (LlmBusyException)

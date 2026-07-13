@@ -623,7 +623,7 @@ public sealed class ReportService(
             .Select(i => new ReportSourceItem(
                 i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview,
                 i.Alerts.Count > 0
-                    ? i.Alerts.Select(a => a.Category).Distinct(StringComparer.Ordinal).ToList()
+                    ? Core.Alerts.AlertMatcher.DistinctCategories(i.Alerts)
                     : null))
             .ToList();
 

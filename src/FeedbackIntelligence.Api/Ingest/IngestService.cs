@@ -59,10 +59,19 @@ public sealed class IngestService(
         // structure: /interpret already previews the forced category, so a
         // mismatch here means it was edited away — the rule re-asserts it.
         var overrideCategory = AlertMatcher.CategoryOverride(alerts, activeDomain.Descriptor.Categories);
-        if (overrideCategory is not null && structure is not null && structure.Category != overrideCategory)
+        var corrections = request.Corrections;
+        var forcedStructure = AlertMatcher.ApplyCategoryOverride(structure, overrideCategory);
+        if (!ReferenceEquals(forcedStructure, structure))
         {
-            logger.LogInformation("Category-alert override: {Old} -> {New}", structure.Category, overrideCategory);
-            structure = structure with { Category = overrideCategory };
+            logger.LogInformation("Category-alert override: {Old} -> {New}", structure!.Category, overrideCategory);
+            // A desk clerk's category correction that the rule just discarded
+            // must not be stored as an audit: telemetry would count a human
+            // category-choice whose value isn't in the stored structure — the
+            // same staleness RestructureAsync clears for (other fields' audits
+            // still describe the stored structure and are kept).
+            if (request.AcceptedStructure is not null)
+                corrections = corrections?.Where(c => c.Field != "category").ToList();
+            structure = forcedStructure;
         }
 
         // Injection hardening (ADR-0021 A2): a deterministic scan of the raw text for
@@ -95,7 +104,7 @@ public sealed class IngestService(
             ModelFailed: request.ModelInterpretationFailed == true,
             SalvageNotes: notes,
             Alerts: alerts,
-            Corrections: request.Corrections,
+            Corrections: corrections,
             NeedsReview: reviewFlags.Count > 0,
             ReviewFlags: reviewFlags);
 
@@ -138,9 +147,9 @@ public sealed class IngestService(
                 // a new category (retail's "rasismi", ADR-0027) must recognize
                 // already-stored comments too — cheap, no LLM.
                 var currentAlerts = AlertMatcher.Match(item.Text, keywords.Categories);
-                var alertsChanged = currentAlerts.Count != item.Alerts.Count
-                    || currentAlerts.Zip(item.Alerts).Any(pair =>
-                        pair.First.Category != pair.Second.Category || pair.First.Pattern != pair.Second.Pattern);
+                // AlertHit is a record — SequenceEqual is value equality over
+                // every field, so a new field can never silently escape the diff.
+                var alertsChanged = !currentAlerts.SequenceEqual(item.Alerts);
                 if (alertsChanged && await store.UpdateAlertsAsync(item.Id, currentAlerts, ct) > 0)
                 {
                     alertsUpdated++;
@@ -160,9 +169,9 @@ public sealed class IngestService(
                     // (incl. review flags) is carried over unchanged; the store
                     // update clears corrections like any restructure, since they
                     // audited a categorization that no longer stands.
-                    if (overrideCategory is not null && item.Structure!.Category != overrideCategory)
+                    var forced = AlertMatcher.ApplyCategoryOverride(item.Structure, overrideCategory);
+                    if (!ReferenceEquals(forced, item.Structure))
                     {
-                        var forced = item.Structure with { Category = overrideCategory };
                         var forcedRows = await store.UpdateStructureAsync(
                             item.Id, forced, item.StructureFailed, item.SalvageNotes,
                             item.NeedsReview, item.ReviewFlags ?? [], ct);
@@ -176,8 +185,7 @@ public sealed class IngestService(
                 }
 
                 var (structure, itemFailed, notes) = await StructureViaGateAsync(item.Text, $"restructure of {item.Id}", ct);
-                if (overrideCategory is not null && structure is not null && structure.Category != overrideCategory)
-                    structure = structure with { Category = overrideCategory };
+                structure = AlertMatcher.ApplyCategoryOverride(structure, overrideCategory);
                 var reviewFlags = BuildReviewFlags(item.Text, structure);
                 var updatedRows = await store.UpdateStructureAsync(
                     item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);

@@ -489,11 +489,15 @@ public static class Commands
         }
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
+        // TryGetProperty: alertsUpdated arrived with ADR-0027 — a still-running
+        // pre-0027 API answers without it, and a missing counter must not turn
+        // a SUCCEEDED server-side pass into a false CLI failure.
+        var alertStamps = root.TryGetProperty("alertsUpdated", out var au) ? $"{au.GetInt32()} alert re-stamps · " : "";
         Console.WriteLine("  " + Term.C("●", "32") +
             $" {root.GetProperty("restructured").GetInt32()} restructured · " +
             $"{root.GetProperty("failed").GetInt32()} structure_failed · " +
             $"{root.GetProperty("skipped").GetInt32()} skipped (valid category, human audit kept) · " +
-            $"{root.GetProperty("alertsUpdated").GetInt32()} alert re-stamps · " +
+            alertStamps +
             $"{root.GetProperty("total").GetInt32()} total");
         return 0;
     }

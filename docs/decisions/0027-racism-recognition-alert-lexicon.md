@@ -57,10 +57,21 @@ LLM caught).
   deterministically, carries the `⚑ rasismi` tag, and appears in Hälytykset —
   the alert channel now carries conduct as well as safety, a deliberate
   widening of its meaning. Nothing is dropped or hidden.
+- **One named exception to "the moment it is saved":** if the LLM is DOWN at
+  ingest (structure_failed — no structure to force a category onto), the alert
+  and ⚑ recognition are still immediate — the comment shows in Hälytykset —
+  but it cannot appear in the category section until it has a structure. The
+  gap self-heals: the restructure pass takes structure-null items and applies
+  the override after the LLM pass. The deterministic recognition never waits
+  on the LLM; only the section placement can.
 - A clerk cannot file a lexicon-hit comment elsewhere: the override wins at
   save time even if the previewed category was edited. This is the one place
   a deterministic rule outranks a human in this system, and it is scoped to
-  alert categories that are also declared categories.
+  alert categories that are also declared categories. When the override
+  rewrites a desk-accepted category, the stored CATEGORY correction from that
+  save is dropped (it would audit a choice the rule discarded — the same
+  staleness the restructure path clears for); corrections to other fields
+  still describe the stored structure and are kept.
 - Wordlists under-recognize by design; the documented split (lexicon =
   precision, `categoryHints` = recall) sets that expectation. The lexicon's
   `deliberateExclusions` block records every precision call so future edits

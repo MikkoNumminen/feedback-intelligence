@@ -51,7 +51,7 @@ public class IngestServiceTests : IDisposable
         _store,
         structuring,
         new LlmGate(_options),
-        AlertKeywordSet.LoadFrom(Path.Combine(TestDomains.RepoRoot(), "domains", "retail", "alert-keywords.json")),
+        TestDomains.RetailKeywords(),
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
@@ -372,21 +372,31 @@ public class IngestServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CategoryAlert_ForcesCategory_OverDeskAcceptedStructure()
+    public async Task CategoryAlert_ForcesCategory_OverDeskAcceptedStructure_AndDropsStaleCategoryAudit()
     {
         // The override outranks desk acceptance too: /interpret previews the
         // forced category, so a mismatch here means it was edited away — the
-        // deterministic rule re-asserts it at save time.
+        // deterministic rule re-asserts it at save time. The clerk's CATEGORY
+        // correction then audits a choice the rule discarded and must not be
+        // stored (telemetry would count it); other-field audits still describe
+        // the stored structure and are kept.
         var structuring = new FakeStructuring(Success());
         var accepted = new FeedbackStructure("hevi", "hedelmät", "low", "complaint", "fi");
+        var corrections = new List<FieldCorrection>
+        {
+            new("category", "rasismi", "hevi"),   // edited the forced preview away
+            new("severity", "medium", "low"),      // unrelated audit — kept
+        };
         var request = new FeedbackRequest(
             "ras-2", "desk", "Hedelmät on pilaantuneita ja kassalla joku mutakuono", "2026-07-01T10:00:00+03:00",
-            accepted, null);
+            accepted, corrections);
 
         var stored = await CreateServiceRealLexicon(structuring).IngestAsync(request, CancellationToken.None);
 
         Assert.Equal(0, structuring.Calls); // still the no-second-LLM-pass desk path
         Assert.Equal("rasismi", stored.Structure!.Category);
+        Assert.DoesNotContain(stored.Corrections!, c => c.Field == "category");
+        Assert.Contains(stored.Corrections!, c => c.Field == "severity");
     }
 
     [Fact]

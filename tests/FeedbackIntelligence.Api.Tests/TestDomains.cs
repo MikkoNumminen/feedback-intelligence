@@ -18,6 +18,12 @@ internal static class TestDomains
     public static IActiveDomain RetailActive(string? promptOverride = null) =>
         new StubActiveDomain(Retail(), promptOverride);
 
+    /// <summary>The COMMITTED retail alert lexicon — the one place tests resolve
+    /// its path, so a module move breaks exactly one helper.</summary>
+    public static Api.Alerts.AlertKeywordSet RetailKeywords() =>
+        Api.Alerts.AlertKeywordSet.LoadFrom(
+            Path.Combine(RepoRoot(), "domains", "retail", "alert-keywords.json"));
+
     internal static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
