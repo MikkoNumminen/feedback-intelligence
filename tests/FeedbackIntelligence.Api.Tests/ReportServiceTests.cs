@@ -96,11 +96,13 @@ public class ReportServiceTests : IDisposable
         var maitoTheme = report.Themes.Single(t => t.Category == "maito_kylma");
         Assert.Equal(2, maitoTheme.Count);
         Assert.False(maitoTheme.NarrativeFromLlm); // per-group narrative stays deterministic in summary mode
+        Assert.False(maitoTheme.IsEmergentTopic);  // a named category never becomes a topic
 
         var palveluTheme = report.Themes.Single(t => t.Title == "Palvelu");
         Assert.Equal("muu", palveluTheme.Category);
         Assert.Equal(3, palveluTheme.Count); // "Palvelu" + "Palvelu" + "palvelu" grouped by case-folded theme
         Assert.False(palveluTheme.NarrativeFromLlm);
+        Assert.True(palveluTheme.IsEmergentTopic); // the view keys off this flag, never re-derives the rule
 
         var hintaTheme = report.Themes.Single(t => t.Title == "Hinnoittelu");
         Assert.Equal("muu", hintaTheme.Category);
@@ -128,7 +130,7 @@ public class ReportServiceTests : IDisposable
     public async Task SummaryAndStandardMode_DoNotShareACacheEntry_ForTheSameWindow()
     {
         await SeedDairyAsync(2, 3);
-        var llm = new CountingChatClient();
+        var llm = new CountingScriptedChatClient("ei-jsonia");
         var service = CreateService(llm, cacheSeconds: 300);
 
         var summaryReport = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
@@ -406,7 +408,7 @@ public class ReportServiceTests : IDisposable
     public async Task ZeroLlmBudget_MakesNoLlmCalls_ReportStillComplete()
     {
         await SeedDairyAsync(2, 3);
-        var llm = new CountingChatClient();
+        var llm = new CountingScriptedChatClient("ei-jsonia");
 
         var report = await CreateService(llm, nominations: true, llmBudget: 0)
             .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
@@ -420,7 +422,7 @@ public class ReportServiceTests : IDisposable
     public async Task CachedReport_IsReused_UntilInvalidated()
     {
         await SeedDairyAsync(2, 3);
-        var llm = new CountingChatClient();
+        var llm = new CountingScriptedChatClient("ei-jsonia");
         var service = CreateService(llm, cacheSeconds: 300);
 
         var first = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
@@ -503,31 +505,10 @@ public class ReportServiceTests : IDisposable
         }
     }
 
-    private sealed class CountingChatClient : IChatClient
-    {
-        public int Calls { get; private set; }
-
-        public Task<ChatResponse> GetResponseAsync(
-            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            Calls++;
-            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "ei-jsonia")));
-        }
-
-        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
-            => throw new NotSupportedException();
-
-        public object? GetService(Type serviceType, object? serviceKey = null) => null;
-
-        public void Dispose()
-        {
-        }
-    }
-
     // Same fixed reply on every call, but counts calls — used where a test needs
     // BOTH a groundable JSON reply (to reach NarrativeFromLlm==true) and an exact
-    // call-count assertion.
+    // call-count assertion. `new CountingScriptedChatClient("ei-jsonia")` covers
+    // the count-only case too (the reply just falls back deterministically).
     private sealed class CountingScriptedChatClient(string response) : IChatClient
     {
         public int Calls { get; private set; }

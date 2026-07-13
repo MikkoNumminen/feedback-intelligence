@@ -233,6 +233,10 @@ async function loadSchema() {
     schemaLoaded = true;
     el("interpret").disabled = false;
     setStatus("status1", "", "");
+    // If phase A painted before /schema arrived, its category labels were raw
+    // keys — re-render now that labels exist (phase B repaints anyway when the
+    // report lands; this covers the window before it).
+    if (!lastReport && lastItems) renderQuick(lastItems);
   } catch {
     schemaLoaded = false;
     el("interpret").disabled = true;
@@ -486,14 +490,12 @@ function renderSegment(report) {
     body.appendChild(box);
   }
 
-  const catchAll = schema?.catchAllCategory;
   for (const theme of report.themes ?? []) {
-    const isTopic = catchAll && theme.category === catchAll;
+    // The server marks emergent topics explicitly (isEmergentTopic) — the view
+    // never re-derives the grouping rule client-side.
     renderSection(body, {
-      // Emergent topics show the AI-named theme as the heading, tagged with
-      // the catch-all's label; named categories show their domain label.
-      label: isTopic ? theme.title : catLabel(theme.category),
-      tag: isTopic ? catLabel(catchAll) : null,
+      label: theme.isEmergentTopic ? theme.title : catLabel(theme.category),
+      tag: theme.isEmergentTopic ? catLabel(theme.category) : null,
       count: theme.count,
       flagged: theme.flaggedCount,
       meta: theme.directionLabel,
@@ -502,8 +504,11 @@ function renderSegment(report) {
   }
 }
 
-// Phase A: instant categorized list built from raw items — no LLM anywhere, so
-// a refresh always shows every stored entry within moments, for every visitor.
+// Phase A: instant CATEGORY-grouped list built from raw items — no LLM, so a
+// refresh always shows every stored entry within moments, for every visitor.
+// Deliberately grouped by category ONLY: the emergent-topic split is the
+// server's rule (ADR-0026) and is not re-implemented client-side — topics
+// appear when the authoritative report (phase B) lands.
 function renderQuick(items) {
   renderedL = L;
   const body = el("segmentBody");
@@ -514,25 +519,19 @@ function renderQuick(items) {
   }
   const structured = items.filter(i => i.structure);
   renderTotals(body, items.length, items.length - structured.length);
-  body.appendChild(node("p", "seg-meta", L.summaryPending));
+  body.appendChild(node("p", "seg-meta seg-pending", L.summaryPending));
 
-  const catchAll = schema?.catchAllCategory;
   const groups = new Map();
   for (const item of structured) {
-    const isTopic = catchAll && item.structure.category === catchAll && (item.structure.theme || "").trim();
-    const key = isTopic ? `${catchAll}\n${item.structure.theme.trim().toLowerCase()}` : item.structure.category;
+    const key = item.structure.category;
     if (!groups.has(key))
-      groups.set(key, {
-        label: isTopic ? item.structure.theme.trim() : catLabel(item.structure.category),
-        tag: isTopic ? catLabel(catchAll) : null,
-        count: 0, flagged: 0, items: [],
-      });
+      groups.set(key, { label: catLabel(key), tag: null, count: 0, flagged: 0, items: [] });
     const group = groups.get(key);
     group.count++;
     if (item.needsReview) group.flagged++;
     group.items.push({ severity: item.structure.severity, text: item.text, timestamp: item.timestamp });
   }
-  for (const section of [...groups.values()].sort((a, b) => b.count - a.count))
+  for (const section of [...groups.values()].sort((a, b) => (b.count - a.count) || a.label.localeCompare(b.label)))
     renderSection(body, section);
 }
 
@@ -541,24 +540,38 @@ async function loadSegment() {
   segmentBusy = true;
   el("segmentRefresh").disabled = true;
   setStatus("segmentStatus", "", L.segmentLoading);
+  // Whether THIS load painted phase A — the error message must never lean on a
+  // previous load's stale content.
+  let phaseARendered = false;
   try {
+    // Both requests start immediately: the raw list renders as soon as it
+    // arrives, without delaying the (much slower) summary synthesis behind it.
+    const itemsPromise = fetch(`${API}/live/feedback?limit=1000`);
+    const reportPromise = fetch(`${API}/live/report`);
     // Phase A — instant: raw items, no LLM. A refresh must never look empty.
     try {
-      const itemsRes = await fetch(`${API}/live/feedback?limit=500`);
+      const itemsRes = await itemsPromise;
       if (itemsRes.ok) {
         lastItems = await itemsRes.json();
         renderQuick(lastItems);
+        phaseARendered = true;
       }
     } catch { /* phase B owns the error path */ }
     // Phase B — authoritative: the summary report (may run a synthesis).
-    const res = await fetch(`${API}/live/report`);
+    const res = await reportPromise;
     if (!res.ok) throw new Error();
     lastReport = await res.json();
     renderSegment(lastReport);
     setStatus("segmentStatus", "", "");
   } catch {
-    // Keep the phase-A content if it rendered; only the status line degrades.
-    setStatus("segmentStatus", "err", lastItems?.length ? L.summaryFailed : L.segmentError);
+    if (phaseARendered) {
+      // Keep this load's entry list, but the optimistic "the AI is writing the
+      // summary" line must not survive a failed synthesis.
+      el("segmentBody").querySelector(".seg-pending")?.remove();
+      setStatus("segmentStatus", "err", L.summaryFailed);
+    } else {
+      setStatus("segmentStatus", "err", L.segmentError);
+    }
   } finally {
     segmentBusy = false;
     el("segmentRefresh").disabled = false;

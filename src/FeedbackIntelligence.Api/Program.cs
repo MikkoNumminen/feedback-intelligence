@@ -279,12 +279,13 @@ app.MapGet("/feedback", (
 // which matches the repo's accepted unauthenticated-operator posture (T1/T2).
 app.MapPost("/live/restructure", async (
     [FromKeyedServices(Channels.Live)] IngestService ingest,
+    IActiveDomain domain,
     CancellationToken ct) =>
 {
     try
     {
-        var (restructured, failed, total) = await ingest.RestructureAllAsync(ct);
-        return Results.Ok(new { restructured, failed, total });
+        var (restructured, failed, skipped, total) = await ingest.RestructureAsync(domain.Descriptor, ct);
+        return Results.Ok(new { restructured, failed, skipped, total });
     }
     catch (LlmBusyException)
     {

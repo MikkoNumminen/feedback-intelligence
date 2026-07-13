@@ -492,6 +492,7 @@ public static class Commands
         Console.WriteLine("  " + Term.C("●", "32") +
             $" {root.GetProperty("restructured").GetInt32()} restructured · " +
             $"{root.GetProperty("failed").GetInt32()} structure_failed · " +
+            $"{root.GetProperty("skipped").GetInt32()} skipped (valid category, human audit kept) · " +
             $"{root.GetProperty("total").GetInt32()} total");
         return 0;
     }

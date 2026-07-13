@@ -49,34 +49,7 @@ public sealed class IngestService(
         }
         else
         {
-            try
-            {
-                var result = await llmGate.RunAsync(
-                    innerCt => structuringService.StructureAsync(request.Text, innerCt), ct);
-                structure = result.Structure;
-                failed = result.Failed;
-                notes = result.Notes;
-                if (result.Failed)
-                    logger.LogWarning("structure_failed on ingest; raw feedback preserved. Notes: {Notes}",
-                        string.Join("; ", result.Notes));
-            }
-            catch (LlmBusyException)
-            {
-                // Shed, don't store: the client gets a clean 503 and retries.
-                throw;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                // LLM down ≠ feedback lost: store unstructured, flag it, move on.
-                logger.LogError(ex, "LLM unavailable during ingest; storing structure_failed.");
-                structure = null;
-                failed = true;
-                notes = [$"llm call failed: {ex.Message}"];
-            }
+            (structure, failed, notes) = await StructureViaGateAsync(request.Text, "ingest", ct);
         }
 
         // Injection hardening (ADR-0021 A2): a deterministic scan of the raw text for
@@ -91,15 +64,9 @@ public sealed class IngestService(
         // interpretation at /interpret and accepted/corrected it, so needs_review ("a
         // human should validate") is already met — and the co-occurrence flag's
         // "model-assigned severe rating" meaning doesn't hold for a human-chosen one.
-        var reviewFlags = new List<string>();
-        if (request.AcceptedStructure is null)
-        {
-            reviewFlags.AddRange(InjectionSignals.Detect(request.Text));
-            if (reviewFlags.Count > 0
-                && structure is not null
-                && InjectionSignals.SevereSeverities.Contains(structure.Severity))
-                reviewFlags.Add(InjectionSignals.SevereRatingFlag);
-        }
+        var reviewFlags = request.AcceptedStructure is null
+            ? BuildReviewFlags(request.Text, structure)
+            : [];
         if (reviewFlags.Count > 0)
             logger.LogWarning("Feedback flagged needs_review (injection symptoms): {Flags}",
                 string.Join(", ", reviewFlags));
@@ -127,61 +94,102 @@ public sealed class IngestService(
     }
 
     /// <summary>Operator maintenance (ADR-0026): re-run the structuring model over
-    /// every stored item with the CURRENT domain vocabulary, so a category added
-    /// later (retail's "asiaton") re-adapts entries stored under the old one.
-    /// Every result is model-assigned: the A2 injection-symptom scan applies to
-    /// each item, and stale human corrections are cleared by the store update so
-    /// the correction telemetry never counts audits of a structure that no longer
-    /// exists. Sheds LlmBusy to the caller (the operator retries); a per-item LLM
-    /// failure stores structure_failed and moves on — feedback is never lost.</summary>
-    public async Task<(int Restructured, int Failed, int Total)> RestructureAllAsync(CancellationToken ct)
+    /// stored items whose structure NEEDS the current vocabulary — unstructured
+    /// items, catch-all items (a new category or emergent topic may now fit), and
+    /// items whose category no longer exists in the domain. Items sitting in a
+    /// still-valid named category are SKIPPED: a human desk-acceptance there is a
+    /// deliberate audit this pass must not overwrite. Re-structured results are
+    /// model-assigned: the A2 injection-symptom scan applies, and stale human
+    /// corrections are cleared by the store update so the correction telemetry
+    /// never counts audits of a structure that no longer exists. Sheds LlmBusy to
+    /// the caller (the operator retries); a per-item LLM failure stores
+    /// structure_failed and moves on — feedback is never lost. The cache is
+    /// invalidated even when the pass aborts mid-way, so a partial pass can never
+    /// leave a stale report over half-updated rows.</summary>
+    public async Task<(int Restructured, int Failed, int Skipped, int Total)> RestructureAsync(
+        Core.Domain.DomainDescriptor domain, CancellationToken ct)
     {
         // Newest-first cap of 500: far above any live-channel population; the
         // main channel's corpus would re-run the generator instead.
         var items = await store.QueryAsync(null, null, 500, ct);
         var restructured = 0;
         var failed = 0;
-        foreach (var item in items)
+        var updatedAny = false;
+        try
         {
-            FeedbackStructure? structure;
-            var itemFailed = false;
-            IReadOnlyList<string> notes = [];
-            try
+            foreach (var item in items)
             {
-                var result = await llmGate.RunAsync(
-                    innerCt => structuringService.StructureAsync(item.Text, innerCt), ct);
-                structure = result.Structure;
-                itemFailed = result.Failed;
-                notes = result.Notes;
-            }
-            catch (LlmBusyException)
-            {
-                throw;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "LLM unavailable during restructure of {Id}; storing structure_failed.", item.Id);
-                structure = null;
-                itemFailed = true;
-                notes = [$"llm call failed: {ex.Message}"];
-            }
+                var needsPass = item.Structure is null
+                    || item.Structure.Category == domain.CatchAllCategory
+                    || !domain.Categories.Contains(item.Structure.Category);
+                if (!needsPass)
+                    continue;
 
-            var reviewFlags = new List<string>(InjectionSignals.Detect(item.Text));
-            if (reviewFlags.Count > 0
-                && structure is not null
-                && InjectionSignals.SevereSeverities.Contains(structure.Severity))
-                reviewFlags.Add(InjectionSignals.SevereRatingFlag);
-
-            await store.UpdateStructureAsync(item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);
-            if (itemFailed) failed++; else restructured++;
+                var (structure, itemFailed, notes) = await StructureViaGateAsync(item.Text, $"restructure of {item.Id}", ct);
+                var reviewFlags = BuildReviewFlags(item.Text, structure);
+                var updatedRows = await store.UpdateStructureAsync(
+                    item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);
+                if (updatedRows == 0)
+                    continue; // row vanished between the snapshot and the update — not a success
+                updatedAny = true;
+                if (itemFailed) failed++; else restructured++;
+            }
         }
-        reportCache.Invalidate();
-        logger.LogInformation("Restructure pass: {Ok} restructured, {Failed} failed, {Total} total.",
-            restructured, failed, items.Count);
-        return (restructured, failed, items.Count);
+        finally
+        {
+            // A partial pass (LlmBusy shed, cancellation) already changed rows —
+            // the cached report must not outlive them.
+            if (updatedAny)
+                reportCache.Invalidate();
+        }
+        var skipped = items.Count - restructured - failed;
+        logger.LogInformation("Restructure pass: {Ok} restructured, {Failed} failed, {Skipped} skipped, {Total} total.",
+            restructured, failed, skipped, items.Count);
+        return (restructured, failed, skipped, items.Count);
+    }
+
+    /// <summary>The gated structuring call with the ingest error contract, shared
+    /// by ingest and restructure so their failure semantics cannot drift:
+    /// LlmBusy sheds to the caller, cancellation propagates, anything else
+    /// degrades to structure_failed with the raw text preserved.</summary>
+    private async Task<(FeedbackStructure? Structure, bool Failed, IReadOnlyList<string> Notes)> StructureViaGateAsync(
+        string text, string context, CancellationToken ct)
+    {
+        try
+        {
+            var result = await llmGate.RunAsync(innerCt => structuringService.StructureAsync(text, innerCt), ct);
+            if (result.Failed)
+                logger.LogWarning("structure_failed on {Context}; raw feedback preserved. Notes: {Notes}",
+                    context, string.Join("; ", result.Notes));
+            return (result.Structure, result.Failed, result.Notes);
+        }
+        catch (LlmBusyException)
+        {
+            // Shed, don't store: the client gets a clean 503 and retries.
+            throw;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // LLM down ≠ feedback lost: store unstructured, flag it, move on.
+            logger.LogError(ex, "LLM unavailable during {Context}; storing structure_failed.", context);
+            return (null, true, [$"llm call failed: {ex.Message}"]);
+        }
+    }
+
+    /// <summary>The ADR-0021 A2 injection-symptom scan for MODEL-ASSIGNED
+    /// structures, shared by ingest and restructure so a security fix to the
+    /// scan can never apply to one path and not the other.</summary>
+    private static List<string> BuildReviewFlags(string text, FeedbackStructure? structure)
+    {
+        var reviewFlags = new List<string>(InjectionSignals.Detect(text));
+        if (reviewFlags.Count > 0
+            && structure is not null
+            && InjectionSignals.SevereSeverities.Contains(structure.Severity))
+            reviewFlags.Add(InjectionSignals.SevereRatingFlag);
+        return reviewFlags;
     }
 }

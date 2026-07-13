@@ -50,7 +50,12 @@ public sealed record ReportTheme(
     // Injection hardening (ADR-0021 A2): how many of this group's items are flagged
     // needs_review, so the view can warn that a possibly-manipulated item is part of
     // the (still-counted) group — the influence is visible, not silent.
-    int FlaggedCount = 0);
+    int FlaggedCount = 0,
+    // Live-summary mode (ADR-0026): true when this group is an EMERGENT TOPIC —
+    // catch-all items grouped by the structuring model's free-text theme, with
+    // Title carrying the topic. The view keys its rendering off this flag rather
+    // than re-deriving the grouping rule client-side.
+    bool IsEmergentTopic = false);
 
 /// <summary>DroppedClaimCount counts ONLY citation-validation failures (the
 /// model made a claim it could not ground). LlmFallbackCount counts groups

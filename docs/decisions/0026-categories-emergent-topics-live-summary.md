@@ -41,11 +41,14 @@ categories and hints are injected into the locked template's placeholders):
    look empty again; every visitor always sees every stored entry.
 
 Adapting existing data: **`POST /live/restructure`** (feedctl `restructure`)
-re-runs structuring over the live channel with the current vocabulary, so
-entries stored before a category existed move into it. Results are
-model-assigned: the A2 injection scan applies per item, and old human
-corrections are cleared — they audited a structure that no longer exists and
-must not feed the correction telemetry.
+re-runs structuring with the current vocabulary over the items that NEED it —
+unstructured items, catch-all items (a new category or emergent topic may now
+fit), and items whose category no longer exists. Items in a still-valid named
+category are skipped: a human desk-acceptance there is a deliberate audit the
+pass must not overwrite. Re-structured results are model-assigned: the A2
+injection scan applies per item, and their old corrections are cleared — they
+audited a structure that no longer exists and must not feed the correction
+telemetry. The report cache is invalidated even if the pass aborts mid-way.
 
 ## Consequences
 
@@ -58,8 +61,9 @@ must not feed the correction telemetry.
 - `/live/restructure` is unauthenticated like every operator endpoint (the
   repo's accepted T1/T2 posture) but deliberately NOT in the public `/api`
   proxy allowlist — the static site cannot trigger GPU-burning re-passes.
-- Re-structuring overwrites desk-accepted structures with model output; the
-  human-in-the-loop audit for those entries starts over. That is the point —
-  the old acceptance was made against a vocabulary that no longer exists.
+- Re-structuring overwrites desk-accepted structures ONLY for items in the
+  catch-all or in a removed category — there the old acceptance was made
+  against a vocabulary that no longer exists, so the audit starts over.
+  Human-accepted items in still-valid categories are never touched.
 - `categoryHints`/`catchAllCategory` are optional domain data: the game domain
   is untouched and compiles into identical behavior.

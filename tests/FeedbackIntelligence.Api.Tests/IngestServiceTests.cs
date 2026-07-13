@@ -288,15 +288,24 @@ public class IngestServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RestructureAllAsync_ReStructuresEveryItem_ClearsCorrections_InvalidatesCache_ReturnsCounts()
+    public async Task Restructure_BoundedScope_AdaptsStaleAndCatchAll_SkipsValidCategories()
     {
-        var oldStructure = new FeedbackStructure("hevi", "vanha teema", "low", "complaint", "fi");
+        // ADR-0026 bounded pass: a removed-category item and a catch-all item are
+        // re-structured (corrections cleared); an item in a still-valid named
+        // category is SKIPPED — its human audit must survive the pass.
         await _store.InsertAsync(new StoredFeedback(
             "r-1", "email", "eka vanha palaute", "2026-07-01T07:00:00.0000000+00:00", "2026-07-01T07:00:00Z",
-            oldStructure, false, false, [], [], [new FieldCorrection("category", "muu", "hevi")]), CancellationToken.None);
+            new FeedbackStructure("vanha_osasto", "vanha teema", "low", "complaint", "fi"),
+            false, false, [], [], [new FieldCorrection("category", "muu", "vanha_osasto")]), CancellationToken.None);
         await _store.InsertAsync(new StoredFeedback(
             "r-2", "web_form", "toka vanha palaute", "2026-07-01T08:00:00.0000000+00:00", "2026-07-01T08:00:00Z",
-            oldStructure, false, false, [], [], null), CancellationToken.None);
+            new FeedbackStructure("muu", "sekalainen", "low", "complaint", "fi"),
+            false, false, [], [], null), CancellationToken.None);
+        var validStructure = new FeedbackStructure("hevi", "hedelmien tuoreus", "low", "complaint", "fi");
+        var validCorrections = new[] { new FieldCorrection("severity", "medium", "low") };
+        await _store.InsertAsync(new StoredFeedback(
+            "r-3", "desk", "hevi palaute", "2026-07-01T09:00:00.0000000+00:00", "2026-07-01T09:00:00Z",
+            validStructure, false, false, [], [], validCorrections), CancellationToken.None);
 
         var newStructure = new FeedbackStructure("asiaton", "uusi teema", "high", "complaint", "fi");
         var structuring = new FakeStructuring(new StructuringResult(newStructure, "{}", false, false, false, []));
@@ -310,18 +319,23 @@ public class IngestServiceTests : IDisposable
             },
             cache, NullLogger<IngestService>.Instance);
 
-        var (restructured, failed, total) = await service.RestructureAllAsync(CancellationToken.None);
+        var (restructured, failed, skipped, total) =
+            await service.RestructureAsync(TestDomains.Retail(), CancellationToken.None);
 
         Assert.Equal(2, restructured);
         Assert.Equal(0, failed);
-        Assert.Equal(2, total);
+        Assert.Equal(1, skipped);
+        Assert.Equal(3, total);
         Assert.NotEqual(epochBefore, cache.Epoch); // live report cache invalidated
 
         var r1 = await _store.GetAsync("r-1", CancellationToken.None);
         var r2 = await _store.GetAsync("r-2", CancellationToken.None);
+        var r3 = await _store.GetAsync("r-3", CancellationToken.None);
         Assert.Equal(newStructure, r1!.Structure);
         Assert.Equal(newStructure, r2!.Structure);
-        Assert.Null(r1.Corrections); // stale correction cleared by the store update
+        Assert.Null(r1.Corrections);                    // stale correction cleared by the store update
+        Assert.Equal(validStructure, r3!.Structure);    // valid-category item untouched...
+        Assert.NotNull(r3.Corrections);                 // ...human audit preserved
     }
 
     private IngestService CreateService2(IStructuringService structuring) => new(

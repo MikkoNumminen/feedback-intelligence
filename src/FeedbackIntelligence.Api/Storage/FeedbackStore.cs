@@ -158,8 +158,10 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options, string? dbPat
     /// entries. Raw text, source, timestamps and the deterministic alerts stay
     /// untouched. Old corrections are CLEARED — they audited a structure that no
     /// longer exists, and stale audits must not feed the correction telemetry —
-    /// and model_failed resets: the new structure is a fresh model output.</summary>
-    public async Task UpdateStructureAsync(
+    /// and model_failed resets: the new structure is a fresh model output.
+    /// Returns the affected row count — 0 means the row vanished between the
+    /// caller's snapshot and this update, which must not count as a success.</summary>
+    public async Task<int> UpdateStructureAsync(
         string id, FeedbackStructure? structure, bool structureFailed,
         IReadOnlyList<string> salvageNotes, bool needsReview, IReadOnlyList<string> reviewFlags, CancellationToken ct)
     {
@@ -183,7 +185,7 @@ public sealed class FeedbackStore(IOptions<IngestOptions> options, string? dbPat
         command.Parameters.AddWithValue("$notes", JsonSerializer.Serialize(salvageNotes, Json));
         command.Parameters.AddWithValue("$needsReview", needsReview ? 1 : 0);
         command.Parameters.AddWithValue("$reviewFlags", JsonSerializer.Serialize(reviewFlags, Json));
-        await command.ExecuteNonQueryAsync(ct);
+        return await command.ExecuteNonQueryAsync(ct);
     }
 
     /// <summary>Open a connection with a bounded busy wait. SQLite's default is to
