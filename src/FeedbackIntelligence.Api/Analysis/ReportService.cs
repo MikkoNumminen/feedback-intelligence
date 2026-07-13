@@ -151,15 +151,17 @@ public sealed class ReportService(
                     .GroupBy(n => n.Id, StringComparer.Ordinal)
                     .ToDictionary(g => g.Key, g => g.First().Reason, StringComparer.Ordinal)
                 : new Dictionary<string, string>(StringComparer.Ordinal);
+            var confirmedIds = confirmed.Select(i => i.Id).ToHashSet(StringComparer.Ordinal);
             foreach (var item in confirmed)
                 alerts.Add(new ReportAlert(item.Id, item.Source, item.Timestamp, Excerpt(item.Text), item.Text, [],
                     // A3: the alert reason is another model-authored, manager-facing
                     // slot. A directive one (recommend/act/verdict) falls back to the
                     // deterministic line — an injected instruction has no slot here
                     // either. A genuine safety reason describes the hazard, not an act.
+                    // Id echoes are stripped like every model-authored prose slot.
                     reasons.TryGetValue(item.Id, out var r) && !string.IsNullOrWhiteSpace(r)
                             && !NarrativeGuard.LooksActionBearing(r)
-                        ? r
+                        ? StripIdEchoes(r, confirmedIds)
                         : ReportText.PossibleSafetyAlert(activeDomain.Descriptor.Language)));
         }
 
@@ -485,8 +487,33 @@ public sealed class ReportService(
                 return null;
             }
 
-            return (titleText, narrativeText);
+            // The model sometimes echoes the internal item ids into its prose
+            // ("kuten [desk-<uuid>] 'sitaatti'") even though grounding rides the
+            // citedIds field. Strip the KNOWN ids deterministically so the
+            // manager-facing text reads as plain speech — presentation is
+            // enforced by post-processing, like grounding is by validation,
+            // never by prompt-wording (and the locked prompts stay untouched).
+            return (StripIdEchoes(titleText, providedIds), StripIdEchoes(narrativeText, providedIds));
         }
+    }
+
+    /// <summary>Remove literal item-id echoes from model prose. Only ids we
+    /// actually provided are touched (never a free regex over the text), in
+    /// bracketed, parenthesized or bare form; the residue — empty brackets,
+    /// doubled spaces, space-before-punctuation — is tidied after.</summary>
+    internal static string StripIdEchoes(string prose, IReadOnlyCollection<string> ids)
+    {
+        foreach (var id in ids)
+        {
+            prose = prose
+                .Replace($"[{id}]", "", StringComparison.Ordinal)
+                .Replace($"({id})", "", StringComparison.Ordinal)
+                .Replace(id, "", StringComparison.Ordinal);
+        }
+        prose = System.Text.RegularExpressions.Regex.Replace(prose, @"[\[(][\s,;·]*[\])]", "");
+        prose = System.Text.RegularExpressions.Regex.Replace(prose, @"\s{2,}", " ");
+        prose = System.Text.RegularExpressions.Regex.Replace(prose, @"\s+([,.;:!?])", "$1");
+        return prose.Trim();
     }
 
     /// <summary>Returns the raw LLM text, or null when the model could not be

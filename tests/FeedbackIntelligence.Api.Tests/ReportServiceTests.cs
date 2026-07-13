@@ -196,6 +196,30 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task NarrativeIdEchoes_AreStrippedFromProse()
+    {
+        // Poro sometimes echoes internal item ids into the prose even though
+        // grounding rides the citedIds field — the manager-facing text must
+        // read as plain speech (presentation by post-processing, ADR-0026 era;
+        // the locked prompt stays untouched).
+        await SeedDairyAsync(2, 1);
+        var llm = new ScriptedChatClient(
+            """{"title": "Maidon tuoreus [late-0]", "narrative": "Asiakas [late-0] 'maito vanhaa' valitti tuoreudesta, samoin (early-1) toinen asiakas.", "citedIds": ["late-0", "early-1"]}""");
+
+        var report = await CreateService(llm).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.True(theme.NarrativeFromLlm);
+        Assert.DoesNotContain("late-0", theme.Title);
+        Assert.DoesNotContain("late-0", theme.Narrative);
+        Assert.DoesNotContain("early-1", theme.Narrative);
+        Assert.DoesNotContain("[", theme.Narrative);   // no empty-bracket residue
+        Assert.DoesNotContain("  ", theme.Narrative);  // no doubled spaces
+        Assert.Equal("Maidon tuoreus", theme.Title);
+        Assert.Contains("'maito vanhaa' valitti tuoreudesta", theme.Narrative);
+    }
+
+    [Fact]
     public async Task GroundedNarrative_IsUsed()
     {
         await SeedDairyAsync(2, 3);
