@@ -52,6 +52,8 @@
   "demotedCategories": ["rasismi", "asiaton"],
   "severities": { "low": "Matala", "medium": "Keskitaso", "high": "Korkea", "critical": "Kriittinen" },
   "types": { "complaint": "Valitus", "praise": "Kehu", "suggestion": "Ehdotus", "question": "Kysymys", "other": "Muu" },
+  "sentiments": { "positive": "Myönteinen", "negative": "Kielteinen", "neutral": "Neutraali" },
+  "typeSentiment": { "complaint": "negative", "praise": "positive", "suggestion": "neutral", "question": "neutral", "other": "neutral" },
   "sources": ["google_review", "email", "web_form", "desk"],
   "prompts": {
     "synthesis": "prompts/synthesis-v0.txt",

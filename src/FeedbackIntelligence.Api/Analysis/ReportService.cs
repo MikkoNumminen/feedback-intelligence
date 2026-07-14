@@ -174,6 +174,9 @@ public sealed partial class ReportService(
         var lang = activeDomain.Descriptor.Language;
         var themes = new List<ReportTheme>();
         var structured = items.Where(i => i.Structure is not null).ToList();
+        // Whole-window sentiment mix (ADR-0030), reused for the report-level
+        // indicator and the live-summary Overall card.
+        var reportSentiment = SentimentCounts(structured);
         // Make the severity-rank fallback non-silent: a domain whose severity values
         // fall outside the built-in rank map ranks every item as "medium", which
         // disables worsening-trend detection. Surface it once per report rather than
@@ -283,11 +286,11 @@ public sealed partial class ReportService(
             overall = synthesized is { } ok
                 ? new ReportTheme("overall", ok.Title, ok.Narrative, structured.Count, overallDirection,
                     overallDirectionLabel, structured.Select(i => i.Id).ToList(), true, [],
-                    structured.Count(i => i.NeedsReview))
+                    structured.Count(i => i.NeedsReview), IsEmergentTopic: false, SentimentCounts: reportSentiment)
                 : new ReportTheme("overall", FallbackTitle(scope, structured),
                     FallbackNarrative(structured, overallDirectionLabel, lang), structured.Count, overallDirection,
                     overallDirectionLabel, structured.Select(i => i.Id).ToList(), false, [],
-                    structured.Count(i => i.NeedsReview));
+                    structured.Count(i => i.NeedsReview), IsEmergentTopic: false, SentimentCounts: reportSentiment);
         }
 
         var report = new ManagementReport(
@@ -302,7 +305,8 @@ public sealed partial class ReportService(
             state.LlmFallbacks,
             lang,
             state.ActionDropped,
-            overall);
+            overall,
+            reportSentiment);
 
         // Snapshot persistence moved to GenerateAsync (opt-in; applies on cache hit too).
         return report;
@@ -421,12 +425,12 @@ public sealed partial class ReportService(
     /// ADR-0021 A2 flagged count: flagged items stay IN the group and trend,
     /// excluding them would be exploitable, but the count surfaces so the view
     /// can warn) can never drift between the two.</summary>
-    private static ReportTheme BuildTheme(
+    private ReportTheme BuildTheme(
         string category, string title, string narrative, List<StoredFeedback> groupItems,
         string direction, string directionLabel, bool fromLlm, bool isEmergentTopic = false) =>
         new(category, title, narrative, groupItems.Count, direction, directionLabel,
             groupItems.Select(i => i.Id).ToList(), fromLlm, BuildSources(groupItems),
-            groupItems.Count(i => i.NeedsReview), isEmergentTopic);
+            groupItems.Count(i => i.NeedsReview), isEmergentTopic, SentimentCounts(groupItems));
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
         string category, IReadOnlyList<StoredFeedback> groupItems, string directionLabel, GenState state, CancellationToken ct)
@@ -691,7 +695,7 @@ public sealed partial class ReportService(
     /// evidence in one click (live OR from a snapshot, no per-item fetch). Ordered
     /// most-severe-then-most-recent first so the serious voices lead; Text is the
     /// full stored message (length-capped at ingest).</summary>
-    private static List<ReportSourceItem> BuildSources(IReadOnlyList<StoredFeedback> items) =>
+    private List<ReportSourceItem> BuildSources(IReadOnlyList<StoredFeedback> items) =>
         items
             .OrderByDescending(i => SeverityRank(i.Structure?.Severity))
             .ThenByDescending(i => i.Timestamp, StringComparer.Ordinal)
@@ -699,8 +703,27 @@ public sealed partial class ReportService(
                 i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview,
                 i.Alerts.Count > 0
                     ? Core.Alerts.AlertMatcher.DistinctCategories(i.Alerts)
-                    : null))
+                    : null,
+                SentimentOf(i)))
             .ToList();
+
+    /// <summary>An item's sentiment KEY (ADR-0030), derived from its type via the
+    /// active domain's map. This is the single seam a future model-authored
+    /// sentiment field swaps behind — callers ask here, never the type directly.</summary>
+    private string? SentimentOf(StoredFeedback item) =>
+        item.Structure is { } s ? activeDomain.Descriptor.SentimentOf(s.Type) : null;
+
+    /// <summary>Sentiment mix over a set of items: sentiment key → count, with
+    /// zero-count keys omitted. Empty when the domain declares no sentiment or no
+    /// item carries a polarity-bearing type (ADR-0030).</summary>
+    private IReadOnlyDictionary<string, int> SentimentCounts(IReadOnlyList<StoredFeedback> items)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var item in items)
+            if (SentimentOf(item) is { } key)
+                counts[key] = counts.GetValueOrDefault(key) + 1;
+        return counts;
+    }
 
     private static int SeverityRank(string? severity) => RankOf(severity);
 
@@ -761,7 +784,7 @@ public sealed partial class ReportService(
             // Accepted — a snapshot is a best-effort offline fallback, self-heals on the
             // next report, and both readers tolerate a one-generation-old file.
             await WriteAtomicAsync(Path.Combine(dir, "report-latest.json"), JsonSerializer.Serialize(report, Json), ct);
-            await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report, activeDomain.Descriptor.Language), ct);
+            await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report, activeDomain.Descriptor.Language, activeDomain.Descriptor.SentimentLabels), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

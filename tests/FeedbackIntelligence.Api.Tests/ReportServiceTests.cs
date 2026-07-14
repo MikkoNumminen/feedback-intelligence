@@ -71,6 +71,11 @@ public class ReportServiceTests : IDisposable
         new FeedbackStructure(category, theme, severity, "complaint", "fi"),
         false, false, [], [], null);
 
+    private static StoredFeedback ItemOfType(string id, string timestamp, string type, string severity = "low") => new(
+        id, "desk", $"palaute {id}", timestamp, timestamp,
+        new FeedbackStructure("maito_kylma", "tuoreus", severity, type, "fi"),
+        false, false, [], [], null);
+
     [Fact]
     public async Task SummaryMode_CatchAllCategory_SplitsIntoEmergentTopicGroups_AndSynthesizesOneOverall()
     {
@@ -527,6 +532,43 @@ public class ReportServiceTests : IDisposable
         var third = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
         Assert.NotSame(first, third);
         Assert.True(llm.Calls > callsBeforeInvalidate);
+    }
+
+    [Fact]
+    public async Task Sentiment_DerivedFromType_OnSourceItems_Theme_AndReport()
+    {
+        // ADR-0030: sentiment is deterministic, derived per-item from its `type`
+        // via the active domain's typeSentiment (retail: complaint→negative,
+        // praise→positive, suggestion/question→neutral). All items share one
+        // category so they land in a single theme, keeping the count check simple.
+        const string ts = "2026-06-29T10:00:00.0000000+00:00";
+        await _store.InsertAsync(ItemOfType("praise-1", ts, "praise"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("praise-2", ts, "praise"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("complaint-1", ts, "complaint"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("complaint-2", ts, "complaint"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("complaint-3", ts, "complaint"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("question-1", ts, "question"), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia"))
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.Equal("positive", theme.Sources.Single(s => s.FeedbackId == "praise-1").Sentiment);
+        Assert.Equal("positive", theme.Sources.Single(s => s.FeedbackId == "praise-2").Sentiment);
+        Assert.Equal("negative", theme.Sources.Single(s => s.FeedbackId == "complaint-1").Sentiment);
+        Assert.Equal("negative", theme.Sources.Single(s => s.FeedbackId == "complaint-2").Sentiment);
+        Assert.Equal("negative", theme.Sources.Single(s => s.FeedbackId == "complaint-3").Sentiment);
+        Assert.Equal("neutral", theme.Sources.Single(s => s.FeedbackId == "question-1").Sentiment);
+
+        Assert.NotNull(theme.SentimentCounts);
+        Assert.Equal(2, theme.SentimentCounts!["positive"]);
+        Assert.Equal(3, theme.SentimentCounts["negative"]);
+        Assert.Equal(1, theme.SentimentCounts["neutral"]);
+
+        Assert.NotNull(report.SentimentCounts);
+        Assert.Equal(2, report.SentimentCounts!["positive"]);
+        Assert.Equal(3, report.SentimentCounts["negative"]);
+        Assert.Equal(1, report.SentimentCounts["neutral"]);
     }
 
     [Fact]

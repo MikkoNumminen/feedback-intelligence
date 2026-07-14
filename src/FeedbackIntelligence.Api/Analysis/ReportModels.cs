@@ -30,7 +30,11 @@ public sealed record ReportSourceItem(
     bool NeedsReview = false,
     // Deterministic alert-lexicon hits on this item (e.g. retail's "rasismi",
     // ADR-0027) — the views tag the row so recognition is visible per comment.
-    IReadOnlyList<string>? AlertCategories = null);
+    IReadOnlyList<string>? AlertCategories = null,
+    // Sentiment (polarity) KEY for this item — positive/negative/neutral, derived
+    // deterministically from the item's type (ADR-0030). Null when the type carries
+    // no polarity. Views render it as a badge via the domain's sentimentLabels.
+    string? Sentiment = null);
 
 /// <summary>One theme group. Count, direction and the feedback IDs are computed
 /// deterministically; only Title/Narrative come from the synthesis model, and
@@ -58,7 +62,11 @@ public sealed record ReportTheme(
     // catch-all items grouped by the structuring model's free-text theme, with
     // Title carrying the topic. The view keys its rendering off this flag rather
     // than re-deriving the grouping rule client-side.
-    bool IsEmergentTopic = false);
+    bool IsEmergentTopic = false,
+    // Sentiment (polarity) mix for the group: sentiment KEY → item count
+    // (ADR-0030), so the view shows a positive/negative/neutral breakdown per
+    // theme without re-deriving it. Empty when the domain declares no sentiment.
+    IReadOnlyDictionary<string, int>? SentimentCounts = null);
 
 /// <summary>DroppedClaimCount counts ONLY citation-validation failures (the
 /// model made a claim it could not ground). LlmFallbackCount counts groups
@@ -86,4 +94,8 @@ public sealed record ManagementReport(
     // Null on the standard report path. Reuses the ReportTheme shape (title,
     // narrative, count, direction, flagged count); its Sources stay empty —
     // the items live in the category sections.
-    ReportTheme? Overall = null);
+    ReportTheme? Overall = null,
+    // Whole-window sentiment (polarity) mix: sentiment KEY → item count across
+    // every structured item in the window (ADR-0030). Drives the overall
+    // positive/negative indicator. Empty when the domain declares no sentiment.
+    IReadOnlyDictionary<string, int>? SentimentCounts = null);

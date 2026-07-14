@@ -27,6 +27,28 @@ public sealed class DomainDescriptor
     public required IReadOnlyDictionary<string, string> SeverityLabels { get; init; }
     public required IReadOnlyDictionary<string, string> TypeLabels { get; init; }
 
+    /// <summary>Sentiment (polarity) value set → display label, e.g.
+    /// positive/negative/neutral (retail relabels to Finnish). Core-defaulted, so
+    /// always present. See <see cref="TypeSentiment"/> for how an item's sentiment
+    /// is derived.</summary>
+    public IReadOnlyDictionary<string, string> SentimentLabels { get; init; } =
+        new Dictionary<string, string>(CoreDefaults.Sentiments, StringComparer.Ordinal);
+
+    /// <summary>Deterministic map from a feedback <c>type</c> key to a sentiment
+    /// key (ADR-0030). The report derives each item's positive/negative/neutral
+    /// indicator from this until a model-authored sentiment field replaces it.
+    /// Keys are a subset of <see cref="Types"/>; values are keys of
+    /// <see cref="SentimentLabels"/>. Both are enforced at load.</summary>
+    public IReadOnlyDictionary<string, string> TypeSentiment { get; init; } =
+        new Dictionary<string, string>(CoreDefaults.TypeSentiment, StringComparer.Ordinal);
+
+    /// <summary>The sentiment key for a feedback <c>type</c>, or null if the type
+    /// carries no polarity signal (not in <see cref="TypeSentiment"/>). This is the
+    /// single seam the future model-authored sentiment field will swap behind
+    /// (ADR-0030): callers ask the domain, not the type map directly.</summary>
+    public string? SentimentOf(string type) =>
+        TypeSentiment.TryGetValue(type, out var s) ? s : null;
+
     /// <summary>The domain's ingest channels (the accepted `source` values), in
     /// declared order — retail's google_review/email/web_form/desk, a game
     /// studio's steam_review/support_ticket/discord/in_game. Channels are

@@ -270,6 +270,12 @@ app.MapGet("/schema", (IActiveDomain domain) =>
         categoryLabels = d.CategoryLabels,
         severityLabels = d.SeverityLabels,
         typeLabels = d.TypeLabels,
+        // Sentiment (polarity) vocabulary (ADR-0030): the value set + labels, and
+        // the type→sentiment map so a view can derive an item's badge from its
+        // type without hardcoding the mapping.
+        sentiments = d.SentimentLabels.Keys,
+        sentimentLabels = d.SentimentLabels,
+        typeSentiment = d.TypeSentiment,
     });
 });
 

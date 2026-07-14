@@ -64,6 +64,14 @@ it into emergent topics named by the model's free-text theme
 Severities and types are not overridden — retail inherits the core defaults
 (`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).
 
+**Sentiment** (`sentiments` + `typeSentiment`, [ADR-0030](../decisions/0030-sentiment-indicator-deterministic-from-type.md)):
+retail relabels the polarity set to Finnish (`positive`→Myönteinen,
+`negative`→Kielteinen, `neutral`→Neutraali) and declares the type→sentiment map
+explicitly (Kehu→positive, Valitus→negative, Ehdotus/Kysymys/Muu→neutral). The
+positive/negative indicator is derived from each item's `type` via this map —
+deterministic, no model call — and rendered as a badge per item plus a mix per
+theme and overall. A model-authored sentiment field is a gated follow-up.
+
 Output language (`language`): **`fi`** — retail's audience is Finnish only, so the
 report prose, direction labels, snapshot, and the desk/management frontends all
 render in Finnish ([ADR-0014](../decisions/0014-domain-output-language.md)). It is

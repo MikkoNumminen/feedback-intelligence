@@ -31,6 +31,21 @@ deterministic layer and the separate analysis pass, never to the structuring
 model ([ADR-0006](decisions/0006-ai-in-exactly-two-places.md),
 [ADR-0009](decisions/0009-grounding-is-structural.md)).
 
+## Sentiment (derived, not a structuring field)
+
+`sentiment` (positive / negative / neutral) is **not** part of the five-field
+structuring contract. It is **derived deterministically from `type`** at report
+time via the active domain's `typeSentiment` map (retail: complaint→negative,
+praise→positive, suggestion/question/other→neutral), so it needs no model
+change, no prompt change, and no new stored data
+([ADR-0030](decisions/0030-sentiment-indicator-deterministic-from-type.md)).
+`GET /schema` serves `sentiments` + `sentimentLabels` + the `typeSentiment` map
+alongside the enum sets; the report attaches a per-item `sentiment`, a per-theme
+`sentimentCounts`, and a whole-window `sentimentCounts`. A future **model-authored**
+sentiment field would extend the contract to six fields, but that edits the
+locked structuring prompt and is gated (ADR-0022); when it lands it swaps in
+behind `DomainDescriptor.SentimentOf`, keeping the type map as the fallback.
+
 `category` is a **fixed per-domain enum** rather than free text on purpose: free
 text returns the same category as "maito" / "maitotuotteet" / "kylmä", which can
 neither be scored for schema adherence nor grouped for trends.
