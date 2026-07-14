@@ -60,12 +60,32 @@ public static class ApiHost
             var r = Shell.Run("powershell", ["-NoProfile", "-Command",
                 $"(Get-NetTCPConnection -LocalPort {Config.ApiPort} -State Listen -ErrorAction SilentlyContinue | " +
                 "Select-Object -First 1).OwningProcess"], 10000);
-            return int.TryParse(r.Output.Trim(), out var pid) ? pid : null;
+            // Output is stdout+stderr combined (Shell.Run); -NoProfile + SilentlyContinue
+            // keep stderr empty, but be defensive — the first purely-numeric token is the
+            // PID, so a stray warning line can't turn a real owner into a false "port free"
+            // (a false "free" would make `up` needlessly restart a healthy own instance).
+            foreach (var tok in r.Output.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                if (int.TryParse(tok, out var pid))
+                    return pid;
+            return null;
         }
         catch
         {
             return null;
         }
+    }
+
+    /// <summary>Kill whatever process is LISTENING on the API port right now, re-queried
+    /// at call time. PID-reuse-safe: it targets who actually holds the port, never a
+    /// possibly-stale PID file (which the OS could have recycled to an unrelated process).
+    /// `up` uses this to take the port from a squatter; <see cref="Start"/> then records
+    /// the truthful PID. It does NOT chase a parent that would respawn the listener — if
+    /// one does, the caller's port-free wait fails honestly rather than fighting it.</summary>
+    public static void KillPortOwner()
+    {
+        Shell.Run("powershell", ["-NoProfile", "-Command",
+            $"$c=(Get-NetTCPConnection -LocalPort {Config.ApiPort} -State Listen -ErrorAction SilentlyContinue | " +
+            "Select-Object -First 1).OwningProcess; if ($c) { Stop-Process -Id $c -Force -ErrorAction SilentlyContinue }"], 20000);
     }
 
     /// <summary>Builds (optionally) the API, then starts it detached on the demo

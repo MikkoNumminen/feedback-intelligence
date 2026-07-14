@@ -81,7 +81,8 @@ public static class Commands
         // so the desk comes up blank while the real entries sit in data/desk-live.db,
         // and meanwhile the PID file points at a dead or unrelated process. So decide on
         // WHO ACTUALLY OWNS THE PORT, not on PID-file liveness: trust it only when the
-        // owner is the exact process feedctl tracks; otherwise take it over.
+        // owner is the exact process feedctl tracks; otherwise kill THAT owner (the real
+        // one, re-queried — never the possibly-recycled PID-file PID) and relaunch.
         var portOwner = ApiHost.PortOwnerPid();
         if (portOwner is not null && portOwner == ApiHost.RunningPid())
         {
@@ -90,18 +91,20 @@ public static class Commands
         else
         {
             if (portOwner is not null)
+            {
                 Console.WriteLine("  " + Term.C("▲", "33") +
                     $" :{Config.ApiPort} is served by pid {portOwner}, which feedctl didn't start — taking it over so the demo/live DBs are feedctl's …");
-            // Stop() reaps BOTH the port owner (its port-based fallback, tree-kill) and
-            // any stale PID-file process, and clears the PID file — a clean slate to
-            // relaunch from, whether the squatter was foreign or a wedged own instance.
-            ApiHost.Stop();
-            if (!await WaitAsync(() => Task.FromResult(!ApiHost.PortListening()), 10))
-            {
-                Console.WriteLine("  " + Term.C("○ could not free :" + Config.ApiPort +
-                    " — stop the process holding it and re-run `up`", "31"));
-                return 1;
+                ApiHost.KillPortOwner(); // targets who actually holds the port, not a stale PID file
+                if (!await WaitAsync(() => Task.FromResult(!ApiHost.PortListening()), 10))
+                {
+                    Console.WriteLine("  " + Term.C("○ could not free :" + Config.ApiPort +
+                        " — stop the process holding it and re-run `up`", "31"));
+                    return 1;
+                }
             }
+            // Port is free now (it always was, or KillPortOwner just freed it). A stale PID
+            // file, if any, is left UNtouched: Start() overwrites it with the truth, and
+            // force-killing a possibly-recycled PID would be the greater risk.
             if (ApiHost.Start() is null) return 1;
         }
 
