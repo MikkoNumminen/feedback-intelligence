@@ -10,7 +10,8 @@ layer** in front of an LLM that structures messy input and reads themes/trends
 out of free text, and gives management a grounded, live situational view —
 alerts on top, themes and trends below, every claim clickable down to the exact
 feedback items behind it. Retail is the first application, carried in a data-only
-domain module; it is not the engine's identity. A second `domains/game/` module
+domain module — a full hybrid grocery-and-hardware taxonomy of 30 departments; it
+is not the engine's identity. A second `domains/game/` module
 proves a new domain is a new folder with zero core edits — switch with
 `--Domain:Active=game` (see [docs/domains.md](docs/domains.md),
 [ADR-0007](docs/decisions/0007-domain-agnostic-core.md),

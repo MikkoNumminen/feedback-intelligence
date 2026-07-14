@@ -281,9 +281,8 @@ function render(report, live) {
                  chartCategories: L.chartCategories, chartSeverity: L.chartSeverity, chartSentiment: L.chartSentiment },
     });
 
-  // Whole-window sentiment (polarity) mix (ADR-0030).
-  const reportMix = sentPills(report.sentimentCounts);
-  if (reportMix.length) root.appendChild(node("p", "muted", reportMix));
+  // Whole-window sentiment mix is already shown by the sentiment-distribution
+  // chart above (ADR-0030); per-theme mixes appear on each card below.
   root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
   for (const theme of report.themes) {
     const card = node("div", "card", [

@@ -383,6 +383,19 @@ public static class Commands
             : key;
     }
 
+    /// <summary>The domain's sentiment key→label map from /schema; empty if
+    /// unreachable (callers fall back to the raw key).</summary>
+    private static async Task<IReadOnlyDictionary<string, string>> SentimentLabelsAsync()
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        var schema = await Shell.GetJsonAsync("/schema", 15);
+        if (schema is { } sc && sc.TryGetProperty("sentimentLabels", out var sl) && sl.ValueKind == JsonValueKind.Object)
+            foreach (var p in sl.EnumerateObject())
+                if (p.Value.ValueKind == JsonValueKind.String)
+                    map[p.Name] = p.Value.GetString()!;
+        return map;
+    }
+
     public static async Task<int> LoadAsync(string? corpus)
     {
         // A direct load makes the board's dataset marker stale; clear it so the
@@ -436,14 +449,16 @@ public static class Commands
         Console.WriteLine($"\n  {Term.Bold("report")} · {sw.Elapsed.TotalSeconds:F1}s · {Items("totalItems")} items · " +
             $"{rep.GetProperty("alerts").GetArrayLength()} alert(s) · {rep.GetProperty("themes").GetArrayLength()} theme(s) · " +
             $"{Items("droppedClaimCount")} ungrounded dropped · {Items("llmFallbackCount")} llm-fallback");
-        // Whole-window sentiment (polarity) mix (ADR-0030/0031).
+        // Whole-window sentiment (polarity) mix (ADR-0030/0031), labelled in the
+        // domain's language to match /interpret and the rest of the report.
         if (rep.TryGetProperty("sentimentCounts", out var sc) && sc.ValueKind == JsonValueKind.Object)
         {
+            var labels = await SentimentLabelsAsync();
             var mix = string.Join(" · ", sc.EnumerateObject()
                 .Where(p => p.Value.ValueKind == JsonValueKind.Number && p.Value.GetInt32() > 0)
-                .Select(p => $"{p.Name} {p.Value.GetInt32()}"));
+                .Select(p => $"{(labels.TryGetValue(p.Name, out var l) ? l : p.Name)} {p.Value.GetInt32()}"));
             if (mix.Length > 0)
-                Console.WriteLine($"    {Term.C("◔ sentiment", "35")} {mix}");
+                Console.WriteLine($"    {Term.C("◔ tunnelma", "35")} {mix}");
         }
         foreach (var a in rep.GetProperty("alerts").EnumerateArray())
         {

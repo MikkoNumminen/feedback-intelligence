@@ -24,7 +24,7 @@ public static class StructureValidator
         // Sentiment is optional (ADR-0031): null is valid; a present value must be
         // a domain sentiment key. A human-corrected structure with a bad sentiment
         // IS an error here (unlike the salvaging ingest parser, which nulls it).
-        if (structure.Sentiment is { } sentiment && !domain.SentimentLabels.ContainsKey(sentiment))
+        if (structure.Sentiment is { } sentiment && !domain.Sentiments.Contains(sentiment))
             errors.Add($"sentiment '{sentiment}' is not a domain taxonomy value");
         return errors;
     }
