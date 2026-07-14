@@ -1,0 +1,46 @@
+name: CodeQL
+
+# Static analysis (code scanning) on the C# sources. Free for public repos and,
+# like the build/test CI, fully hermetic: no LLM, no GPU, no secrets. C# runs in
+# build-mode `none` — CodeQL analyzes the source directly without compiling, so
+# the scan needs no .NET toolchain and cannot touch the shared Ollama/RAG stack
+# (matches the hermetic-CI posture of ADR-0013). Results surface under
+# Security > Code scanning and gate PRs the same way the build does.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    # Weekly re-scan (Mondays 04:31 UTC) so newly published query patterns catch
+    # regressions in code that has not otherwise changed. Fixed time, not random.
+    - cron: '31 4 * * 1'
+
+# Superseded runs on the same ref are cancelled to save minutes.
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (C#)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload the SARIF results to code scanning
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:csharp"
