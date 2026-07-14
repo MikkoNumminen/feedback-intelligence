@@ -481,8 +481,12 @@ function renderSection(body, section) {
   const list = node("ul", "seg-items");
   for (const item of section.items) {
     const li = node("li");
-    const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity || "?";
-    li.appendChild(node("span", "sev", sevLabel));
+    // Unrated (demoted) sections show no severity or sentiment — the category is
+    // the signal (ADR-0032); sentiment is already null on those items.
+    if (!section.unrated) {
+      const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity || "?";
+      li.appendChild(node("span", "sev", sevLabel));
+    }
     const badge = sentBadge(item.sentiment);
     if (badge) li.appendChild(badge);
     li.appendChild(document.createTextNode(item.text));
@@ -546,14 +550,19 @@ function renderSegment(report) {
     meta: theme.directionLabel,
     items: theme.sources ?? [],
     sentimentCounts: theme.sentimentCounts,
+    unrated: theme.unrated,
   }));
   const sevCounts = {};
-  for (const section of sections)
+  for (const section of sections) {
+    if (section.unrated) continue; // no severity for demoted/non-substantive categories (ADR-0032)
     for (const item of section.items)
       sevCounts[item.severity] = (sevCounts[item.severity] || 0) + 1;
-  // Charts cover STRUCTURED items only, so the entries tile counts the same
-  // set the bars sum to — the unstructured remainder is reported in the
-  // totals line above, never silently absorbed into a mismatching KPI.
+  }
+  // Charts cover STRUCTURED items only: the entries tile and the category bar
+  // count all of them (the unstructured remainder is on the totals line above,
+  // never absorbed into a mismatching KPI). The SEVERITY bar and the "severe"
+  // tile intentionally exclude unrated (demoted) items — those carry no severity
+  // (ADR-0032) — so that distribution is over rated feedback only.
   renderChartLayer(body, sections, sevCounts,
     report.totalItems - (report.structureFailedCount || 0),
     report.overall?.directionLabel, report.sentimentCounts);
@@ -596,17 +605,21 @@ function renderQuick(items) {
   renderTotals(body, items.length, items.length - structured.length);
   body.appendChild(node("p", "seg-meta seg-pending", L.summaryPending));
 
+  // Demoted / non-substantive categories (ADR-0032): no severity or sentiment,
+  // and excluded from those aggregates — mirrors the server's Unrated flag.
+  const demoted = schema?.demotedCategories || [];
   const groups = new Map();
   const sevCounts = {};
   const sentCounts = {};
   for (const item of structured) {
     const key = item.structure.category;
+    const unrated = demoted.includes(key);
     if (!groups.has(key))
-      groups.set(key, { category: key, label: catLabel(key), tag: null, count: 0, flagged: 0, items: [], sentimentCounts: {} });
+      groups.set(key, { category: key, label: catLabel(key), tag: null, count: 0, flagged: 0, items: [], sentimentCounts: {}, unrated });
     const group = groups.get(key);
     group.count++;
     if (item.needsReview) group.flagged++;
-    const sent = sentimentFromType(item.structure.type);
+    const sent = unrated ? null : sentimentFromType(item.structure.type);
     group.items.push({
       severity: item.structure.severity, text: item.text, timestamp: item.timestamp,
       alertCategories: item.alerts?.length
@@ -614,14 +627,13 @@ function renderQuick(items) {
       sentiment: sent,
     });
     if (sent) { group.sentimentCounts[sent] = (group.sentimentCounts[sent] || 0) + 1; sentCounts[sent] = (sentCounts[sent] || 0) + 1; }
-    sevCounts[item.structure.severity] = (sevCounts[item.structure.severity] || 0) + 1;
+    if (!unrated) sevCounts[item.structure.severity] = (sevCounts[item.structure.severity] || 0) + 1;
   }
   // Same ordering rule as the server, INCLUDING the tiebreak: demoted
   // categories (schema) last IN DECLARED ORDER (indexOf; non-demoted rank -1),
   // then count, then category KEY (ordinal — the server's
   // StringComparer.Ordinal, not a locale label sort) — so phase B never
   // visibly reshuffles the page, even on equal counts.
-  const demoted = schema?.demotedCategories || [];
   const sections = [...groups.values()].sort((a, b) =>
     (demoted.indexOf(a.category) - demoted.indexOf(b.category))
     || (b.count - a.count)

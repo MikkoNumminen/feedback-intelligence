@@ -591,6 +591,32 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DemotedCategory_IsUnrated_SuppressesSentiment_AndExcludesFromMix()
+    {
+        // ADR-0032: rasismi/asiaton carry no polarity or severity signal — the
+        // category is the signal. A complaint-typed asiaton item would map to
+        // "negative", but a demoted category suppresses it: the theme is Unrated,
+        // its items carry no sentiment, and it is dropped from the report mix.
+        await _store.InsertAsync(ItemIn("asia-1", "2026-06-19T10:00:00.0000000+00:00", "asiaton", "loukkaus"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("maito-1", "2026-06-20T10:00:00.0000000+00:00", "maito_kylma", "tuoreus"), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia"))
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var asiaton = report.Themes.Single(t => t.Category == "asiaton");
+        Assert.True(asiaton.Unrated);
+        Assert.All(asiaton.Sources, s => Assert.Null(s.Sentiment)); // no good/bad on demoted content
+        Assert.Empty(asiaton.SentimentCounts);
+
+        var maito = report.Themes.Single(t => t.Category == "maito_kylma");
+        Assert.False(maito.Unrated);
+        Assert.Equal("negative", maito.Sources[0].Sentiment); // a normal category is still rated (complaint→negative)
+
+        // The whole-window mix counts only the rated (maito) complaint, not the demoted one.
+        Assert.Equal(1, report.SentimentCounts!.GetValueOrDefault("negative"));
+    }
+
+    [Fact]
     public async Task Snapshot_PersistedOnlyOnOptIn_NotOnEphemeralView()
     {
         // dotnet-audit finding #3: an ephemeral frontend view (persistSnapshot: false,

@@ -36,6 +36,14 @@ kassa_palvelu | tilat_siisteys | varasto_nouto | verkkokauppa_toimitus |
 rasismi | asiaton | muu
 ```
 
+The demoted buckets (`rasismi`, `asiaton`) are **unrated**
+([ADR-0032](../decisions/0032-unrated-nonsubstantive-categories.md)): the views
+suppress their severity and sentiment and drop them from those aggregates — the
+category is the signal, a good/bad/how-severe rating on hostile content is
+misleading. A dedicated `ei_palautetta` bucket for nonsense was investigated and
+**rejected** — an announced live check showed Poro does not route garbage there
+(automatic garbage detection is not achievable with this model); see ADR-0032.
+
 `makeiset` (Makeiset) is the sweets department; it and `kuiva_elintarvike` carry
 `categoryHints` that draw the boundary between them explicitly, so candy no
 longer falls into "Kuivat elintarvikkeet"
