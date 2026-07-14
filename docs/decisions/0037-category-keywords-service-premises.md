@@ -18,8 +18,10 @@ leaking badly: Poro-2-8B has a strong attractor toward `maito_kylma` and default
 pure **service/premises** comments there — a helpful salesperson ("myyjä oli
 energinen … neuvoi missä wc-tilat sijaitsevat"), fish-counter service, parking-lot
 cleanliness. A measurement with the override off confirmed Poro's raw output is
-genuinely wrong on these (see the model-behavior findings doc). There is a clean way
-to force these without stealing product complaints.
+genuinely wrong on these (the "myyjä oli energinen" case landing in `maito_kylma` is
+recorded in [ADR-0035](0035-categorization-discipline-muu-single-category-hints.md);
+the measured model behavior is in [docs/poro-findings.md](../poro-findings.md)).
+There is a clean way to force these without stealing product complaints.
 
 ## Decision
 
@@ -35,12 +37,15 @@ to force these without stealing product complaints.
    This makes declaration order **load-bearing for product-vs-service precedence** —
    a stronger role than ADR-0036's within-product tie-break — and it is pinned by the
    order test.
-3. **Curation avoided the location-word trap.** A corpus false-positive scan caught
-   that bare `kassa` over-forced premises-cleanliness complaints (which mention the
-   checkout *area*) to service, so it was dropped; `myyjä`, `palvelu`, `jono`,
-   `asiakaspalvelu`, `kassahenkilö`, `kassajono` remain for service, and `wc`,
-   `vessa`, `pysäköinti`, `siivous`, `ostoskärry`, `roskat` for premises (`wc-paperi`
-   excluded so toilet paper is not forced to premises).
+3. **Curation, validated by a corpus false-positive scan.** The scan flagged and
+   dropped several stems: bare `kassa` (it pulled premises-cleanliness complaints,
+   which name the checkout *area*, into service), `neuvo` (it matched `ajoneuvo`, a
+   vehicle), and `käytävä` (it matched the necessive verb `on käytävä`, "must visit").
+   To keep a cleanliness complaint in premises even when it names staff,
+   `kassa_palvelu` excludes the cleanliness stems `siivo`/`likai`, so
+   `"henkilökunta ei siivonnut vessoja"` routes to `tilat_siisteys`. Premises terms
+   are stems (`vess`, `parkki`, `pysäköin`, `siist`, `roska`) so inflected forms match
+   (`vessoja`, `parkkipaikan`).
 4. **Still excluded:** `verkkokauppa_toimitus`, `varasto_nouto`, `muu` — no reliable
    distinctive noun; they stay with the model + hints + desk.
 

@@ -92,19 +92,19 @@
     },
     "kassa_palvelu": {
       "terms": [
-        "myyjä", "myyjät", "kassahenkilö", "kassajono", "asiakaspalvelu",
-        "henkilökunta", "palvelu", "jono", "neuvo", "opastus"
+        "myyjä", "kassahenkilö", "kassajono", "henkilökunta", "palvelu",
+        "jono", "opastus"
       ],
-      "excludeIfContains": []
+      "excludeIfContains": [
+        "siivo", "likai"
+      ]
     },
     "tilat_siisteys": {
       "terms": [
-        "wc", "vessa", "pysäköinti", "parkkipaikka", "siisteys",
-        "siivous", "ostoskärry", "ostoskori", "roskat", "käytävä"
+        "wc", "vess", "pysäköin", "parkki", "siist",
+        "siivo", "ostoskärry", "roska"
       ],
-      "excludeIfContains": [
-        "paperi", "raikastin"
-      ]
+      "excludeIfContains": []
     }
   }
 }
