@@ -24,6 +24,21 @@ public class CategoryKeywordSetTests : IDisposable
     }
 
     [Fact]
+    public void Rules_PreserveJsonDeclarationOrder()
+    {
+        // The cross-category exclusions route compounds on their own; declaration order is
+        // only the tie-break when a text names two departments. Pin it so a future refactor
+        // of LoadFrom can't silently reshuffle precedence (ADR-0036).
+        var set = CategoryKeywordSet.LoadFrom(
+            Path.Combine(TestDomains.RepoRoot(), "domains", "retail", "category-keywords.json"),
+            TestDomains.Retail().Categories);
+
+        Assert.Equal(
+            new[] { "hevi", "makeiset", "maito_kylma", "liha_kala", "juomat", "pakasteet", "leipa" },
+            set.Rules.Keys.ToArray());
+    }
+
+    [Fact]
     public void MissingFile_ReturnsEmpty_DoesNotThrow()
     {
         var missingPath = Path.Combine(Path.GetTempPath(), $"no-such-file-{Guid.NewGuid():N}.json");

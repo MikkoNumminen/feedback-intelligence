@@ -116,6 +116,7 @@ _ = app.Services.GetRequiredService<IOptions<LlmOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<IngestOptions>>().Value;
 var reportOptions = app.Services.GetRequiredService<IOptions<ReportOptions>>().Value;
 _ = app.Services.GetRequiredService<AlertKeywordSet>();
+_ = app.Services.GetRequiredService<CategoryKeywordSet>(); // ADR-0036: a typo'd category-keywords.json fails the boot, not the first request
 
 // The report resolves its prompts from the active domain at generation time.
 // Validate those roles (and their files) HERE so a domain that omits/misspells a

@@ -30,10 +30,13 @@ without raising an alert.
    *exclusion* for the base-ingredient category **and** a *term* for the
    derivative category, so a compound routes to the product it actually is:
    `maitosuklaa` → makeiset, `juustokakku` → leipa, `kalapuikko` → pakasteet,
-   `nektariinijogurtti` → maito_kylma, `omenamehu` → juomat. The first declared
-   category whose rule fires wins, so **order is load-bearing** (makeiset before
-   maito_kylma — milk chocolate is candy; pakasteet before leipa — ice-cream cake
-   is frozen).
+   `nektariinijogurtti` → maito_kylma, `omenamehu` → juomat. Because the exclusions
+   do this routing, declaration order is **not** load-bearing for compounds —
+   `maito_kylma` excludes `suklaa`, so `maitosuklaa` reaches `makeiset` whichever
+   category comes first. The first declared category whose rule fires wins, so order
+   is only a **tie-break** for the rare text that names two departments with no
+   mutual exclusion (e.g. "banaania ja maitoa"); it comes from JSON → insertion
+   order and is pinned by a test.
 3. **Scope: the grocery-core product-noun departments** — `hevi`, `makeiset`,
    `maito_kylma`, `liha_kala`, `juomat`, `pakasteet`, `leipa`. Experience/process
    departments (`kassa_palvelu`, `tilat_siisteys`, `verkkokauppa_toimitus`,
