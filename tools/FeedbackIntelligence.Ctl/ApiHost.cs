@@ -47,6 +47,27 @@ public static class ApiHost
         }
     }
 
+    /// <summary>PID of the process actually LISTENING on the API port, or null when
+    /// the port is free. This is the ground truth of who is serving :5088 — unlike
+    /// <see cref="RunningPid"/>, which reflects only the PID file and goes stale when
+    /// a supervisor loop, a bare `dotnet run`, or an orphaned launcher (e.g. an older
+    /// feedctl's launch-api.cmd wrapper) takes the port instead. `up` compares the two
+    /// to tell feedctl's OWN instance from a squatter it must take over.</summary>
+    public static int? PortOwnerPid()
+    {
+        try
+        {
+            var r = Shell.Run("powershell", ["-NoProfile", "-Command",
+                $"(Get-NetTCPConnection -LocalPort {Config.ApiPort} -State Listen -ErrorAction SilentlyContinue | " +
+                "Select-Object -First 1).OwningProcess"], 10000);
+            return int.TryParse(r.Output.Trim(), out var pid) ? pid : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     /// <summary>Builds (optionally) the API, then starts it detached on the demo
     /// DB. Returns the pid, or null on failure. <paramref name="build"/> is false
     /// for a data switch, which never changes API code: rebuilding there is wasted
