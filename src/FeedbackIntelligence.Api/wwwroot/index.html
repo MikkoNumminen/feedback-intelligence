@@ -101,7 +101,7 @@ const STR = {
     dropped: "perustelematonta väitettä hylätty", actionDropped: "ohjaileva kooste hylätty", fallbacks: "koostetta ilman kielimallia",
     alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
-    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma",
+    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma", chartSentiment: "Tunnelmajakauma",
     tileEntries: "Palautteita", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
     flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa", flaggedItem: "tarkistettava",
     snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
@@ -120,7 +120,7 @@ const STR = {
     dropped: "ungrounded claim(s) dropped", actionDropped: "directive summary(ies) dropped", fallbacks: "summary(ies) without the model",
     alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
-    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution",
+    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution", chartSentiment: "Sentiment distribution",
     tileEntries: "Items", tileFlagged: "To review", tileTrend: "Trend",
     flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted", flaggedItem: "review",
     snapShown: "The server was unreachable — showing the last saved snapshot.",
@@ -274,8 +274,11 @@ function render(report, live) {
       directionLabel: report.overall?.directionLabel,
       declaredSeverities: schema?.severities,
       sevLabel: k => severityMeta(k).label,
+      sentimentCounts: report.sentimentCounts,
+      declaredSentiments: schema?.sentiments,
+      sentLabel,
       strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
-                 chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+                 chartCategories: L.chartCategories, chartSeverity: L.chartSeverity, chartSentiment: L.chartSentiment },
     });
 
   // Whole-window sentiment (polarity) mix (ADR-0030).

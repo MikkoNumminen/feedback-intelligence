@@ -15,6 +15,11 @@ window.FeedbackCharts = (() => {
   // NEVER dropped from the distribution.
   const SEV_COLORS = { low: "#4e8ac8", medium: "#d97706", high: "#ef5350", critical: "#a02c2c" };
   const SEV_FALLBACK = "#9aa4af";
+  // Sentiment (polarity) palette (ADR-0030): positive green, negative red,
+  // neutral grey — the SAME values as the per-item badge CSS on both pages, so a
+  // chart segment always matches the row badges. Keys follow the sentiment enum;
+  // an undeclared sentiment renders in the fallback grey, never dropped.
+  const SENTIMENT_COLORS = { positive: "#1e7e34", negative: "#b3261e", neutral: "#9aa4af" };
   // Magnitude bars and chart text ride the page's theme tokens.
   const BAR_HUE = "var(--acc, #0b5fa5)";
   const INK = "var(--ink, #1c2430)", MUT = "var(--mut, #66707d)";
@@ -104,26 +109,48 @@ window.FeedbackCharts = (() => {
   // surface gaps between segments. Slivers clamp to a visible minimum and the
   // overflow is shaved off the widest segment so the stack never overlaps or
   // clips. The legend (mandatory at ≥2 series) carries identity + counts.
-  function severityStackedBar(order, sevCounts, sevLabel) {
-    const present = order.filter(k => (sevCounts[k] || 0) > 0);
-    const total = present.reduce((sum, k) => sum + sevCounts[k], 0);
+  function stackedBar(order, counts, labelFn, colors, fallback) {
+    const present = order.filter(k => (counts[k] || 0) > 0);
+    const total = present.reduce((sum, k) => sum + counts[k], 0);
     if (total === 0) return null;
     const width = 320, barH = 16, gap = 2, minW = 2;
     const plotW = width - gap * (present.length - 1);
-    const widths = present.map(k => Math.max((sevCounts[k] / total) * plotW, minW));
+    const widths = present.map(k => Math.max((counts[k] / total) * plotW, minW));
     const overflow = widths.reduce((sum, w) => sum + w, 0) - plotW;
     if (overflow > 0) widths[widths.indexOf(Math.max(...widths))] -= overflow;
     const svg = svgNode("svg", { viewBox: `0 0 ${width} ${barH}`, role: "img" });
     let x = 0;
     present.forEach((k, i) => {
-      const seg = svgNode("rect", { x, y: 0, width: widths[i], height: barH, rx: 2, fill: SEV_COLORS[k] || SEV_FALLBACK, class: "bar" });
+      const seg = svgNode("rect", { x, y: 0, width: widths[i], height: barH, rx: 2, fill: colors[k] || fallback, class: "bar" });
       const tip = svgNode("title", {});
-      tip.textContent = `${sevLabel(k)} · ${sevCounts[k]}`;
+      tip.textContent = `${labelFn(k)} · ${counts[k]}`;
       seg.appendChild(tip);
       svg.appendChild(seg);
       x += widths[i] + gap;
     });
     return svg;
+  }
+
+  // A titled 100% stacked bar + legend for a categorical distribution — severity
+  // or sentiment (ADR-0030). Returns null when there is nothing to show, so the
+  // caller can skip the block entirely.
+  function stackedBlock(title, order, counts, labelFn, colors, fallback) {
+    const bar = stackedBar(order, counts, labelFn, colors, fallback);
+    if (!bar) return null;
+    const block = htmlNode("div", "chart-block");
+    block.appendChild(htmlNode("p", "chart-title", title));
+    block.appendChild(bar);
+    const legend = htmlNode("ul", "sev-legend");
+    for (const k of order.filter(k => (counts[k] || 0) > 0)) {
+      const li = htmlNode("li");
+      const swatch = htmlNode("span", "swatch");
+      swatch.style.background = colors[k] || fallback;
+      li.appendChild(swatch);
+      li.appendChild(document.createTextNode(`${labelFn(k)} ${counts[k]}`));
+      legend.appendChild(li);
+    }
+    block.appendChild(legend);
+    return block;
   }
 
   function kpiTile(label, value, warn) {
@@ -161,22 +188,18 @@ window.FeedbackCharts = (() => {
     catBlock.appendChild(categoryBarChart(opts.sections));
     container.appendChild(catBlock);
 
-    const sevBar = severityStackedBar(order, opts.sevCounts, opts.sevLabel);
-    if (sevBar) {
-      const sevBlock = htmlNode("div", "chart-block");
-      sevBlock.appendChild(htmlNode("p", "chart-title", opts.strings.chartSeverity));
-      sevBlock.appendChild(sevBar);
-      const legend = htmlNode("ul", "sev-legend");
-      for (const k of order.filter(k => (opts.sevCounts[k] || 0) > 0)) {
-        const li = htmlNode("li");
-        const swatch = htmlNode("span", "swatch");
-        swatch.style.background = SEV_COLORS[k] || SEV_FALLBACK;
-        li.appendChild(swatch);
-        li.appendChild(document.createTextNode(`${opts.sevLabel(k)} ${opts.sevCounts[k]}`));
-        legend.appendChild(li);
-      }
-      sevBlock.appendChild(legend);
-      container.appendChild(sevBlock);
+    const sevBlock = stackedBlock(opts.strings.chartSeverity, order, opts.sevCounts, opts.sevLabel, SEV_COLORS, SEV_FALLBACK);
+    if (sevBlock) container.appendChild(sevBlock);
+
+    // Sentiment (polarity) distribution (ADR-0030) — same 100%-stacked treatment
+    // as severity, in the domain's declared sentiment order.
+    if (opts.sentimentCounts && opts.sentLabel) {
+      const sentDeclared = opts.declaredSentiments && opts.declaredSentiments.length
+        ? opts.declaredSentiments : Object.keys(SENTIMENT_COLORS);
+      const sentOrder = [...sentDeclared, ...Object.keys(opts.sentimentCounts).filter(k => !sentDeclared.includes(k))];
+      const sentBlock = stackedBlock(opts.strings.chartSentiment || "Sentiment", sentOrder,
+        opts.sentimentCounts, opts.sentLabel, SENTIMENT_COLORS, SEV_FALLBACK);
+      if (sentBlock) container.appendChild(sentBlock);
     }
   }
 
