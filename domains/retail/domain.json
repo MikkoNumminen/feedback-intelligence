@@ -47,8 +47,8 @@
     "tilat_siisteys": "myymälän yleiset tilat: siisteys, WC:t, pysäköinti, ostoskärryt — ei yksittäinen tuoteosasto",
     "rasismi": "VAIN kun teksti kohdistuu etniseen ryhmään, kansallisuuteen, uskontoon tai ihonväriin — pelkkä kiroilu ei riitä",
     "asiaton": "loukkaava, uhkaava tai kiroileva sisältö ilman asiakaspalauteasiaa ja ilman etnistä kohdetta",
-    "ei_palautetta": "teksti ei ole asiakaspalautetta lainkaan: hölynpöly, testisyöte, satunnainen tai epämielekäs sisältö ilman todellista palauteasiaa (ei sama kuin muu, joka on asiallista palautetta)",
-    "muu": "asiallinen palaute, joka ei sovi mihinkään osastoon — mutta on aitoa palautetta"
+    "ei_palautetta": "teksti ei ole asiakaspalautetta lainkaan: hölynpöly, testisyöte, satunnainen tai epämielekäs sisältö ilman todellista palauteasiaa (ei sama kuin muu, joka on asiallista mutta osastotonta palautetta)",
+    "muu": "asiallinen palaute, joka ei sovi mihinkään osastoon"
   },
   "catchAllCategory": "muu",
   "demotedCategories": ["rasismi", "asiaton", "ei_palautetta"],
