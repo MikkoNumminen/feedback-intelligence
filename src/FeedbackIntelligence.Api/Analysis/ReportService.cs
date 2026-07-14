@@ -223,13 +223,12 @@ public sealed partial class ReportService(
         }
         else
         {
-            // Live-summary grouping (ADR-0026, the desk segment): the domain's
-            // catch-all category splits into EMERGENT TOPICS keyed on the
-            // structuring model's own free-text theme — the AI names the topic,
-            // arithmetic does the grouping (AI stays in exactly two places).
-            // Per-group prose stays deterministic; the narrative budget goes to
-            // ONE whole-window synthesis below.
-            var catchAll = activeDomain.Descriptor.CatchAllCategory;
+            // Live-summary grouping (ADR-0026; the catch-all's emergent-topic
+            // split retired by ADR-0035): every category — the catch-all "muu"
+            // included — is ONE group, so "muu" reads as a single department
+            // instead of fragmenting into theme-named topics. Per-group prose
+            // stays deterministic; the narrative budget goes to ONE whole-window
+            // synthesis below.
             var demoted = activeDomain.Descriptor.DemotedCategories;
             // Non-demoted rank -1 (first); demoted rank = position in the
             // declared list, so the domain controls the bottom-of-page order
@@ -242,38 +241,20 @@ public sealed partial class ReportService(
                 return -1;
             }
             foreach (var group in structured
-                         .GroupBy(i =>
-                         {
-                             // Emergent topic only when this is the catch-all AND the
-                             // theme normalizes to a non-empty key (ADR-0028); anything
-                             // else groups by its own category.
-                             var key = catchAll is not null && i.Structure!.Category == catchAll
-                                 ? ThemeGroupKey(i.Structure!.Theme)
-                                 : "";
-                             return key.Length > 0
-                                 ? (Category: catchAll!, TopicKey: (string?)key)
-                                 : (Category: i.Structure!.Category, TopicKey: (string?)null);
-                         })
+                         .GroupBy(i => i.Structure!.Category)
                          // Demoted categories (retail's "rasismi", "asiaton") sort
                          // LAST no matter their count — hostile content must not
                          // lead — in their declared order among themselves.
-                         .OrderBy(g => DemotedRank(g.Key.Category))
+                         .OrderBy(g => DemotedRank(g.Key))
                          .ThenByDescending(g => g.Count())
-                         .ThenBy(g => g.Key.Category, StringComparer.Ordinal)
-                         .ThenBy(g => g.Key.TopicKey, StringComparer.Ordinal))
+                         .ThenBy(g => g.Key, StringComparer.Ordinal))
             {
                 var groupItems = group.ToList();
-                var isTopic = group.Key.TopicKey is not null;
-                // Emergent topic display keeps the first item's theme casing, with
-                // separators normalized to match how the group key was formed.
-                var title = isTopic
-                    ? CleanTheme(groupItems[0].Structure!.Theme)
-                    : FallbackTitle(group.Key.Category, groupItems);
                 var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
                 var directionLabel = ReportText.DirectionLabel(direction, lang);
-                themes.Add(BuildTheme(group.Key.Category, title,
+                themes.Add(BuildTheme(group.Key, FallbackTitle(group.Key, groupItems),
                     FallbackNarrative(groupItems, directionLabel, lang), groupItems, direction, directionLabel,
-                    fromLlm: false, isEmergentTopic: isTopic));
+                    fromLlm: false));
             }
         }
 
@@ -295,11 +276,11 @@ public sealed partial class ReportService(
             overall = synthesized is { } ok
                 ? new ReportTheme("overall", ok.Title, ok.Narrative, structured.Count, overallDirection,
                     overallDirectionLabel, structured.Select(i => i.Id).ToList(), true, [],
-                    structured.Count(i => i.NeedsReview), IsEmergentTopic: false, SentimentCounts: reportSentiment)
+                    structured.Count(i => i.NeedsReview), SentimentCounts: reportSentiment)
                 : new ReportTheme("overall", FallbackTitle(scope, structured),
                     FallbackNarrative(structured, overallDirectionLabel, lang), structured.Count, overallDirection,
                     overallDirectionLabel, structured.Select(i => i.Id).ToList(), false, [],
-                    structured.Count(i => i.NeedsReview), IsEmergentTopic: false, SentimentCounts: reportSentiment);
+                    structured.Count(i => i.NeedsReview), SentimentCounts: reportSentiment);
         }
 
         var report = new ManagementReport(
@@ -436,10 +417,10 @@ public sealed partial class ReportService(
     /// can warn) can never drift between the two.</summary>
     private ReportTheme BuildTheme(
         string category, string title, string narrative, List<StoredFeedback> groupItems,
-        string direction, string directionLabel, bool fromLlm, bool isEmergentTopic = false) =>
+        string direction, string directionLabel, bool fromLlm) =>
         new(category, title, narrative, groupItems.Count, direction, directionLabel,
             groupItems.Select(i => i.Id).ToList(), fromLlm, BuildSources(groupItems),
-            groupItems.Count(i => i.NeedsReview), isEmergentTopic, SentimentCounts(groupItems),
+            groupItems.Count(i => i.NeedsReview), SentimentCounts(groupItems),
             Unrated: activeDomain.Descriptor.DemotedCategories.Contains(category));
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
@@ -753,26 +734,6 @@ public sealed partial class ReportService(
             .First().Key;
         return $"{category}: {topTheme}";
     }
-
-    /// <summary>Normalize a free-text theme for emergent-topic DISPLAY (ADR-0028):
-    /// treat underscores as word separators and collapse whitespace runs, so
-    /// "tuotteiden_laatu" and "tuotteiden  laatu" render identically. Casing is
-    /// preserved. Returns empty when the theme was only separators.</summary>
-    private static string CleanTheme(string? theme) =>
-        string.IsNullOrEmpty(theme)
-            ? ""
-            : DoubledSpaces().Replace(theme.Replace('_', ' ').Trim(), " ").Trim();
-
-    /// <summary>The GROUPING key for emergent topics: <see cref="CleanTheme"/>
-    /// lowercased. Collapses the exact spelling variants the structuring prompt
-    /// asks the model to avoid — underscores-as-separators, stray casing, doubled
-    /// spaces — into one topic for when the model drifts anyway. Finnish
-    /// morphology (laatu/laatua) is deliberately NOT merged: that needs a
-    /// lemmatizer, and an occasional near-duplicate topic is acceptable while
-    /// over-merging two genuinely distinct topics is not. Empty (theme was only
-    /// separators) routes the item to its category bucket, not a nameless
-    /// topic.</summary>
-    private static string ThemeGroupKey(string? theme) => CleanTheme(theme).ToLowerInvariant();
 
     private string FallbackNarrative(IReadOnlyList<StoredFeedback> groupItems, string directionLabel, string language)
     {

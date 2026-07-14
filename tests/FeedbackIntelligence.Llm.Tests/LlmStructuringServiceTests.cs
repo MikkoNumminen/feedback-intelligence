@@ -109,7 +109,7 @@ public class LlmStructuringServiceTests : IDisposable
 
         await CreateService(client).StructureAsync("maito oli vanhaa");
 
-        Assert.Contains("\"muu\" (Muu — asiallinen palaute, joka ei sovi mihinkään osastoon)", client.Prompts[0]);
+        Assert.Contains("\"muu\" (Muu — asiallinen palaute, joka ei sovi MIHINKÄÄN yllä olevaan osastoon; valitse aina ensin oikea osasto jos sellainen on)", client.Prompts[0]);
     }
 
     [Fact]

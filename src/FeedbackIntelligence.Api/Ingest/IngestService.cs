@@ -117,7 +117,7 @@ public sealed class IngestService(
 
     /// <summary>Operator maintenance (ADR-0026): re-run the structuring model over
     /// stored items whose structure NEEDS the current vocabulary — unstructured
-    /// items, catch-all items (a new category or emergent topic may now fit), and
+    /// items, catch-all items (a new category may now fit), and
     /// items whose category no longer exists in the domain. Items sitting in a
     /// still-valid named category are SKIPPED: a human desk-acceptance there is a
     /// deliberate audit this pass must not overwrite. Re-structured results are

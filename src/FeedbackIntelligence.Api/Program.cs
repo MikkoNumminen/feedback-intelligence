@@ -258,8 +258,10 @@ app.MapGet("/schema", (IActiveDomain domain) =>
     {
         language = d.Language,
         categoryField = d.CategoryFieldLabel,
-        // The catch-all key (retail's "muu") so UIs can group its items by
-        // emergent topic without hardcoding a domain value.
+        // The catch-all key (retail's "muu") — the department that absorbs
+        // feedback with no better home. Exposed so tooling can identify it
+        // without hardcoding a domain value (ADR-0035 retired the emergent-topic
+        // split; it now renders as one plain category).
         catchAllCategory = d.CatchAllCategory,
         // Categories views sort LAST (retail's "asiaton") — presentation only.
         demotedCategories = d.DemotedCategories,
@@ -344,9 +346,9 @@ app.MapGet("/report", async (
 });
 
 // The live desk channel's report — the desk segment's grounded summary view:
-// one whole-window narrative (Overall) + per-category groups with the catch-all
-// split into emergent theme topics. Never persists a snapshot: the shared-link
-// fallback page belongs to the demo channel.
+// one whole-window narrative (Overall) + per-category groups (the catch-all
+// "muu" is one plain category — ADR-0035 retired the emergent-topic split).
+// Never persists a snapshot: the shared-link fallback page belongs to the demo channel.
 app.MapGet("/live/report", async (
     [FromKeyedServices(Channels.Live)] ReportService reports,
     IOptions<ReportOptions> reportOptions,

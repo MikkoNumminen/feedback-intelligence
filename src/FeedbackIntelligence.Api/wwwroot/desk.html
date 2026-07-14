@@ -51,8 +51,6 @@
   .seg-overall h3 { font-size:.95rem; margin:0 0 .3rem; }
   .seg-overall .seg-meta { margin:.25rem 0 0; }
   .itemtag { color:var(--err); font-weight:600; font-size:.75rem; margin-left:.35rem; white-space:nowrap; }
-  .seg-tag { font-size:.72rem; font-weight:400; color:var(--mut); border:1px solid var(--line);
-             border-radius:.4rem; padding:.05rem .35rem; margin-left:.45rem; vertical-align:middle; }
   /* Sentiment (polarity) badge — ADR-0030 */
   .snt { display:inline-block; border-radius:.4rem; padding:.02rem .4rem; font-size:.72rem; margin-right:.3rem; }
   .snt-positive { background:#e6f4ea; color:#1e7e34; }
@@ -421,13 +419,13 @@ function setStatus(id, kind, message) {
   node.textContent = message;
 }
 
-// ----- The live desk segment (ADR-0024; summary view + emergent topics ADR-0026) -----
+// ----- The live desk segment (ADR-0024; summary view ADR-0026, emergent-topic split retired ADR-0035) -----
 // Two-phase render: the raw entry list (fast, no LLM) paints IMMEDIATELY on
 // every load so a refresh never shows an empty segment, then GET /live/report
 // (one whole-window synthesis) replaces it with the authoritative view —
-// Yhteenveto on top, category sections below, the catch-all category split
-// into the AI-named emergent topics. All feedback text lands via textContent —
-// hostile input must never reach innerHTML.
+// Yhteenveto on top, category sections below (the catch-all "muu" is one
+// section, not split into topics — ADR-0035). All feedback text lands via
+// textContent — hostile input must never reach innerHTML.
 let segmentBusy = false;
 // A refresh requested while one is in flight must RUN AGAIN after it, not be
 // dropped: the in-flight response predates the just-saved entry, so dropping the
@@ -468,11 +466,10 @@ function sentPills(counts) {
   return wrap.childNodes.length ? wrap : null;
 }
 
-// One category section: { label, tag?, count, flagged, meta?, items:[{severity,text,timestamp}] }
+// One category section: { label, count, flagged, meta?, items:[{severity,text,timestamp}] }
 function renderSection(body, section) {
   const box = node("div", "seg-theme");
   const heading = node("h3", null, section.label);
-  if (section.tag) heading.appendChild(node("span", "seg-tag", section.tag));
   box.appendChild(heading);
   box.appendChild(node("p", "seg-meta",
     `${section.count} ${L.itemsWord}` + (section.meta ? ` · ${section.meta}` : "")));
@@ -557,12 +554,11 @@ function renderSegment(report) {
     body.appendChild(box);
   }
 
-  // The server marks emergent topics explicitly (isEmergentTopic) and already
-  // orders sections (demoted categories last) — the view never re-derives
-  // grouping or ordering client-side.
+  // The server groups by category and already orders sections (demoted
+  // categories last) — the view never re-derives grouping or ordering
+  // client-side.
   const sections = (report.themes ?? []).map(theme => ({
-    label: theme.isEmergentTopic ? theme.title : catLabel(theme.category),
-    tag: theme.isEmergentTopic ? catLabel(theme.category) : null,
+    label: catLabel(theme.category),
     count: theme.count,
     flagged: theme.flaggedCount,
     meta: theme.directionLabel,
@@ -608,9 +604,8 @@ function renderChartLayer(body, sections, sevCounts, total, directionLabel, sent
 
 // Phase A: instant CATEGORY-grouped list built from raw items — no LLM, so a
 // refresh always shows every stored entry within moments, for every visitor.
-// Deliberately grouped by category ONLY: the emergent-topic split is the
-// server's rule (ADR-0026) and is not re-implemented client-side — topics
-// appear when the authoritative report (phase B) lands.
+// Grouped by category, exactly like the authoritative report (phase B) — the
+// server owns grouping and ordering; the view never re-derives it (ADR-0026/0035).
 function renderQuick(items) {
   renderedL = L;
   const body = el("segmentBody");
@@ -633,7 +628,7 @@ function renderQuick(items) {
     const key = item.structure.category;
     const unrated = demoted.includes(key);
     if (!groups.has(key))
-      groups.set(key, { category: key, label: catLabel(key), tag: null, count: 0, flagged: 0, items: [], sentimentCounts: {}, unrated });
+      groups.set(key, { category: key, label: catLabel(key), count: 0, flagged: 0, items: [], sentimentCounts: {}, unrated });
     const group = groups.get(key);
     group.count++;
     if (item.needsReview) group.flagged++;

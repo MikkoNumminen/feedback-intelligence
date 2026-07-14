@@ -4,7 +4,7 @@ namespace FeedbackIntelligence.Api.Tests;
 
 /// <summary>ADR-0026: categoryHints/catchAllCategory are optional domain.json
 /// fields validated at load — an unknown key must fail loudly (a typo would
-/// otherwise silently guide nothing / never split emergent topics).</summary>
+/// otherwise silently guide nothing / point maintenance at a non-existent bucket).</summary>
 public class ActiveDomainLoadDescriptorTests : IDisposable
 {
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"domain-test-{Guid.NewGuid():N}.json");
