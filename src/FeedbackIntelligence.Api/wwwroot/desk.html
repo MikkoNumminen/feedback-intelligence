@@ -558,9 +558,11 @@ function renderSegment(report) {
     for (const item of section.items)
       sevCounts[item.severity] = (sevCounts[item.severity] || 0) + 1;
   }
-  // Charts cover STRUCTURED items only, so the entries tile counts the same
-  // set the bars sum to — the unstructured remainder is reported in the
-  // totals line above, never silently absorbed into a mismatching KPI.
+  // Charts cover STRUCTURED items only: the entries tile and the category bar
+  // count all of them (the unstructured remainder is on the totals line above,
+  // never absorbed into a mismatching KPI). The SEVERITY bar and the "severe"
+  // tile intentionally exclude unrated (demoted) items — those carry no severity
+  // (ADR-0032) — so that distribution is over rated feedback only.
   renderChartLayer(body, sections, sevCounts,
     report.totalItems - (report.structureFailedCount || 0),
     report.overall?.directionLabel, report.sentimentCounts);
