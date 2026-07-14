@@ -1,6 +1,8 @@
 # Feedback Intelligence
 
 [![CI](https://github.com/MikkoNumminen/feedback-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/MikkoNumminen/feedback-intelligence/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/MikkoNumminen/feedback-intelligence/actions/workflows/codeql.yml/badge.svg)](https://github.com/MikkoNumminen/feedback-intelligence/actions/workflows/codeql.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MikkoNumminen/feedback-intelligence)
 
 Domain-agnostic feedback intelligence: ingest messy free-text feedback, surface
 grounded situational signal. **First application: Finnish retail.**

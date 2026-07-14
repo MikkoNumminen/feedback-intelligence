@@ -1,0 +1,16 @@
+{
+  "name": "Feedback Intelligence (.NET 8)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp"
+      ]
+    }
+  },
+  "postCreateCommand": "dotnet restore FeedbackIntelligence.sln",
+  "remoteUser": "vscode"
+}

@@ -1,0 +1,31 @@
+# Dependabot — security alerts and version-update PRs, free on public repos.
+# Two ecosystems: the .NET (NuGet) dependencies of the solution, and the pinned
+# action versions in .github/workflows. Updates are grouped into one PR per
+# ecosystem per week to keep review noise low on a solo repo, and carry the
+# repo's conventional-commit prefixes so CI's docs-only detection and the commit
+# history stay consistent.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dotnet:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns:
+          - "*"
