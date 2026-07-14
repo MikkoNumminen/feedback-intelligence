@@ -99,6 +99,8 @@ refuses to grab the GPU while `mikkonumminendev` is running), and
 - [docs/domain/retail.md](docs/domain/retail.md) — retail config: category enum,
   alert keywords, stories, domain prompts (first application, config-level).
 - [docs/decisions/](docs/decisions/) — numbered ADRs (the *why*).
+- [docs/poro-findings.md](docs/poro-findings.md) — measured Poro-2-8B behavior
+  (what it can and cannot do) and the deterministic mitigations for its failure modes.
 - [docs/plan.md](docs/plan.md) — the original phased build spell (reference).
 - [docs/operations.md](docs/operations.md) — GPU sharing, containment, deploy.
 - [docs/TODO.md](docs/TODO.md) — remaining owner tasks · [docs/prs/](docs/prs/)
