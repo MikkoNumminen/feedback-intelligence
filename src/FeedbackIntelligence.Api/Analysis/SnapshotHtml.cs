@@ -68,8 +68,13 @@ public static class SnapshotHtml
             {
                 sb.Append($"<details><summary>{theme.Sources.Count} {E(t.ItemsWord)}</summary>");
                 foreach (var s in theme.Sources)
-                    sb.Append($"<div class=\"src\">{E(s.Text)}<div class=\"muted\">{E(s.Source)} · {E(s.Timestamp)} · {E(s.Severity)}{SentBadge(s.Sentiment, labels)}" +
+                {
+                    // Unrated (demoted) themes show no severity or sentiment — the
+                    // category is the signal (ADR-0032). Sentiment is already null.
+                    var sev = theme.Unrated ? "" : $" · {E(s.Severity)}";
+                    sb.Append($"<div class=\"src\">{E(s.Text)}<div class=\"muted\">{E(s.Source)} · {E(s.Timestamp)}{sev}{SentBadge(s.Sentiment, labels)}" +
                         (s.NeedsReview ? $" · <span class=\"flag\">⚠ {E(t.FlaggedItem)}</span>" : "") + "</div></div>");
+                }
                 sb.Append("</details>");
             }
             sb.AppendLine("</div>");

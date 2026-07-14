@@ -430,7 +430,8 @@ public sealed partial class ReportService(
         string direction, string directionLabel, bool fromLlm, bool isEmergentTopic = false) =>
         new(category, title, narrative, groupItems.Count, direction, directionLabel,
             groupItems.Select(i => i.Id).ToList(), fromLlm, BuildSources(groupItems),
-            groupItems.Count(i => i.NeedsReview), isEmergentTopic, SentimentCounts(groupItems));
+            groupItems.Count(i => i.NeedsReview), isEmergentTopic, SentimentCounts(groupItems),
+            Unrated: activeDomain.Descriptor.DemotedCategories.Contains(category));
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
         string category, IReadOnlyList<StoredFeedback> groupItems, string directionLabel, GenState state, CancellationToken ct)
@@ -709,9 +710,17 @@ public sealed partial class ReportService(
 
     /// <summary>An item's sentiment KEY: the model-authored value when present
     /// (ADR-0031, validated at ingest), else the deterministic type→sentiment map
-    /// (ADR-0030). The single seam every caller asks through.</summary>
-    private string? SentimentOf(StoredFeedback item) =>
-        item.Structure is { } s ? (s.Sentiment ?? activeDomain.Descriptor.SentimentOf(s.Type)) : null;
+    /// (ADR-0030). Null for demoted / non-substantive categories — a good/bad read
+    /// on hostile or junk content is misleading, so it is suppressed (ADR-0032).
+    /// The single seam every caller asks through.</summary>
+    private string? SentimentOf(StoredFeedback item)
+    {
+        if (item.Structure is not { } s)
+            return null;
+        if (activeDomain.Descriptor.DemotedCategories.Contains(s.Category))
+            return null;
+        return s.Sentiment ?? activeDomain.Descriptor.SentimentOf(s.Type);
+    }
 
     /// <summary>Sentiment mix over a set of items: sentiment key → count, with
     /// zero-count keys omitted. Empty when the domain declares no sentiment or no

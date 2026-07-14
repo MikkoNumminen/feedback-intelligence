@@ -66,7 +66,12 @@ public sealed record ReportTheme(
     // Sentiment (polarity) mix for the group: sentiment KEY → item count
     // (ADR-0030), so the view shows a positive/negative/neutral breakdown per
     // theme without re-deriving it. Empty when the domain declares no sentiment.
-    IReadOnlyDictionary<string, int>? SentimentCounts = null);
+    IReadOnlyDictionary<string, int>? SentimentCounts = null,
+    // True when this theme's category is demoted / non-substantive (retail's
+    // rasismi, asiaton, ei_palautetta): views suppress its severity + sentiment
+    // and drop it from those aggregates — the category is the signal, a
+    // good/bad/how-severe rating on hostile-or-junk content is misleading (ADR-0032).
+    bool Unrated = false);
 
 /// <summary>DroppedClaimCount counts ONLY citation-validation failures (the
 /// model made a claim it could not ground). LlmFallbackCount counts groups

@@ -260,9 +260,11 @@ function render(report, live) {
     flagged: t.flaggedCount,
   }));
   const chartSevCounts = {};
-  for (const t of report.themes)
+  for (const t of report.themes) {
+    if (t.unrated) continue; // demoted/non-substantive categories carry no severity (ADR-0032)
     for (const s of t.sources || [])
       chartSevCounts[s.severity] = (chartSevCounts[s.severity] || 0) + 1;
+  }
   // Guarded: a missing/failed charts.js degrades to a chartless report page
   // instead of a ReferenceError wiping the theme cards below. The entries
   // tile counts STRUCTURED items so it reconciles with what the bars sum to;
@@ -339,12 +341,16 @@ function openMessages(theme) {
   body.appendChild(node("div", "muted", [`${catLabel(theme.category)} · ${theme.sources.length} ${L.messagesWord}`]));
   const list = node("div", "msglist", []);
   for (const s of theme.sources) {
-    const sm = severityMeta(s.severity);
-    const metaKids = [
-      node("span", ("sevdot " + sm.cls).trim(), []),
-      node("span", null, [`${s.source} · ${short(s.timestamp)} · ${sm.label}`]),
-    ];
-    // Sentiment (polarity) badge per message (ADR-0030).
+    // Unrated (demoted) themes show no severity or sentiment — the category is
+    // the signal (ADR-0032). Sentiment is already null on those items.
+    const metaKids = [];
+    if (theme.unrated) {
+      metaKids.push(node("span", null, [`${s.source} · ${short(s.timestamp)}`]));
+    } else {
+      const sm = severityMeta(s.severity);
+      metaKids.push(node("span", ("sevdot " + sm.cls).trim(), []));
+      metaKids.push(node("span", null, [`${s.source} · ${short(s.timestamp)} · ${sm.label}`]));
+    }
     const stm = sentimentMeta(s.sentiment);
     if (stm) metaKids.push(node("span", "snt " + stm.cls, [stm.label]));
     if (s.needsReview) metaKids.push(node("span", "flagtag", [`⚠ ${L.flaggedItem}`]));

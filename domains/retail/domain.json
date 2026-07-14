@@ -32,6 +32,7 @@
     "verkkokauppa_toimitus": "Verkkokauppa & toimitus",
     "rasismi": "Rasistinen palaute",
     "asiaton": "Asiaton palaute",
+    "ei_palautetta": "Ei palautetta",
     "muu": "Muu"
   },
   "categoryHints": {
@@ -46,10 +47,11 @@
     "tilat_siisteys": "myymälän yleiset tilat: siisteys, WC:t, pysäköinti, ostoskärryt — ei yksittäinen tuoteosasto",
     "rasismi": "VAIN kun teksti kohdistuu etniseen ryhmään, kansallisuuteen, uskontoon tai ihonväriin — pelkkä kiroilu ei riitä",
     "asiaton": "loukkaava, uhkaava tai kiroileva sisältö ilman asiakaspalauteasiaa ja ilman etnistä kohdetta",
-    "muu": "asiallinen palaute, joka ei sovi mihinkään osastoon"
+    "ei_palautetta": "teksti ei ole asiakaspalautetta lainkaan: hölynpöly, testisyöte, satunnainen tai epämielekäs sisältö ilman todellista palauteasiaa (ei sama kuin muu, joka on asiallista palautetta)",
+    "muu": "asiallinen palaute, joka ei sovi mihinkään osastoon — mutta on aitoa palautetta"
   },
   "catchAllCategory": "muu",
-  "demotedCategories": ["rasismi", "asiaton"],
+  "demotedCategories": ["rasismi", "asiaton", "ei_palautetta"],
   "severities": { "low": "Matala", "medium": "Keskitaso", "high": "Korkea", "critical": "Kriittinen" },
   "types": { "complaint": "Valitus", "praise": "Kehu", "suggestion": "Ehdotus", "question": "Kysymys", "other": "Muu" },
   "sentiments": { "positive": "Myönteinen", "negative": "Kielteinen", "neutral": "Neutraali" },
