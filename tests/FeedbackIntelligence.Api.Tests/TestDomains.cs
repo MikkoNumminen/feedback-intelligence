@@ -24,6 +24,13 @@ internal static class TestDomains
         Api.Alerts.AlertKeywordSet.LoadFrom(
             Path.Combine(RepoRoot(), "domains", "retail", "alert-keywords.json"));
 
+    /// <summary>The COMMITTED retail category-keyword lexicon (ADR-0036) — the one
+    /// place tests resolve its path, so a module move breaks exactly one helper.</summary>
+    public static Api.Structuring.CategoryKeywordSet RetailCategoryKeywords() =>
+        Api.Structuring.CategoryKeywordSet.LoadFrom(
+            Path.Combine(RepoRoot(), "domains", "retail", "category-keywords.json"),
+            Retail().Categories);
+
     internal static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -39,6 +46,7 @@ internal static class TestDomains
             Descriptor = descriptor;
             var dir = Path.Combine(RepoRoot(), "domains", "retail");
             AlertKeywordsPath = Path.Combine(dir, "alert-keywords.json");
+            CategoryKeywordsPath = Path.Combine(dir, "category-keywords.json");
             StoriesPath = Path.Combine(dir, "stories.json");
             PromptPaths = new Dictionary<string, string>(StringComparer.Ordinal)
             {
@@ -51,6 +59,7 @@ internal static class TestDomains
         public DomainDescriptor Descriptor { get; }
         public string Name => Descriptor.Name;
         public string AlertKeywordsPath { get; }
+        public string CategoryKeywordsPath { get; }
         public string StoriesPath { get; }
         public IReadOnlyDictionary<string, string> PromptPaths { get; }
         public string PromptPath(string role) => PromptPaths.TryGetValue(role, out var p)

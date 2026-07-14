@@ -131,6 +131,7 @@ public class LlmStructuringServiceTests : IDisposable
         public DomainDescriptor Descriptor { get; } = descriptor;
         public string Name => Descriptor.Name;
         public string AlertKeywordsPath => "";
+        public string CategoryKeywordsPath => "";
         public string StoriesPath => "";
         public IReadOnlyDictionary<string, string> PromptPaths { get; } =
             new Dictionary<string, string>(StringComparer.Ordinal);
