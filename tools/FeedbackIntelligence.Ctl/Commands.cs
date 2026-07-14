@@ -72,11 +72,41 @@ public static class Commands
         if (!await WaitAsync(async () => (await Board.GatherAsync()).FirstOrDefault(r => r.Label.StartsWith("ollama"))?.State == Term.State.Ok, 60))
             Console.WriteLine("  " + Term.C("▲ ollama slow to report healthy — continuing", "33"));
 
-        if (!ApiHost.IsRunning())
+        // The process actually SERVING :5088 must be feedctl's own instance — it
+        // alone passes --Ingest:LiveDbPath, pointing the live channel at
+        // data/desk-live.db (ADR-0024). The PID file only records what feedctl
+        // LAUNCHED; a supervisor loop, a bare `dotnet run`, an IDE, or an orphaned
+        // launcher from an older feedctl can end up owning the port instead — with the
+        // live channel resolved against its own CWD (an EMPTY src/…/data/desk-live.db),
+        // so the desk comes up blank while the real entries sit in data/desk-live.db,
+        // and meanwhile the PID file points at a dead or unrelated process. So decide on
+        // WHO ACTUALLY OWNS THE PORT, not on PID-file liveness: trust it only when the
+        // owner is the exact process feedctl tracks; otherwise kill THAT owner (the real
+        // one, re-queried — never the possibly-recycled PID-file PID) and relaunch.
+        var portOwner = ApiHost.PortOwnerPid();
+        if (portOwner is not null && portOwner == ApiHost.RunningPid())
         {
+            Console.WriteLine("  " + Term.C("●", "32") + " API already running (feedctl-managed)");
+        }
+        else
+        {
+            if (portOwner is not null)
+            {
+                Console.WriteLine("  " + Term.C("▲", "33") +
+                    $" :{Config.ApiPort} is served by pid {portOwner}, which feedctl didn't start — taking it over so the demo/live DBs are feedctl's …");
+                ApiHost.KillPortOwner(); // targets who actually holds the port, not a stale PID file
+                if (!await WaitAsync(() => Task.FromResult(!ApiHost.PortListening()), 10))
+                {
+                    Console.WriteLine("  " + Term.C("○ could not free :" + Config.ApiPort +
+                        " — stop the process holding it and re-run `up`", "31"));
+                    return 1;
+                }
+            }
+            // Port is free now (it always was, or KillPortOwner just freed it). A stale PID
+            // file, if any, is left UNtouched: Start() overwrites it with the truth, and
+            // force-killing a possibly-recycled PID would be the greater risk.
             if (ApiHost.Start() is null) return 1;
         }
-        else Console.WriteLine("  " + Term.C("●", "32") + " API already running");
 
         Console.WriteLine("  " + Term.C("◐", "33") + " warming Poro (first /health loads the model) …");
         var healthy = await WaitAsync(async () =>

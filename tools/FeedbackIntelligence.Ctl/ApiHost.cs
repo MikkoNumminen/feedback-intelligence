@@ -47,6 +47,47 @@ public static class ApiHost
         }
     }
 
+    /// <summary>PID of the process actually LISTENING on the API port, or null when
+    /// the port is free. This is the ground truth of who is serving :5088 — unlike
+    /// <see cref="RunningPid"/>, which reflects only the PID file and goes stale when
+    /// a supervisor loop, a bare `dotnet run`, or an orphaned launcher (e.g. an older
+    /// feedctl's launch-api.cmd wrapper) takes the port instead. `up` compares the two
+    /// to tell feedctl's OWN instance from a squatter it must take over.</summary>
+    public static int? PortOwnerPid()
+    {
+        try
+        {
+            var r = Shell.Run("powershell", ["-NoProfile", "-Command",
+                $"(Get-NetTCPConnection -LocalPort {Config.ApiPort} -State Listen -ErrorAction SilentlyContinue | " +
+                "Select-Object -First 1).OwningProcess"], 10000);
+            // Output is stdout+stderr combined (Shell.Run); -NoProfile + SilentlyContinue
+            // keep stderr empty, but be defensive — the first purely-numeric token is the
+            // PID, so a stray warning line can't turn a real owner into a false "port free"
+            // (a false "free" would make `up` needlessly restart a healthy own instance).
+            foreach (var tok in r.Output.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                if (int.TryParse(tok, out var pid))
+                    return pid;
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Kill whatever process is LISTENING on the API port right now, re-queried
+    /// at call time. PID-reuse-safe: it targets who actually holds the port, never a
+    /// possibly-stale PID file (which the OS could have recycled to an unrelated process).
+    /// `up` uses this to take the port from a squatter; <see cref="Start"/> then records
+    /// the truthful PID. It does NOT chase a parent that would respawn the listener — if
+    /// one does, the caller's port-free wait fails honestly rather than fighting it.</summary>
+    public static void KillPortOwner()
+    {
+        Shell.Run("powershell", ["-NoProfile", "-Command",
+            $"$c=(Get-NetTCPConnection -LocalPort {Config.ApiPort} -State Listen -ErrorAction SilentlyContinue | " +
+            "Select-Object -First 1).OwningProcess; if ($c) { Stop-Process -Id $c -Force -ErrorAction SilentlyContinue }"], 20000);
+    }
+
     /// <summary>Builds (optionally) the API, then starts it detached on the demo
     /// DB. Returns the pid, or null on failure. <paramref name="build"/> is false
     /// for a data switch, which never changes API code: rebuilding there is wasted
