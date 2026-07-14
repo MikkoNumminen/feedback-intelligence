@@ -43,6 +43,11 @@ category is the signal, a good/bad/how-severe rating on hostile content is
 misleading. A dedicated `ei_palautetta` bucket for nonsense was investigated and
 **rejected** — an announced live check showed Poro does not route garbage there
 (automatic garbage detection is not achievable with this model); see ADR-0032.
+The unrated content also lives in a **collapsed "Moderoitava sisältö" disclosure
+at the bottom** of the views, and **racism is no longer an alert**: the alert
+channel (`Hälytykset`) is retail-operational only, so a racist comment is
+recognized (category + `⚑` + count) but never leads the page
+([ADR-0033](../decisions/0033-operational-alerts-moderation-view.md)).
 
 `makeiset` (Makeiset) is the sweets department; it and `kuiva_elintarvike` carry
 `categoryHints` that draw the boundary between them explicitly, so candy no
@@ -101,7 +106,12 @@ engine code** — the boundary gap ADR-0007 flagged is closed (ADR-0012).
 
 Loaded and validated at startup. Case-insensitive substring match over the raw
 feedback text, Finnish stems, in four categories: injury/safety, payment,
-racism, legal-threat. The file also records **deliberate exclusions** — structural-failure
+racism, legal-threat. The `racism` category still forces the `rasismi`
+structuring category and tags the item `⚑` (ADR-0027), but it no longer surfaces
+as an operational `Hälytys` — alerts are retail-operational, and racist content
+is shown in the moderation view instead
+([ADR-0033](../decisions/0033-operational-alerts-moderation-view.md)). The file
+also records **deliberate exclusions** — structural-failure
 verbs (pettää, sortua, irrota, antaa periksi, romahtaa) are *non-keywords on
 purpose*: they are the no-keyword safety story's vocabulary, which must be
 detectable only by understanding

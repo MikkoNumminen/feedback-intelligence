@@ -638,6 +638,32 @@ public class ReportServiceTests : IDisposable
         Assert.Contains("maito_kylma", json);
     }
 
+    [Fact]
+    public async Task Alerts_AreOperationalOnly_RacismAlertsSuppressed_SafetyKept()
+    {
+        // ADR-0033: a Hälytys is retail-operational. A PURE-rasismi alert hit does
+        // NOT surface as an alert (the content is recognized via its category, its ⚑
+        // tag and the moderation view). A genuine safety hit DOES; a MIXED item (also
+        // racist but with a safety hazard) keeps its operational signal.
+        const string ts = "2026-06-29T10:00:00.0000000+00:00";
+        StoredFeedback Alerting(string id, string category, params FeedbackIntelligence.Core.Alerts.AlertHit[] hits) => new(
+            id, "desk", $"teksti {id}", ts, ts,
+            new FeedbackStructure(category, "aihe", "high", "complaint", "fi"),
+            false, false, [], hits, null);
+
+        await _store.InsertAsync(Alerting("racism-1", "rasismi", new FeedbackIntelligence.Core.Alerts.AlertHit("rasismi", "neek")), CancellationToken.None);
+        await _store.InsertAsync(Alerting("safety-1", "rakennustarvike", new FeedbackIntelligence.Core.Alerts.AlertHit("injury_safety", "loukkaantu")), CancellationToken.None);
+        await _store.InsertAsync(Alerting("mixed-1", "rasismi", new FeedbackIntelligence.Core.Alerts.AlertHit("rasismi", "neek"), new FeedbackIntelligence.Core.Alerts.AlertHit("injury_safety", "loukkaantu")), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia"))
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var alertIds = report.Alerts.Select(a => a.FeedbackId).ToHashSet();
+        Assert.DoesNotContain("racism-1", alertIds); // pure conduct → not an operational alert
+        Assert.Contains("safety-1", alertIds);        // genuine safety → alerted
+        Assert.Contains("mixed-1", alertIds);         // also racist, but has a safety hazard → kept
+    }
+
     private sealed class ScriptedChatClient(params string[] responses) : IChatClient
     {
         private int _next;
