@@ -2,8 +2,9 @@
 
 This is a working reference for how Poro-2-8B behaves in two of my projects, and
 the deterministic machinery added to make it usable. The promise in the title is
-that every number here comes from a run you can repeat. Where a
-claim rests on a small sample or a judgment call, I say so in the same sentence.
+that every number here traces to a run you can repeat, or to a judgment I name as
+one. Where a claim rests on a small sample or a single rating, I say so in the same
+sentence.
 
 Two projects measured Poro independently and reached opposite deployment decisions
 from the same evidence.
@@ -35,8 +36,15 @@ to `/interpret`; the returned `structure.category` is Poro's raw pick. The
 structuring quality harness is `tools/FeedbackIntelligence.StructuringEval`. The
 naturalness ranking and the Voikko rates below come from the mikkonumminen.dev eval
 set (`chat-backend/evals/`), not from this repo, and were measured on the same
-hardware. The model is cheap to serve: about 5.9 GB of VRAM loaded, an 8192-token
-context window, and the largest prompt-plus-output we measured was 5205 tokens.
+hardware.
+
+Not everything here reproduces the same way. The category probes and the Voikko
+rates can be reproduced by re-running code, because the model is deterministic at
+temperature 0 and the answers are saved. The naturalness ranking cannot: reproducing
+it means finding a second judge, not re-running a job.
+
+The model is cheap to serve: about 5.9 GB of VRAM loaded, an 8192-token context
+window, and the largest prompt-plus-output we measured was 5205 tokens.
 
 ## What Poro is good at: Finnish
 
@@ -58,7 +66,10 @@ does ("Astro 6:sta", "TypeScriptistä") where the general models produce stiff o
 half-anglicized forms.
 
 A deterministic spelling and grammar pass (Voikko, all three models, 84 scored
-answers each) put Poro at 3.3% flagged tokens, qwen3 at 4.0%, llama at 5.8%. Taken
+answers each) put Poro at 3.3% flagged tokens, qwen3 at 4.0%, llama at 5.8%. The 84
+is larger than the ranking's 30 because the blinded human ranking took a subset a
+person could get through by hand, while the automatic Voikko pass scored the full
+set. Taken
 flat against a 7.2% floor measured on human-approved UI strings, 3.3% would read as
 "Poro writes more correctly than a person," which nobody should claim. The likelier
 reading is that Voikko flags proper nouns, code identifiers and anglicisms, and
