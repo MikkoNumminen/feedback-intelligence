@@ -466,7 +466,7 @@ function sentPills(counts) {
   return wrap.childNodes.length ? wrap : null;
 }
 
-// One category section: { label, tag?, count, flagged, meta?, items:[{severity,text,timestamp}] }
+// One category section: { label, count, flagged, meta?, items:[{severity,text,timestamp}] }
 function renderSection(body, section) {
   const box = node("div", "seg-theme");
   const heading = node("h3", null, section.label);
