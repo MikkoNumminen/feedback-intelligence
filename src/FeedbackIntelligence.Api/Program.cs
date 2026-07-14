@@ -9,8 +9,10 @@ using FeedbackIntelligence.Api.Alerts;
 using FeedbackIntelligence.Api.Analysis;
 using FeedbackIntelligence.Api.Ingest;
 using FeedbackIntelligence.Api.Storage;
+using FeedbackIntelligence.Api.Structuring;
 using FeedbackIntelligence.Core.Alerts;
 using FeedbackIntelligence.Core.Domain;
+using FeedbackIntelligence.Core.Structuring;
 using FeedbackIntelligence.Llm;
 using FeedbackIntelligence.Llm.Structuring;
 
@@ -29,6 +31,13 @@ builder.Services.AddSingleton<IValidateOptions<IngestOptions>, IngestOptionsVali
 // a fixed path. Switching Domain:Active swaps the keyword list with everything else.
 builder.Services.AddSingleton(sp =>
     AlertKeywordSet.LoadFrom(sp.GetRequiredService<IActiveDomain>().AlertKeywordsPath));
+// The category-keyword lexicon (ADR-0036) is domain data too — optional, and validated
+// against the active domain's declared categories so a typo'd key fails the boot.
+builder.Services.AddSingleton(sp =>
+{
+    var domain = sp.GetRequiredService<IActiveDomain>();
+    return CategoryKeywordSet.LoadFrom(domain.CategoryKeywordsPath, domain.Descriptor.Categories);
+});
 builder.Services.AddSingleton<FeedbackStore>();
 builder.Services.AddSingleton<LlmGate>();
 builder.Services.AddSingleton<IngestService>();
@@ -54,6 +63,7 @@ builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) => new IngestService(
     sp.GetRequiredService<IStructuringService>(),
     sp.GetRequiredService<LlmGate>(),
     sp.GetRequiredService<AlertKeywordSet>(),
+    sp.GetRequiredService<CategoryKeywordSet>(),
     sp.GetRequiredService<IActiveDomain>(),
     sp.GetRequiredKeyedService<ReportCache>(Channels.Live),
     sp.GetRequiredService<ILogger<IngestService>>()));
@@ -205,6 +215,7 @@ app.MapPost("/interpret", async (
     LlmGate gate,
     IOptions<IngestOptions> options,
     AlertKeywordSet keywords,
+    CategoryKeywordSet categoryKeywords,
     IActiveDomain domain,
     ILoggerFactory loggerFactory,
     CancellationToken ct) =>
@@ -215,11 +226,13 @@ app.MapPost("/interpret", async (
     try
     {
         var result = await gate.RunAsync(innerCt => structuring.StructureAsync(request.Text, innerCt), ct);
-        // ADR-0027: the preview shows the same category-alert override ingest
-        // will enforce, so the human accepts what actually gets stored.
+        // The preview shows the SAME deterministic override ingest will enforce — the
+        // alert-forced category (ADR-0027) or the category-keyword one (ADR-0036, retail's
+        // produce → hevi) — so the human accepts what actually gets stored.
         var alerts = AlertMatcher.Match(request.Text, keywords.Categories);
         var structure = AlertMatcher.ApplyCategoryOverride(
-            result.Structure, AlertMatcher.CategoryOverride(alerts, domain.Descriptor.Categories));
+            result.Structure,
+            CategoryOverrideResolver.Resolve(alerts, request.Text, result.Structure, domain.Descriptor, categoryKeywords.Rules));
         return Results.Ok(new
         {
             structure,

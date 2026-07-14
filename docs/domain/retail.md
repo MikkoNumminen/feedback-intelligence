@@ -129,6 +129,37 @@ detectable only by understanding
 ([ADR-0006](../decisions/0006-ai-in-exactly-two-places.md)). Safety-story corpus
 texts are verified against this list, not a guess of it.
 
+## Category keywords (`domains/retail/category-keywords.json`)
+
+An OPTIONAL domain lexicon, sibling to `alert-keywords.json`, loaded and
+validated at boot against the declared categories. It forces a **grocery-core
+product department** deterministically before save — the deterministic layer
+(ADR-0006), no LLM — but unlike the `rasismi` forcing of ADR-0027, it raises
+**no alert**: produce categorization is not a conduct signal. This fixes cases
+like a nectarine mis-categorized as dairy, forcing bare produce/grocery nouns
+to the department they name.
+
+Scope is deliberately the enumerable **product-noun** departments — `hevi`,
+`makeiset`, `maito_kylma`, `liha_kala`, `juomat`, `pakasteet`, `leipa`.
+Experience/process departments (`kassa_palvelu`, `tilat_siisteys`,
+`verkkokauppa_toimitus`, `varasto_nouto`, `muu`) are defined by what happened,
+not a noun, so they are not keyword-forceable and stay with the model + hints
++ the desk-correction loop (ADR-0035).
+
+The design's core is **cross-category exclusions**: a derivative head word
+(e.g. `mehu`, `jäätelö`, `kakku`, `suklaa`, `puikko`) is an exclusion for the
+base-ingredient category *and* a term for the derivative category, so a
+compound routes to the product it actually is (milk chocolate is candy,
+ice-cream cake is frozen). The first declared category whose rule fires wins,
+so **order is load-bearing**. The category-keyword override never outranks a
+safety/conduct category — the alert override (ADR-0027) is checked first, and
+this override applies only if the alert is silent and the current category is
+not demoted; one resolver (`CategoryOverrideResolver`) is shared by ingest,
+`/interpret`, and restructure so preview never drifts from what is stored. The
+enriched `hevi` categoryHint (avokado/soijapapu plus kivihedelmät, sitrukset)
+remains the LLM **recall net** for names the keyword list misses
+([ADR-0036](../decisions/0036-deterministic-category-keyword-override.md)).
+
 ## Generator stories (`domains/retail/stories.json`)
 
 Three planted-story archetypes (the demo's ground truth), validated against the

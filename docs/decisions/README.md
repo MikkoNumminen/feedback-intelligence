@@ -46,3 +46,4 @@ these ADRs relocate that reasoning into durable records.
 | [0033](0033-operational-alerts-moderation-view.md) | Alerts are retail-operational (racism recognized but not alerted); non-substantive content in a collapsed bottom moderation view | Accepted |
 | [0034](0034-github-free-tier-hardening.md) | GitHub free-tier hardening for the public repo (CodeQL, Dependabot, community-health files, Codespaces devcontainer, topics) | Accepted |
 | [0035](0035-categorization-discipline-muu-single-category-hints.md) | Categorization discipline: the catch-all is one category (retires 0026 emergent topics), tighter disambiguating hints, the desk correction loop as backstop | Accepted |
+| [0036](0036-deterministic-category-keyword-override.md) | Deterministic category-keyword override: a grocery-core lexicon forces product departments (produce → hevi) with cross-category exclusions, sibling to the alert lexicon but raising no alert | Accepted |

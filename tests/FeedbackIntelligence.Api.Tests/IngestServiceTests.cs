@@ -40,18 +40,20 @@ public class IngestServiceTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        Structuring.CategoryKeywordSet.Empty,
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
 
     /// <summary>Service over the COMMITTED retail lexicon + domain, for the
     /// ADR-0027 category-alert tests ("rasismi" is both an alert category and a
-    /// declared structuring category).</summary>
+    /// declared structuring category) and the ADR-0036 category-keyword tests.</summary>
     private IngestService CreateServiceRealLexicon(IStructuringService structuring) => new(
         _store,
         structuring,
         new LlmGate(_options),
         TestDomains.RetailKeywords(),
+        TestDomains.RetailCategoryKeywords(),
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
@@ -330,6 +332,7 @@ public class IngestServiceTests : IDisposable
             {
                 Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
             },
+            Structuring.CategoryKeywordSet.Empty,
             TestDomains.RetailActive(),
             cache, NullLogger<IngestService>.Instance);
 
@@ -429,6 +432,20 @@ public class IngestServiceTests : IDisposable
         Assert.Equal(preLexicon.Severity, updated.Structure.Severity); // rest carried over
     }
 
+    [Fact]
+    public async Task CategoryKeyword_ForcesCategory_OverModelStructure()
+    {
+        // ADR-0036: bare produce vocabulary forces "hevi" deterministically —
+        // whatever the model said, the item lands in the produce category.
+        var structuring = new FakeStructuring(Success()); // model says maito_kylma
+        var request = new FeedbackRequest(
+            "hevi-1", "web_form", "nektariinierä oli homeessa", "2026-07-01T10:00:00+03:00", null, null);
+
+        var stored = await CreateServiceRealLexicon(structuring).IngestAsync(request, CancellationToken.None);
+
+        Assert.Equal("hevi", stored.Structure!.Category);
+    }
+
     private IngestService CreateService2(IStructuringService structuring) => new(
         _store,
         structuring,
@@ -437,6 +454,7 @@ public class IngestServiceTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        Structuring.CategoryKeywordSet.Empty,
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);

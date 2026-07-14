@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using FeedbackIntelligence.Api.Alerts;
 using FeedbackIntelligence.Api.Storage;
+using FeedbackIntelligence.Api.Structuring;
 using FeedbackIntelligence.Core.Alerts;
 using FeedbackIntelligence.Core.Security;
 using FeedbackIntelligence.Core.Structuring;
@@ -19,6 +20,7 @@ public sealed class IngestService(
     IStructuringService structuringService,
     LlmGate llmGate,
     AlertKeywordSet keywords,
+    CategoryKeywordSet categoryKeywords,
     Core.Domain.IActiveDomain activeDomain,
     Analysis.ReportCache reportCache,
     ILogger<IngestService> logger)
@@ -53,12 +55,14 @@ public sealed class IngestService(
             (structure, failed, notes) = await StructureViaGateAsync(request.Text, "ingest", ct);
         }
 
-        // ADR-0027: a category-alert (lexicon category that IS a declared
-        // structuring category, e.g. retail's "rasismi") categorizes the item
-        // deterministically. It outranks the model AND the desk-accepted
-        // structure: /interpret already previews the forced category, so a
-        // mismatch here means it was edited away — the rule re-asserts it.
-        var overrideCategory = AlertMatcher.CategoryOverride(alerts, activeDomain.Descriptor.Categories);
+        // A deterministic override categorizes the item: the alert lexicon (ADR-0027 —
+        // retail's "rasismi", a safety/conduct category that outranks everything) or, if
+        // that is silent, the category-keyword lexicon (ADR-0036 — retail's produce →
+        // hevi, never over a conduct category). It outranks the model AND the desk-accepted
+        // structure: /interpret already previews the forced category, so a mismatch here
+        // means it was edited away — the rule re-asserts it.
+        var overrideCategory = CategoryOverrideResolver.Resolve(
+            alerts, request.Text, structure, activeDomain.Descriptor, categoryKeywords.Rules);
         var corrections = request.Corrections;
         var forcedStructure = AlertMatcher.ApplyCategoryOverride(structure, overrideCategory);
         if (!ReferenceEquals(forcedStructure, structure))
@@ -156,20 +160,20 @@ public sealed class IngestService(
                     updatedAny = true;
                 }
 
-                var overrideCategory = AlertMatcher.CategoryOverride(currentAlerts, domain.Categories);
                 var needsPass = item.Structure is null
                     || item.Structure.Category == domain.CatchAllCategory
                     || !domain.Categories.Contains(item.Structure.Category);
                 if (!needsPass)
                 {
-                    // A category-alert (ADR-0027) re-categorizes even an item the
-                    // bounded scope would skip — deterministic, no LLM, and it
-                    // outranks the human audit for the same reason it outranks
-                    // desk acceptance at ingest. Everything but the category
-                    // (incl. review flags) is carried over unchanged; the store
-                    // update clears corrections like any restructure, since they
+                    // A deterministic override (a category-alert, ADR-0027, or a
+                    // category-keyword hit, ADR-0036) re-categorizes even an item the
+                    // bounded scope would skip — no LLM, and it outranks the human audit
+                    // for the same reason it outranks desk acceptance at ingest. Everything
+                    // but the category (incl. review flags) is carried over unchanged; the
+                    // store update clears corrections like any restructure, since they
                     // audited a categorization that no longer stands.
-                    var forced = AlertMatcher.ApplyCategoryOverride(item.Structure, overrideCategory);
+                    var forced = AlertMatcher.ApplyCategoryOverride(item.Structure,
+                        CategoryOverrideResolver.Resolve(currentAlerts, item.Text, item.Structure, domain, categoryKeywords.Rules));
                     if (!ReferenceEquals(forced, item.Structure))
                     {
                         var forcedRows = await store.UpdateStructureAsync(
@@ -185,7 +189,8 @@ public sealed class IngestService(
                 }
 
                 var (structure, itemFailed, notes) = await StructureViaGateAsync(item.Text, $"restructure of {item.Id}", ct);
-                structure = AlertMatcher.ApplyCategoryOverride(structure, overrideCategory);
+                structure = AlertMatcher.ApplyCategoryOverride(structure,
+                    CategoryOverrideResolver.Resolve(currentAlerts, item.Text, structure, domain, categoryKeywords.Rules));
                 var reviewFlags = BuildReviewFlags(item.Text, structure);
                 var updatedRows = await store.UpdateStructureAsync(
                     item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);

@@ -11,6 +11,11 @@ public interface IActiveDomain
     DomainDescriptor Descriptor { get; }
     string Name { get; }
     string AlertKeywordsPath { get; }
+
+    /// <summary>Absolute path of the domain's OPTIONAL category-keyword lexicon
+    /// (category-keywords.json, ADR-0036) — term lists that force a category. The file
+    /// need not exist; a domain without it forces nothing.</summary>
+    string CategoryKeywordsPath { get; }
     string StoriesPath { get; }
 
     /// <summary>Domain-owned prompt files by role (e.g. "synthesis",
@@ -28,6 +33,7 @@ public sealed class ActiveDomain : IActiveDomain
     public DomainDescriptor Descriptor { get; }
     public string Name => Descriptor.Name;
     public string AlertKeywordsPath { get; }
+    public string CategoryKeywordsPath { get; }
     public string StoriesPath { get; }
     public IReadOnlyDictionary<string, string> PromptPaths { get; }
 
@@ -46,6 +52,7 @@ public sealed class ActiveDomain : IActiveDomain
 
         Descriptor = BuildDescriptor(root, o.Active, domainJson);
         AlertKeywordsPath = Path.Combine(dir, "alert-keywords.json");
+        CategoryKeywordsPath = Path.Combine(dir, "category-keywords.json");
         StoriesPath = Path.Combine(dir, "stories.json");
         PromptPaths = BuildPromptPaths(root, dir);
     }

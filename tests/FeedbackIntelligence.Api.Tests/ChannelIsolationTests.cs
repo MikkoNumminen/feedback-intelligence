@@ -50,6 +50,7 @@ public class ChannelIsolationTests : IDisposable
         {
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
+        Api.Structuring.CategoryKeywordSet.Empty,
         TestDomains.RetailActive(),
         cache,
         NullLogger<IngestService>.Instance);

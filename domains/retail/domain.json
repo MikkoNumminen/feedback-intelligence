@@ -37,7 +37,7 @@
   "categoryHints": {
     "kuiva_elintarvike": "jauhot, pasta, riisi, säilykkeet, kahvi — EI makeisia, juomia eikä pakasteita",
     "makeiset": "karkkipussit, irtokarkit, suklaa, purukumi, pastillit",
-    "hevi": "hedelmät, vihannekset, juurekset, marjat, tuoreyrtit — myös avokado, soijapapu ja muut erikoisvihannekset",
+    "hevi": "hedelmät, vihannekset, juurekset, marjat, tuoreyrtit — myös kivihedelmät (nektariini, persikka, luumu), sitrukset, avokado, soijapapu ja muut erikoisvihannekset",
     "juomat": "alkoholittomat juomat: virvoitusjuomat, mehut, vesi, energiajuomat — EI oluita/siidereitä (oluet_siiderit) eikä maitoa (maito_kylma)",
     "pakasteet": "pakastetut tuotteet: pakastevihannekset, -pizzat, jäätelö — sulava mutta jäinen; tuoretuotteet kuuluvat maito_kylma-osastoon",
     "einekset": "valmisruoat, salaatit ja deli-tuotteet — EI raakaa lihaa tai kalaa (liha_kala)",

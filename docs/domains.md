@@ -30,6 +30,7 @@ or a malformed module fails the boot rather than silently degrading.
 domains/<name>/
   domain.json            # taxonomy + labels + prompt map      (required)
   alert-keywords.json    # deterministic alert lexicon          (required by the API)
+  category-keywords.json # deterministic category-keyword override (optional)
   stories.json           # generator planted-story definitions  (required by the generator)
   prompts/
     synthesis-v0.txt         # domain-voiced management synthesis (persona, language)
@@ -127,6 +128,16 @@ model). This is layer 1 of the two-layer alert design; the LLM nomination pass
 (layer 2) catches urgent items that carry no keyword. Keeping a class of urgent
 signal *out* of this list on purpose (so it is detectable only by understanding)
 is a legitimate, documentable choice — see the retail file's `deliberateExclusions`.
+
+### `category-keywords.json`
+
+OPTIONAL, sibling to `alert-keywords.json`. When present, it is validated at
+boot against the domain's declared `categories`; when absent, it forces
+nothing (e.g. the `game` domain is unaffected). It maps a category to a term
+list plus cross-category exclusions, and forces that category deterministically
+before save — same deterministic layer as the alert override, but it never
+raises an alert. See [ADR-0036](decisions/0036-deterministic-category-keyword-override.md)
+and the worked example in [domain/retail.md](domain/retail.md).
 
 ### `stories.json`
 
