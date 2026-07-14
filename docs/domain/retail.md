@@ -70,7 +70,10 @@ retail relabels the polarity set to Finnish (`positive`→Myönteinen,
 explicitly (Kehu→positive, Valitus→negative, Ehdotus/Kysymys/Muu→neutral). The
 positive/negative indicator is derived from each item's `type` via this map —
 deterministic, no model call — and rendered as a badge per item plus a mix per
-theme and overall. A model-authored sentiment field is a gated follow-up.
+theme and overall. An optional model-authored `sentiment` field also exists
+([ADR-0031](../decisions/0031-model-authored-sentiment-field-optional.md)) and
+would take precedence, but Poro-2-8B does not emit it, so the deterministic map
+is the active source.
 
 Output language (`language`): **`fi`** — retail's audience is Finnish only, so the
 report prose, direction labels, snapshot, and the desk/management frontends all

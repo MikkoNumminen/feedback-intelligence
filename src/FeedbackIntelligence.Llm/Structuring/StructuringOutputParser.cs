@@ -36,18 +36,22 @@ public static class StructuringOutputParser
             var type = ReadEnumField(root, "type", domain.Types, allowArrayFirst: false, notes, violations, ref normalized);
             var theme = ReadTextField(root, "theme", lowercase: false, notes, violations, ref normalized);
             var language = ReadTextField(root, "language", lowercase: true, notes, violations, ref normalized);
+            // OPTIONAL sentiment (ADR-0031): absent is fine (deterministic fallback);
+            // present-but-invalid is SALVAGED to null with a note, never a violation —
+            // an optional field must not fail an otherwise-valid item.
+            var sentiment = ReadOptionalEnumField(root, "sentiment", domain.Sentiments, notes, ref normalized);
 
-            // Extra fields are tolerated in production (only the five schema
-            // fields are ever taken) but noted — the eval counts them strictly.
+            // Extra fields are tolerated in production (only known fields are ever
+            // taken) but noted — the eval counts them strictly.
             foreach (var prop in root.EnumerateObject())
-                if (!StructuringSchema.Fields.Contains(prop.Name))
+                if (!StructuringSchema.KnownFields.Contains(prop.Name))
                     notes.Add($"ignored extra field '{prop.Name}'");
 
             if (violations.Count > 0)
                 return new Attempt(null, !strict, normalized, notes, violations);
 
             return new Attempt(
-                new FeedbackStructure(category!, theme!, severity!, type!, language!),
+                new FeedbackStructure(category!, theme!, severity!, type!, language!, sentiment),
                 Salvaged: !strict,
                 Normalized: normalized,
                 notes,
@@ -106,6 +110,37 @@ public static class StructuringOutputParser
             return null;
         }
 
+        return cleaned;
+    }
+
+    /// <summary>Reads an OPTIONAL enum field (ADR-0031 sentiment): absent → null,
+    /// no violation; present-but-invalid → null + note (salvage), no violation.
+    /// The field never fails the structure — the report has a deterministic
+    /// fallback for it.</summary>
+    private static string? ReadOptionalEnumField(
+        JsonElement root, string field, IReadOnlySet<string> allowed, List<string> notes, ref bool normalized)
+    {
+        if (!root.TryGetProperty(field, out var value))
+            return null;
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            notes.Add($"optional '{field}' was {value.ValueKind}, ignored");
+            return null;
+        }
+        var candidate = value.GetString();
+        var cleaned = (candidate ?? "").Trim().ToLowerInvariant();
+        if (cleaned.Length == 0)
+            return null;
+        if (cleaned != candidate)
+        {
+            normalized = true;
+            notes.Add($"'{field}' normalized from '{candidate}' to '{cleaned}'");
+        }
+        if (!allowed.Contains(cleaned))
+        {
+            notes.Add($"optional '{field}' value '{candidate}' is not in the allowed set, ignored");
+            return null;
+        }
         return cleaned;
     }
 

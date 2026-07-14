@@ -183,6 +183,7 @@ public sealed class ActiveDomain : IActiveDomain
             CatchAllCategory = catchAll,
             DemotedCategories = demoted,
             SentimentLabels = sentiments,
+            Sentiments = sentiments.Keys.ToHashSet(StringComparer.Ordinal),
             TypeSentiment = typeSentiment,
         };
     }

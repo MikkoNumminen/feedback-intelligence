@@ -34,6 +34,12 @@ public sealed class DomainDescriptor
     public IReadOnlyDictionary<string, string> SentimentLabels { get; init; } =
         new Dictionary<string, string>(CoreDefaults.Sentiments, StringComparer.Ordinal);
 
+    /// <summary>The sentiment value set (keys of <see cref="SentimentLabels"/>) —
+    /// the legal values for the optional model-authored sentiment field (ADR-0031),
+    /// parallel to <see cref="Severities"/>/<see cref="Types"/>.</summary>
+    public IReadOnlySet<string> Sentiments { get; init; } =
+        CoreDefaults.Sentiments.Keys.ToHashSet(StringComparer.Ordinal);
+
     /// <summary>Deterministic map from a feedback <c>type</c> key to a sentiment
     /// key (ADR-0030). The report derives each item's positive/negative/neutral
     /// indicator from this until a model-authored sentiment field replaces it.

@@ -23,7 +23,11 @@ public class PromptLockTests
 {
     [Theory]
     [InlineData("prompts/structuring-v0.txt",
-        "b5b2ed74d876b124072a7a697a9e696280c475445975a323548c2933e2908944")]
+        // Re-validated 2026-07-14 (ADR-0022 gate, ADR-0028/0031): theme-format
+        // constraint + optional model-authored sentiment field. A4 RedTeamCoverage
+        // stayed green; announced seed-42 live Poro check on a throwaway DB showed
+        // 71 items, 0 ungrounded, 0 action drops, both alerts grounded.
+        "4fc90656b772532a74a8e295b8fe96ba051313bc007ab6c69a1bb6833e459f64")]
     [InlineData("domains/retail/prompts/synthesis-v0.txt",
         "2d22cd66934d8ae50d7a47053b8d1b466369a026c2be0ee0f499a38cc8e061d6")]
     [InlineData("domains/retail/prompts/alert-nomination-v0.txt",

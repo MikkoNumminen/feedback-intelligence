@@ -572,6 +572,25 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Sentiment_ModelValue_WinsOverTypeDerivedMap()
+    {
+        // ADR-0031: a model-authored sentiment on the structure overrides the
+        // deterministic type→sentiment map (ADR-0030) — here type is "complaint"
+        // (which alone would map to "negative"), but the model said "positive".
+        const string ts = "2026-06-29T10:00:00.0000000+00:00";
+        await _store.InsertAsync(new StoredFeedback(
+            "override-1", "desk", "palaute", ts, ts,
+            new FeedbackStructure("maito_kylma", "tuoreus", "low", "complaint", "fi", "positive"),
+            false, false, [], [], null), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia"))
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.Equal("positive", theme.Sources.Single(s => s.FeedbackId == "override-1").Sentiment);
+    }
+
+    [Fact]
     public async Task Snapshot_PersistedOnlyOnOptIn_NotOnEphemeralView()
     {
         // dotnet-audit finding #3: an ephemeral frontend view (persistSnapshot: false,

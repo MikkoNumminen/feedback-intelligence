@@ -41,3 +41,4 @@ these ADRs relocate that reasoning into durable records.
 | [0028](0028-categorization-accuracy-makeiset-theme-normalization.md) | Categorization accuracy: `makeiset` department, disambiguating hints, normalized emergent-topic keys | Accepted |
 | [0029](0029-complete-retail-taxonomy-hypermarket.md) | Complete the retail department taxonomy to a full hybrid hypermarket (17 → 30) | Accepted |
 | [0030](0030-sentiment-indicator-deterministic-from-type.md) | Sentiment (positive/negative) indicator: deterministic from type now, model-authored later | Accepted |
+| [0031](0031-model-authored-sentiment-field-optional.md) | Model-authored sentiment as an optional 6th structuring field (Poro ignores it today; forward-compat seam) | Accepted |

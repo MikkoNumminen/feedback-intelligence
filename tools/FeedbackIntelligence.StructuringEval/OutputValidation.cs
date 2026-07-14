@@ -48,7 +48,7 @@ public static class OutputValidation
                     violations.Add(new FieldViolation(field, "missing_field", ""));
 
             foreach (var prop in root.EnumerateObject())
-                if (!StructuringSchema.Fields.Contains(prop.Name))
+                if (!StructuringSchema.KnownFields.Contains(prop.Name))
                     violations.Add(new FieldViolation(prop.Name, "extra_field", Formatting.Truncate(prop.Value.ToString(), 40)));
 
             CheckEnum(root, "category", domain.Categories, violations);
@@ -56,6 +56,10 @@ public static class OutputValidation
             CheckEnum(root, "type", domain.Types, violations);
             CheckNonEmptyString(root, "theme", violations);
             CheckNonEmptyString(root, "language", violations);
+            // Optional sentiment (ADR-0031): absent is fine, but a PRESENT value must
+            // be a legal sentiment key — a bad one is a real enum violation.
+            if (root.TryGetProperty("sentiment", out _))
+                CheckEnum(root, "sentiment", domain.Sentiments, violations);
 
             // Advisory (never a schema violation): does the theme follow the
             // base-form / lowercase / plain-space shape the prompt asks for?

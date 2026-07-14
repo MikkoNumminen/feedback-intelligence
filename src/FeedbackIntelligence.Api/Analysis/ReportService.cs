@@ -707,11 +707,11 @@ public sealed partial class ReportService(
                 SentimentOf(i)))
             .ToList();
 
-    /// <summary>An item's sentiment KEY (ADR-0030), derived from its type via the
-    /// active domain's map. This is the single seam a future model-authored
-    /// sentiment field swaps behind — callers ask here, never the type directly.</summary>
+    /// <summary>An item's sentiment KEY: the model-authored value when present
+    /// (ADR-0031, validated at ingest), else the deterministic type→sentiment map
+    /// (ADR-0030). The single seam every caller asks through.</summary>
     private string? SentimentOf(StoredFeedback item) =>
-        item.Structure is { } s ? activeDomain.Descriptor.SentimentOf(s.Type) : null;
+        item.Structure is { } s ? (s.Sentiment ?? activeDomain.Descriptor.SentimentOf(s.Type)) : null;
 
     /// <summary>Sentiment mix over a set of items: sentiment key → count, with
     /// zero-count keys omitted. Empty when the domain declares no sentiment or no
