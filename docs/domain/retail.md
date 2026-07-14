@@ -12,9 +12,9 @@ hand-written corpus.
 
 ## Category taxonomy (`domains/retail/domain.json`)
 
-The `category` field ([../schema.md](../schema.md)). Thirty-one values (27 real
-departments + the four special buckets `rasismi`/`asiaton`/`ei_palautetta`/`muu`),
-each with a Finnish display label; `categoryFieldLabel` is `osasto`. The set models a full
+The `category` field ([../schema.md](../schema.md)). Thirty values (27 real
+departments + the three special buckets `rasismi`/`asiaton`/`muu`), each with a
+Finnish display label; `categoryFieldLabel` is `osasto`. The set models a full
 Finnish hybrid hypermarket — groceries, non-food consumer goods, home
 improvement, and store-service departments — so ordinary feedback has a real
 department to land in rather than overflowing into `muu`
@@ -33,17 +33,16 @@ piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit | sahko_lvi |
 # store service & experience
 kassa_palvelu | tilat_siisteys | varasto_nouto | verkkokauppa_toimitus |
 # special
-rasismi | asiaton | ei_palautetta | muu
+rasismi | asiaton | muu
 ```
 
-The three demoted buckets (`rasismi`, `asiaton`, `ei_palautetta`) are **unrated**
+The demoted buckets (`rasismi`, `asiaton`) are **unrated**
 ([ADR-0032](../decisions/0032-unrated-nonsubstantive-categories.md)): the views
 suppress their severity and sentiment and drop them from those aggregates — the
-category is the signal, a good/bad/how-severe rating on hostile-or-junk content
-is misleading. `ei_palautetta` ("Ei palautetta") is for genuine non-feedback, but
-it is a **manual** desk category: the announced live check showed Poro does **not**
-auto-route nonsense there, so a clerk assigns it (automatic garbage detection is
-not achievable with this model).
+category is the signal, a good/bad/how-severe rating on hostile content is
+misleading. A dedicated `ei_palautetta` bucket for nonsense was investigated and
+**rejected** — an announced live check showed Poro does not route garbage there
+(automatic garbage detection is not achievable with this model); see ADR-0032.
 
 `makeiset` (Makeiset) is the sweets department; it and `kuiva_elintarvike` carry
 `categoryHints` that draw the boundary between them explicitly, so candy no
