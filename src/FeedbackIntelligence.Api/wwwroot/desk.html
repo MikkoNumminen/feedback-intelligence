@@ -53,6 +53,12 @@
   .itemtag { color:var(--err); font-weight:600; font-size:.75rem; margin-left:.35rem; white-space:nowrap; }
   .seg-tag { font-size:.72rem; font-weight:400; color:var(--mut); border:1px solid var(--line);
              border-radius:.4rem; padding:.05rem .35rem; margin-left:.45rem; vertical-align:middle; }
+  /* Sentiment (polarity) badge — ADR-0030 */
+  .snt { display:inline-block; border-radius:.4rem; padding:.02rem .4rem; font-size:.72rem; margin-right:.3rem; }
+  .snt-positive { background:#e6f4ea; color:#1e7e34; }
+  .snt-negative { background:#fdecea; color:#b3261e; }
+  .snt-neutral { background:#eef1f4; color:#66707d; }
+  .seg-items .snt { margin-left:.35rem; margin-right:0; }
 </style>
 </head>
 <body>
@@ -139,7 +145,7 @@ const STR = {
     summaryHeading: "Yhteenveto",
     summaryPending: "Tekoäly kirjoittaa yhteenvetoa…",
     summaryFailed: "Yhteenveto ei päivittynyt — kirjaukset näkyvät alla.",
-    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma",
+    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma", chartSentiment: "Tunnelmajakauma",
     tileEntries: "Kirjauksia", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
   },
   en: {
@@ -172,7 +178,7 @@ const STR = {
     summaryHeading: "Summary",
     summaryPending: "The AI is writing the summary…",
     summaryFailed: "The summary did not refresh — entries are shown below.",
-    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution",
+    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution", chartSentiment: "Sentiment distribution",
     tileEntries: "Entries", tileFlagged: "To review", tileTrend: "Trend",
   },
 };
@@ -440,6 +446,21 @@ function shortTime(iso) {
 }
 
 const catLabel = key => (schema && schema.categoryLabels?.[key]) || key;
+const sentLabel = key => (schema && schema.sentimentLabels?.[key]) || key;
+// Sentiment (ADR-0030): the report path carries item.sentiment; the instant
+// phase-A path derives it from the item's type via the schema map. One badge
+// either way, so the desk shows a positive/negative signal in both phases.
+const sentimentFromType = type => (schema && schema.typeSentiment?.[type]) || null;
+function sentBadge(key) { return key ? node("span", `snt snt-${key}`, sentLabel(key)) : null; }
+// Colored pills for a {sentimentKey: count} mix, in the domain's declared order.
+function sentPills(counts) {
+  if (!counts) return null;
+  const order = (schema && schema.sentiments) || Object.keys(counts);
+  const wrap = node("span", "snt-mix");
+  for (const key of order)
+    if (counts[key] > 0) wrap.appendChild(node("span", `snt snt-${key}`, `${sentLabel(key)} ${counts[key]}`));
+  return wrap.childNodes.length ? wrap : null;
+}
 
 // One category section: { label, tag?, count, flagged, meta?, items:[{severity,text,timestamp}] }
 function renderSection(body, section) {
@@ -449,6 +470,9 @@ function renderSection(body, section) {
   box.appendChild(heading);
   box.appendChild(node("p", "seg-meta",
     `${section.count} ${L.itemsWord}` + (section.meta ? ` · ${section.meta}` : "")));
+  // Sentiment (polarity) mix for the group (ADR-0030).
+  const mix = sentPills(section.sentimentCounts);
+  if (mix) { const p = node("p", "seg-meta"); p.appendChild(mix); box.appendChild(p); }
   // ADR-0021 A2 parity with index.html: a possibly-manipulated (needs_review)
   // item stays in the count — so the warning that it is in the mix must show
   // here too, or the desk reads a poisoned count as clean.
@@ -459,6 +483,8 @@ function renderSection(body, section) {
     const li = node("li");
     const sevLabel = (schema && schema.severityLabels?.[item.severity]) || item.severity || "?";
     li.appendChild(node("span", "sev", sevLabel));
+    const badge = sentBadge(item.sentiment);
+    if (badge) li.appendChild(badge);
     li.appendChild(document.createTextNode(item.text));
     // Deterministic alert-lexicon recognition, visible per comment (ADR-0027):
     // e.g. a racist comment carries its "rasismi" tag right on the row.
@@ -504,6 +530,8 @@ function renderSegment(report) {
     box.appendChild(node("h3", null, `${L.summaryHeading}: ${report.overall.title}`));
     box.appendChild(node("p", "seg-narrative", report.overall.narrative));
     box.appendChild(node("p", "seg-meta", report.overall.directionLabel));
+    const omix = sentPills(report.overall.sentimentCounts);
+    if (omix) { const p = node("p", "seg-meta"); p.appendChild(omix); box.appendChild(p); }
     body.appendChild(box);
   }
 
@@ -517,6 +545,7 @@ function renderSegment(report) {
     flagged: theme.flaggedCount,
     meta: theme.directionLabel,
     items: theme.sources ?? [],
+    sentimentCounts: theme.sentimentCounts,
   }));
   const sevCounts = {};
   for (const section of sections)
@@ -527,7 +556,7 @@ function renderSegment(report) {
   // totals line above, never silently absorbed into a mismatching KPI.
   renderChartLayer(body, sections, sevCounts,
     report.totalItems - (report.structureFailedCount || 0),
-    report.overall?.directionLabel);
+    report.overall?.directionLabel, report.sentimentCounts);
 
   for (const section of sections)
     renderSection(body, section);
@@ -537,14 +566,16 @@ function renderSegment(report) {
 // phase B can never relabel what phase A painted — and guarded, so a missing
 // or failed charts.js degrades to a chartless summary instead of a
 // ReferenceError killing every section below it.
-function renderChartLayer(body, sections, sevCounts, total, directionLabel) {
+function renderChartLayer(body, sections, sevCounts, total, directionLabel, sentimentCounts) {
   if (!window.FeedbackCharts) return;
   FeedbackCharts.render(body, {
-    sections, sevCounts, total, directionLabel,
+    sections, sevCounts, total, directionLabel, sentimentCounts,
     declaredSeverities: schema?.severities,
     sevLabel: k => (schema && schema.severityLabels?.[k]) || k,
+    declaredSentiments: schema?.sentiments,
+    sentLabel,
     strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
-               chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+               chartCategories: L.chartCategories, chartSeverity: L.chartSeverity, chartSentiment: L.chartSentiment },
   });
 }
 
@@ -567,18 +598,22 @@ function renderQuick(items) {
 
   const groups = new Map();
   const sevCounts = {};
+  const sentCounts = {};
   for (const item of structured) {
     const key = item.structure.category;
     if (!groups.has(key))
-      groups.set(key, { category: key, label: catLabel(key), tag: null, count: 0, flagged: 0, items: [] });
+      groups.set(key, { category: key, label: catLabel(key), tag: null, count: 0, flagged: 0, items: [], sentimentCounts: {} });
     const group = groups.get(key);
     group.count++;
     if (item.needsReview) group.flagged++;
+    const sent = sentimentFromType(item.structure.type);
     group.items.push({
       severity: item.structure.severity, text: item.text, timestamp: item.timestamp,
       alertCategories: item.alerts?.length
         ? [...new Set(item.alerts.map(a => a.category))] : null,
+      sentiment: sent,
     });
+    if (sent) { group.sentimentCounts[sent] = (group.sentimentCounts[sent] || 0) + 1; sentCounts[sent] = (sentCounts[sent] || 0) + 1; }
     sevCounts[item.structure.severity] = (sevCounts[item.structure.severity] || 0) + 1;
   }
   // Same ordering rule as the server, INCLUDING the tiebreak: demoted
@@ -591,7 +626,7 @@ function renderQuick(items) {
     (demoted.indexOf(a.category) - demoted.indexOf(b.category))
     || (b.count - a.count)
     || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0));
-  renderChartLayer(body, sections, sevCounts, structured.length, null);
+  renderChartLayer(body, sections, sevCounts, structured.length, null, sentCounts);
   for (const section of sections)
     renderSection(body, section);
 }

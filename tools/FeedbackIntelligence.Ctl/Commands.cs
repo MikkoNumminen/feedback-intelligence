@@ -347,11 +347,53 @@ public static class Commands
         }
         var s = r.GetProperty("structure");
         var salvaged = r.TryGetProperty("salvaged", out var sv) && sv.GetBoolean() ? Term.C(" (salvaged)", "2") : "";
+        // Effective sentiment (ADR-0030/0031): the model's own value if it emitted
+        // one, else the deterministic type→sentiment map — the same seam the report
+        // uses. Labelled via /schema (Poro does not emit sentiment, so in practice
+        // this shows the derived value).
+        var sentiment = await EffectiveSentimentLabelAsync(s);
         Console.WriteLine($"  {Term.C("→", "32")} {s.GetProperty("category").GetString()} / " +
             $"\"{s.GetProperty("theme").GetString()}\" / {s.GetProperty("severity").GetString()} / " +
             $"{s.GetProperty("type").GetString()} / {s.GetProperty("language").GetString()}" +
+            (sentiment is null ? "" : $" / {Term.C(sentiment, "35")}") +
             $"   {Term.C($"{sw.Elapsed.TotalSeconds:F1}s", "2")}{salvaged}\n");
         return 0;
+    }
+
+    /// <summary>The item's sentiment display label (ADR-0031 model value ?? ADR-0030
+    /// type-derived), resolved through /schema; null if the domain declares none or
+    /// /schema is unreachable.</summary>
+    private static async Task<string?> EffectiveSentimentLabelAsync(JsonElement structure)
+    {
+        var schema = await Shell.GetJsonAsync("/schema", 15);
+        if (schema is not { } sc)
+            return null;
+        string? key = structure.TryGetProperty("sentiment", out var mv) && mv.ValueKind == JsonValueKind.String
+            ? mv.GetString()
+            : null;
+        if (key is null
+            && structure.TryGetProperty("type", out var ty) && ty.ValueKind == JsonValueKind.String
+            && sc.TryGetProperty("typeSentiment", out var ts)
+            && ts.TryGetProperty(ty.GetString()!, out var d) && d.ValueKind == JsonValueKind.String)
+            key = d.GetString();
+        if (key is null)
+            return null;
+        return sc.TryGetProperty("sentimentLabels", out var sl) && sl.TryGetProperty(key, out var lv) && lv.ValueKind == JsonValueKind.String
+            ? lv.GetString()
+            : key;
+    }
+
+    /// <summary>The domain's sentiment key→label map from /schema; empty if
+    /// unreachable (callers fall back to the raw key).</summary>
+    private static async Task<IReadOnlyDictionary<string, string>> SentimentLabelsAsync()
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        var schema = await Shell.GetJsonAsync("/schema", 15);
+        if (schema is { } sc && sc.TryGetProperty("sentimentLabels", out var sl) && sl.ValueKind == JsonValueKind.Object)
+            foreach (var p in sl.EnumerateObject())
+                if (p.Value.ValueKind == JsonValueKind.String)
+                    map[p.Name] = p.Value.GetString()!;
+        return map;
     }
 
     public static async Task<int> LoadAsync(string? corpus)
@@ -407,6 +449,17 @@ public static class Commands
         Console.WriteLine($"\n  {Term.Bold("report")} · {sw.Elapsed.TotalSeconds:F1}s · {Items("totalItems")} items · " +
             $"{rep.GetProperty("alerts").GetArrayLength()} alert(s) · {rep.GetProperty("themes").GetArrayLength()} theme(s) · " +
             $"{Items("droppedClaimCount")} ungrounded dropped · {Items("llmFallbackCount")} llm-fallback");
+        // Whole-window sentiment (polarity) mix (ADR-0030/0031), labelled in the
+        // domain's language to match /interpret and the rest of the report.
+        if (rep.TryGetProperty("sentimentCounts", out var sc) && sc.ValueKind == JsonValueKind.Object)
+        {
+            var labels = await SentimentLabelsAsync();
+            var mix = string.Join(" · ", sc.EnumerateObject()
+                .Where(p => p.Value.ValueKind == JsonValueKind.Number && p.Value.GetInt32() > 0)
+                .Select(p => $"{(labels.TryGetValue(p.Name, out var l) ? l : p.Name)} {p.Value.GetInt32()}"));
+            if (mix.Length > 0)
+                Console.WriteLine($"    {Term.C("◔ tunnelma", "35")} {mix}");
+        }
         foreach (var a in rep.GetProperty("alerts").EnumerateArray())
         {
             var reason = a.TryGetProperty("llmReason", out var lr) && lr.ValueKind == JsonValueKind.String

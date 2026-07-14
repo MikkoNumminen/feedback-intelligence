@@ -100,7 +100,8 @@ public sealed class LlmStructuringService(
         template = template
             .Replace("{{categories}}", RenderLabelledKeys(d.CategoryLabels, d.CategoryHints), StringComparison.Ordinal)
             .Replace("{{severities}}", RenderJsonArray(d.SeverityLabels.Keys), StringComparison.Ordinal)
-            .Replace("{{types}}", RenderJsonArray(d.TypeLabels.Keys), StringComparison.Ordinal);
+            .Replace("{{types}}", RenderJsonArray(d.TypeLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{sentiments}}", RenderJsonArray(d.SentimentLabels.Keys), StringComparison.Ordinal);
 
         return _template = template;
     }

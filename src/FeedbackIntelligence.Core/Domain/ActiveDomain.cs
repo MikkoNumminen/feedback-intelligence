@@ -137,6 +137,36 @@ public sealed class ActiveDomain : IActiveDomain
             throw new InvalidOperationException(
                 $"{sourcePath}: 'demotedCategories' has key(s) not in 'categories': {string.Join(", ", unknownDemoted)}.");
 
+        // Optional sentiment (polarity) taxonomy (ADR-0030). Labels default to the
+        // core positive/negative/neutral; a domain may relabel (retail → Finnish).
+        var sentiments = ReadMap(root, "sentiments") is { Count: > 0 } snt
+            ? snt : new Dictionary<string, string>(CoreDefaults.Sentiments, StringComparer.Ordinal);
+
+        // type → sentiment map. An EXPLICIT domain map is typo-checked like the
+        // hints (an unknown type key is rejected). When omitted, the core default
+        // applies but ONLY for the types this domain actually declares — a domain
+        // that renamed its types still gets a consistent, non-empty map with no error.
+        Dictionary<string, string> typeSentiment;
+        var explicitTypeSentiment = ReadMap(root, "typeSentiment");
+        if (explicitTypeSentiment is { Count: > 0 })
+        {
+            var unknownTsKeys = explicitTypeSentiment.Keys.Where(k => !types.ContainsKey(k)).ToList();
+            if (unknownTsKeys.Count > 0)
+                throw new InvalidOperationException(
+                    $"{sourcePath}: 'typeSentiment' has key(s) not in 'types': {string.Join(", ", unknownTsKeys)}.");
+            typeSentiment = explicitTypeSentiment;
+        }
+        else
+        {
+            typeSentiment = CoreDefaults.TypeSentiment
+                .Where(kv => types.ContainsKey(kv.Key))
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+        }
+        var unknownTsValues = typeSentiment.Values.Where(v => !sentiments.ContainsKey(v)).Distinct().ToList();
+        if (unknownTsValues.Count > 0)
+            throw new InvalidOperationException(
+                $"{sourcePath}: 'typeSentiment' maps to sentiment(s) not in 'sentiments': {string.Join(", ", unknownTsValues)}.");
+
         return new DomainDescriptor
         {
             Name = name,
@@ -152,6 +182,9 @@ public sealed class ActiveDomain : IActiveDomain
             CategoryHints = hints,
             CatchAllCategory = catchAll,
             DemotedCategories = demoted,
+            SentimentLabels = sentiments,
+            Sentiments = sentiments.Keys.ToHashSet(StringComparer.Ordinal),
+            TypeSentiment = typeSentiment,
         };
     }
 

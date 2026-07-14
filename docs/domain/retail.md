@@ -12,14 +12,40 @@ hand-written corpus.
 
 ## Category taxonomy (`domains/retail/domain.json`)
 
-The `category` field ([../schema.md](../schema.md)). Sixteen values, each with a
-Finnish display label; `categoryFieldLabel` is `osasto`:
+The `category` field ([../schema.md](../schema.md)). Thirty values (27 real
+departments + the three special buckets `rasismi`/`asiaton`/`muu`), each with a
+Finnish display label; `categoryFieldLabel` is `osasto`. The set models a full
+Finnish hybrid hypermarket — groceries, non-food consumer goods, home
+improvement, and store-service departments — so ordinary feedback has a real
+department to land in rather than overflowing into `muu`
+([ADR-0029](../decisions/0029-complete-retail-taxonomy-hypermarket.md)). Listed
+in display order:
 
 ```
-maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | kassa_palvelu |
+# groceries
+maito_kylma | hevi | kuiva_elintarvike | liha_kala | leipa | makeiset |
+juomat | pakasteet | einekset | oluet_siiderit |
+# non-food consumer goods
+koti_taloustavara | hygienia_kauneus | lastentarvikkeet | lemmikki |
+kodinkoneet | vaatteet_jalkineet | vapaa_aika | autotarvikkeet |
+# home improvement
 piha_puutarha | rakennustarvike | tyokalut | sisustus_maalit | sahko_lvi |
-varasto_nouto | verkkokauppa_toimitus | rasismi | asiaton | muu
+# store service & experience
+kassa_palvelu | tilat_siisteys | varasto_nouto | verkkokauppa_toimitus |
+# special
+rasismi | asiaton | muu
 ```
+
+`makeiset` (Makeiset) is the sweets department; it and `kuiva_elintarvike` carry
+`categoryHints` that draw the boundary between them explicitly, so candy no
+longer falls into "Kuivat elintarvikkeet"
+([ADR-0028](../decisions/0028-categorization-accuracy-makeiset-theme-normalization.md)).
+Hints are added only for the genuinely confusable boundaries — `juomat` vs
+`oluet_siiderit` vs `maito_kylma`, `einekset` vs `liha_kala`, `pakasteet` vs
+`maito_kylma`, `kodinkoneet` vs `sahko_lvi` — plus `tilat_siisteys`, the one
+non-product "department" for premises/cleanliness/parking feedback; a
+self-explanatory label (`lastentarvikkeet`, `vaatteet_jalkineet`) gets none, to
+keep the rendered prompt lean.
 
 `rasismi` (Rasistinen palaute) names racist content per comment — flagged and
 KEPT, never dropped. Blunt racist vocabulary forces the category
@@ -37,6 +63,17 @@ it into emergent topics named by the model's free-text theme
 
 Severities and types are not overridden — retail inherits the core defaults
 (`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).
+
+**Sentiment** (`sentiments` + `typeSentiment`, [ADR-0030](../decisions/0030-sentiment-indicator-deterministic-from-type.md)):
+retail relabels the polarity set to Finnish (`positive`→Myönteinen,
+`negative`→Kielteinen, `neutral`→Neutraali) and declares the type→sentiment map
+explicitly (Kehu→positive, Valitus→negative, Ehdotus/Kysymys/Muu→neutral). The
+positive/negative indicator is derived from each item's `type` via this map —
+deterministic, no model call — and rendered as a badge per item plus a mix per
+theme and overall. An optional model-authored `sentiment` field also exists
+([ADR-0031](../decisions/0031-model-authored-sentiment-field-optional.md)) and
+would take precedence, but Poro-2-8B does not emit it, so the deterministic map
+is the active source.
 
 Output language (`language`): **`fi`** — retail's audience is Finnish only, so the
 report prose, direction labels, snapshot, and the desk/management frontends all

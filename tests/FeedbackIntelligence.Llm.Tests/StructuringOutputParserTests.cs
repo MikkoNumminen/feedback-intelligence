@@ -149,4 +149,48 @@ public class StructuringOutputParserTests
         Assert.Null(attempt.Structure);
         Assert.Contains(attempt.Violations, v => v.Contains("severity"));
     }
+
+    [Fact]
+    public void ValidSentiment_IsAccepted_AsOptionalSixthField()
+    {
+        // ADR-0031: sentiment is OPTIONAL — present and valid, it flows straight
+        // through onto the structure (lowercased/trimmed, like the other enums).
+        var raw =
+            """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi", "sentiment": "positive"}""";
+
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
+
+        Assert.NotNull(attempt.Structure);
+        Assert.Equal("positive", attempt.Structure!.Sentiment);
+    }
+
+    [Fact]
+    public void InvalidSentiment_IsSalvaged_NotAViolation()
+    {
+        // An invented sentiment value nulls the field and leaves a note — unlike an
+        // invented category/severity/type, it is NOT a violation, so the rest of the
+        // structure still comes through (ADR-0031's salvage, not a strict rejection).
+        var raw =
+            """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi", "sentiment": "iloinen"}""";
+
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
+
+        Assert.NotNull(attempt.Structure);
+        Assert.Null(attempt.Structure!.Sentiment);
+        Assert.Contains(attempt.Notes, n => n.Contains("sentiment"));
+    }
+
+    [Fact]
+    public void MissingSentiment_StructureStillNonNull_FiveFieldBackCompat()
+    {
+        // No "sentiment" key at all (the pre-ADR-0031 shape, or a model that never
+        // emits it) — absence is not a violation and not a note-worthy salvage.
+        var raw =
+            """{"category": "maito_kylma", "theme": "tuoreus", "severity": "high", "type": "complaint", "language": "fi"}""";
+
+        var attempt = StructuringOutputParser.Parse(raw, Retail);
+
+        Assert.NotNull(attempt.Structure);
+        Assert.Null(attempt.Structure!.Sentiment);
+    }
 }

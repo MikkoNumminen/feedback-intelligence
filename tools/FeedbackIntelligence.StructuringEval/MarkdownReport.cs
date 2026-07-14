@@ -60,6 +60,34 @@ public static class MarkdownReport
         }
         sb.AppendLine();
 
+        sb.AppendLine("## Theme-format advisories (non-fatal — ADR-0028)");
+        sb.AppendLine();
+        sb.AppendLine("Base-form / lowercase / plain-space compliance of the free-text theme. NOT schema violations.");
+        foreach (var model in eval.Candidates)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"### {Short(model)}");
+            var groups = records
+                .Where(r => r.Model == model)
+                .SelectMany(r => r.Validated.ThemeFormatWarnings)
+                .GroupBy(v => (v.Kind, v.Value))
+                .OrderByDescending(g => g.Count())
+                .ThenBy(g => g.Key.Kind, StringComparer.Ordinal)
+                .ToList();
+            if (groups.Count == 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("(none)");
+                continue;
+            }
+            sb.AppendLine();
+            sb.AppendLine("| kind | value | count |");
+            sb.AppendLine("|---|---|---|");
+            foreach (var g in groups)
+                sb.AppendLine($"| {g.Key.Kind} | {Escape(g.Key.Value)} | {g.Count()} |");
+        }
+        sb.AppendLine();
+
         sb.AppendLine("## Side by side (sensibility judgment)");
         sb.AppendLine();
         sb.AppendLine("Majority result over repetitions as category/severity/type, then theme of the first adherent repetition.");
@@ -84,6 +112,11 @@ public static class MarkdownReport
         AppendRow(sb, eval, records, "strict JSON rate", rs => Rate(rs.Count(r => r.Validated.Outcome == ParseOutcome.StrictJson), rs.Count));
         AppendRow(sb, eval, records, "parseable rate (incl. salvaged)", rs => Rate(rs.Count(r => r.Validated.Outcome != ParseOutcome.Unparseable), rs.Count));
         AppendRow(sb, eval, records, "schema-adherent rate (of all calls)", rs => Rate(rs.Count(r => r.Validated.SchemaAdherent), rs.Count));
+        AppendRow(sb, eval, records, "theme-format clean (of adherent)", rs =>
+        {
+            var adherent = rs.Where(r => r.Validated.SchemaAdherent).ToList();
+            return Rate(adherent.Count(r => r.Validated.ThemeFormatWarnings.Count == 0), adherent.Count);
+        });
         AppendRow(sb, eval, records, "consistency (items where all reps agree)", rs => Consistency(rs));
         AppendRow(sb, eval, records, "latency mean", rs => $"{rs.Average(r => r.LatencyMs):F0} ms");
         AppendRow(sb, eval, records, "latency p50", rs => $"{Percentile(rs.Select(r => (double)r.LatencyMs).ToList(), 0.5):F0} ms");

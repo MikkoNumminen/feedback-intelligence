@@ -90,7 +90,8 @@ public sealed class StructuringEvalRunner(
         promptTemplate = promptTemplate
             .Replace("{{categories}}", RenderJsonArray(descriptor.CategoryLabels.Keys), StringComparison.Ordinal)
             .Replace("{{severities}}", RenderJsonArray(descriptor.SeverityLabels.Keys), StringComparison.Ordinal)
-            .Replace("{{types}}", RenderJsonArray(descriptor.TypeLabels.Keys), StringComparison.Ordinal);
+            .Replace("{{types}}", RenderJsonArray(descriptor.TypeLabels.Keys), StringComparison.Ordinal)
+            .Replace("{{sentiments}}", RenderJsonArray(descriptor.SentimentLabels.Keys), StringComparison.Ordinal);
 
         if (!File.Exists(eval.InputPath))
         {

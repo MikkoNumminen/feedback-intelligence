@@ -38,3 +38,7 @@ these ADRs relocate that reasoning into durable records.
 | [0025](0025-same-origin-api-proxy.md) | Same-origin /api proxy on the static host (Chrome LNA; amends 0016/0023) | Accepted |
 | [0026](0026-categories-emergent-topics-live-summary.md) | Asiaton category, emergent topics, and the desk summary view | Accepted |
 | [0027](0027-racism-recognition-alert-lexicon.md) | Racist-comment recognition: a category, forced by a deterministic lexicon | Accepted |
+| [0028](0028-categorization-accuracy-makeiset-theme-normalization.md) | Categorization accuracy: `makeiset` department, disambiguating hints, normalized emergent-topic keys | Accepted |
+| [0029](0029-complete-retail-taxonomy-hypermarket.md) | Complete the retail department taxonomy to a full hybrid hypermarket (17 → 30) | Accepted |
+| [0030](0030-sentiment-indicator-deterministic-from-type.md) | Sentiment (positive/negative) indicator: deterministic from type now, model-authored later | Accepted |
+| [0031](0031-model-authored-sentiment-field-optional.md) | Model-authored sentiment as an optional 6th structuring field (Poro ignores it today; forward-compat seam) | Accepted |

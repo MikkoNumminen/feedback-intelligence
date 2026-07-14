@@ -24,6 +24,54 @@ publicly via Tailscale Funnel.
   a direct `ollama pull` hit repeated `tls: bad record MAC` network errors — a
   read-once copy, no ongoing coupling.
 
+### Cold-start `/health` — warm the model before you trust it
+
+`/health` runs a real 1-token completion against the structuring model under a
+10 s budget (`Ingest:HealthTimeoutSeconds`) and returns **`503
+{"status":"llm_unavailable"}` on ANY failure — including the benign one: a cold
+model.** After an API (re)start, or once Ollama has evicted Poro from VRAM on
+idle (its `keep_alive`), the first completion must load ~4.9 GB into VRAM; under
+GPU contention that first load can exceed the 10 s budget and 503 **even though
+Ollama is up and the model is pulled**. This is not a fault — the deterministic
+layer keeps serving (reports, keyword alerts, grouping, grounding all 200); only
+LLM-authored prose/nomination is missing and is honestly counted as
+`llmFallbackCount` on a fresh report.
+
+- **Remedy — warm the model.** `feedctl up` does this automatically. Manually:
+  `POST http://localhost:11434/api/generate` with
+  `{"model":"…Llama-Poro-2-8B…","prompt":"ping","stream":false,"keep_alive":"30m"}`,
+  then `/health` returns `ok`. Warming is **shared-GPU use — announce first**
+  (the hard rule above); confirm `mikkonumminendev` is absent from `docker ps`
+  before warming.
+- **Cold vs. down (the endpoint swallows the reason).** `/health` catches the
+  underlying exception into a generic 503, so distinguish out-of-band:
+  `GET :11434/api/tags` (lists models **without** loading one) answering 200
+  means Ollama is up and the 503 is a cold/contended GPU, not an outage.
+
+### Restarting from the working tree — the `bin` lock
+
+A running API holds an exclusive lock on its own
+`src/…Api/bin/Debug/net8.0/FeedbackIntelligence.Api.dll` (and feedctl on the Ctl
+exe). So `dotnet build`/`dotnet test` against the default output fails with
+`MSB3021`/`MSB3026` *copy* errors — these are **lock errors, not compile
+errors** (CoreCompile has already succeeded). Two consequences:
+
+- **To rebuild + restart:** stop the API process first, then rebuild and
+  relaunch. Blessed path is `feedctl down && feedctl up` (tracks the PID, warms
+  Poro, re-guards the shared GPU). If the API was started **outside** feedctl,
+  `.feedctl/api.pid` is stale — find the real owner of `:5088` with
+  `netstat -ano` before killing. A manual relaunch must pass the same args,
+  including `--Ingest:LiveDbPath=data/desk-live.db` for the desk live channel
+  (ADR-0024), and run with the working directory at `src/FeedbackIntelligence.Api`
+  so `appsettings.json` loads (domain/prompt paths resolve up to the repo root
+  independently). Verify after: `/schema` returns the expected category count and
+  `/health` is `ok`.
+- **To build/test WITHOUT stopping the API:** redirect output to a dir **inside**
+  the repo — `dotnet test <proj> -o .local/testout-x` (`.local/` is gitignored).
+  It must be inside the repo: the test harness locates the domain/prompt files by
+  walking up from the test assembly to the `.sln`, so a `%TEMP%`/`/tmp` output
+  dir makes every domain-loading test fail with "repo root not found".
+
 ## Reuse measured in the sibling RAG (`mikkonumminen.dev`)
 
 Ported rather than reinvented; each was measured there.

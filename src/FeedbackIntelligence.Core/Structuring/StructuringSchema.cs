@@ -22,4 +22,18 @@ public static class StructuringSchema
         "type",
         "language",
     };
+
+    /// <summary>The OPTIONAL sixth field (ADR-0031): a model-authored sentiment
+    /// key. Separate from <see cref="Fields"/> so its ABSENCE is never a
+    /// missing-field violation — the report falls back to the deterministic
+    /// type→sentiment map (ADR-0030) when it is not present.</summary>
+    public static readonly IReadOnlySet<string> OptionalFields = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "sentiment",
+    };
+
+    /// <summary>Every field name the schema recognizes (required + optional). A
+    /// field outside this set is a genuine extra field.</summary>
+    public static readonly IReadOnlySet<string> KnownFields =
+        new HashSet<string>(Fields.Concat(OptionalFields), StringComparer.Ordinal);
 }

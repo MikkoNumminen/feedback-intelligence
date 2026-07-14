@@ -19,4 +19,28 @@ public static class CoreDefaults
             ["complaint"] = "complaint", ["praise"] = "praise", ["suggestion"] = "suggestion",
             ["question"] = "question", ["other"] = "other",
         };
+
+    /// <summary>The sentiment (polarity) value set + display labels. A domain MAY
+    /// override to relabel (retail → Finnish) or extend, but if it omits them these
+    /// three apply. Kept minimal on purpose — a positive/negative indicator with an
+    /// explicit neutral, not a fine-grained scale.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Sentiments =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["positive"] = "positive", ["negative"] = "negative", ["neutral"] = "neutral",
+        };
+
+    /// <summary>Default deterministic map from a feedback <c>type</c> to its
+    /// sentiment: praise reads positive, a complaint negative, everything else
+    /// neutral (a question or a constructive suggestion is not a polarity signal).
+    /// A domain MAY override; if it omits <c>typeSentiment</c>, the entries whose
+    /// type the domain actually declares apply. This is the source of the
+    /// deterministic indicator until a model-authored sentiment field lands
+    /// (ADR-0030).</summary>
+    public static readonly IReadOnlyDictionary<string, string> TypeSentiment =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["complaint"] = "negative", ["praise"] = "positive", ["suggestion"] = "neutral",
+            ["question"] = "neutral", ["other"] = "neutral",
+        };
 }

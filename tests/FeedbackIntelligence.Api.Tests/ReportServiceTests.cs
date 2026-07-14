@@ -71,6 +71,11 @@ public class ReportServiceTests : IDisposable
         new FeedbackStructure(category, theme, severity, "complaint", "fi"),
         false, false, [], [], null);
 
+    private static StoredFeedback ItemOfType(string id, string timestamp, string type, string severity = "low") => new(
+        id, "desk", $"palaute {id}", timestamp, timestamp,
+        new FeedbackStructure("maito_kylma", "tuoreus", severity, type, "fi"),
+        false, false, [], [], null);
+
     [Fact]
     public async Task SummaryMode_CatchAllCategory_SplitsIntoEmergentTopicGroups_AndSynthesizesOneOverall()
     {
@@ -113,6 +118,41 @@ public class ReportServiceTests : IDisposable
         Assert.Equal("Yleiskatsaus", report.Overall.Title);
         Assert.Equal("Asiakkaat raportoivat useista aiheista.", report.Overall.Narrative);
         Assert.Equal(1, llm.Calls); // exactly one synthesis call: the whole-window Overall (nominations disabled)
+    }
+
+    [Fact]
+    public async Task SummaryMode_EmergentTopicKey_MergesUnderscoreAndWhitespaceVariants_WithCleanTitle()
+    {
+        // ADR-0028: the emergent-topic key normalizes separators, so the structuring
+        // model's spelling drift for ONE topic ("tuotteiden_laatu" / "tuotteiden
+        // laatu" / "tuotteiden  laatu") collapses into a single group instead of
+        // fragmenting into three thin ones. The displayed title shows plain spaces,
+        // never an underscore or a doubled space. A genuinely different theme
+        // ("hinnoittelu") stays its own topic — the normalization only fuses
+        // separator/case variants, it never over-merges. (Case-folding into the
+        // title is already covered by the "Palvelu" case above.)
+        await _store.InsertAsync(ItemIn("laatu-us", "2026-06-19T10:00:00.0000000+00:00", "muu", "tuotteiden_laatu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("laatu-sp", "2026-06-20T10:00:00.0000000+00:00", "muu", "tuotteiden laatu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("laatu-dbl", "2026-06-21T10:00:00.0000000+00:00", "muu", "tuotteiden  laatu"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("hinta-1", "2026-06-22T10:00:00.0000000+00:00", "muu", "hinnoittelu"), CancellationToken.None);
+
+        var llm = new CountingScriptedChatClient(
+            """{"title": "Yleiskatsaus", "narrative": "Asiakkaat raportoivat useista aiheista.", "citedIds": ["laatu-us"]}""");
+
+        var report = await CreateService(llm)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
+
+        Assert.Equal(2, report.Themes.Count); // three laatu variants merged into one; hinnoittelu separate
+
+        var laatu = report.Themes.Single(t => t.Count == 3);
+        Assert.Equal("muu", laatu.Category);
+        Assert.True(laatu.IsEmergentTopic);
+        Assert.Equal("tuotteiden laatu", laatu.Title); // underscore + doubled space normalized to plain spaces
+        Assert.DoesNotContain("_", laatu.Title);
+        Assert.DoesNotContain("  ", laatu.Title);
+
+        var hinta = report.Themes.Single(t => t.Title == "hinnoittelu");
+        Assert.Equal(1, hinta.Count); // distinct topic never absorbed by the merge
     }
 
     [Fact]
@@ -492,6 +532,62 @@ public class ReportServiceTests : IDisposable
         var third = await service.GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
         Assert.NotSame(first, third);
         Assert.True(llm.Calls > callsBeforeInvalidate);
+    }
+
+    [Fact]
+    public async Task Sentiment_DerivedFromType_OnSourceItems_Theme_AndReport()
+    {
+        // ADR-0030: sentiment is deterministic, derived per-item from its `type`
+        // via the active domain's typeSentiment (retail: complaint→negative,
+        // praise→positive, suggestion/question→neutral). All items share one
+        // category so they land in a single theme, keeping the count check simple.
+        const string ts = "2026-06-29T10:00:00.0000000+00:00";
+        await _store.InsertAsync(ItemOfType("praise-1", ts, "praise"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("praise-2", ts, "praise"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("complaint-1", ts, "complaint"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("complaint-2", ts, "complaint"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("complaint-3", ts, "complaint"), CancellationToken.None);
+        await _store.InsertAsync(ItemOfType("question-1", ts, "question"), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia"))
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.Equal("positive", theme.Sources.Single(s => s.FeedbackId == "praise-1").Sentiment);
+        Assert.Equal("positive", theme.Sources.Single(s => s.FeedbackId == "praise-2").Sentiment);
+        Assert.Equal("negative", theme.Sources.Single(s => s.FeedbackId == "complaint-1").Sentiment);
+        Assert.Equal("negative", theme.Sources.Single(s => s.FeedbackId == "complaint-2").Sentiment);
+        Assert.Equal("negative", theme.Sources.Single(s => s.FeedbackId == "complaint-3").Sentiment);
+        Assert.Equal("neutral", theme.Sources.Single(s => s.FeedbackId == "question-1").Sentiment);
+
+        Assert.NotNull(theme.SentimentCounts);
+        Assert.Equal(2, theme.SentimentCounts!["positive"]);
+        Assert.Equal(3, theme.SentimentCounts["negative"]);
+        Assert.Equal(1, theme.SentimentCounts["neutral"]);
+
+        Assert.NotNull(report.SentimentCounts);
+        Assert.Equal(2, report.SentimentCounts!["positive"]);
+        Assert.Equal(3, report.SentimentCounts["negative"]);
+        Assert.Equal(1, report.SentimentCounts["neutral"]);
+    }
+
+    [Fact]
+    public async Task Sentiment_ModelValue_WinsOverTypeDerivedMap()
+    {
+        // ADR-0031: a model-authored sentiment on the structure overrides the
+        // deterministic type→sentiment map (ADR-0030) — here type is "complaint"
+        // (which alone would map to "negative"), but the model said "positive".
+        const string ts = "2026-06-29T10:00:00.0000000+00:00";
+        await _store.InsertAsync(new StoredFeedback(
+            "override-1", "desk", "palaute", ts, ts,
+            new FeedbackStructure("maito_kylma", "tuoreus", "low", "complaint", "fi", "positive"),
+            false, false, [], [], null), CancellationToken.None);
+
+        var report = await CreateService(new ScriptedChatClient("ei-jsonia"))
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var theme = Assert.Single(report.Themes);
+        Assert.Equal("positive", theme.Sources.Single(s => s.FeedbackId == "override-1").Sentiment);
     }
 
     [Fact]

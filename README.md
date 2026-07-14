@@ -10,7 +10,8 @@ layer** in front of an LLM that structures messy input and reads themes/trends
 out of free text, and gives management a grounded, live situational view —
 alerts on top, themes and trends below, every claim clickable down to the exact
 feedback items behind it. Retail is the first application, carried in a data-only
-domain module; it is not the engine's identity. A second `domains/game/` module
+domain module — a full hybrid grocery-and-hardware taxonomy of 30 departments; it
+is not the engine's identity. A second `domains/game/` module
 proves a new domain is a new folder with zero core edits — switch with
 `--Domain:Active=game` (see [docs/domains.md](docs/domains.md),
 [ADR-0007](docs/decisions/0007-domain-agnostic-core.md),
@@ -43,6 +44,21 @@ be rule-coded:
 
 The full four-round elimination — the ideas rejected and why — is recorded in
 [ADR-0006](docs/decisions/0006-ai-in-exactly-two-places.md).
+
+## Sentiment without a sentiment model
+
+The management and desk views tag every item positive / negative / neutral and
+show the polarity mix per theme and over the whole window — but nothing new is
+asked of a model to earn it. Sentiment is **derived from the `type` the
+structuring model already assigns**: praise reads positive, a complaint
+negative, a question or a plain suggestion neutral. The indicator is
+deterministic arithmetic over an existing field, not a second guess
+([ADR-0030](docs/decisions/0030-sentiment-indicator-deterministic-from-type.md)).
+An optional model-authored `sentiment` field is wired in behind the same seam
+for a structuring model that can produce one — but Poro-2-8B does not emit it, so
+the type-derived value stays the active source, said plainly instead of dressed
+up as a model feature
+([ADR-0031](docs/decisions/0031-model-authored-sentiment-field-optional.md)).
 
 ## Synthetic data as a GDPR decision
 

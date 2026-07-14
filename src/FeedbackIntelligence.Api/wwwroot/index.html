@@ -37,6 +37,11 @@
   .sev-medium { background:#d97706; } .sev-high { background:#ef5350; } .sev-critical { background:#a02c2c; }
   .flagwarn { color:#8a5a00; font-weight:600; }
   .flagtag { font-size:.72rem; color:#8a5a00; border:1px solid #d9b877; border-radius:.5rem; padding:0 .3rem; margin-left:.35rem; }
+  /* Sentiment (polarity) badge — ADR-0030 */
+  .snt { display:inline-block; border-radius:.4rem; padding:.02rem .4rem; font-size:.72rem; margin-right:.3rem; }
+  .snt-positive { background:#e6f4ea; color:#1e7e34; }
+  .snt-negative { background:#fdecea; color:#b3261e; }
+  .snt-neutral { background:#eef1f4; color:#66707d; }
   dialog { border:1px solid var(--line); border-radius:.7rem; max-width:42rem; width:92vw; padding:1rem; }
   dialog::backdrop { background:rgba(20,25,30,.45); }
   #status { min-height:1.2rem; font-size:.9rem; color:var(--mut); }
@@ -96,7 +101,7 @@ const STR = {
     dropped: "perustelematonta väitettä hylätty", actionDropped: "ohjaileva kooste hylätty", fallbacks: "koostetta ilman kielimallia",
     alerts: "Hälytykset", noAlerts: "Ei hälytyksiä aikavälillä.", keyword: "sanahaku", model: "kielimalli",
     themes: "Teemat ja trendit", trend: "suunta", autoSummary: "automaattinen kooste",
-    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma",
+    chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma", chartSentiment: "Tunnelmajakauma",
     tileEntries: "Palautteita", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
     flaggedTheme: "tarkistettavana", flaggedHint: "mahdollinen manipulointi — mukana laskennassa", flaggedItem: "tarkistettava",
     snapShown: "Palvelin ei ollut tavoitettavissa — näytetään viimeisin tallennettu tilannekuva.",
@@ -115,7 +120,7 @@ const STR = {
     dropped: "ungrounded claim(s) dropped", actionDropped: "directive summary(ies) dropped", fallbacks: "summary(ies) without the model",
     alerts: "Alerts", noAlerts: "No alerts in the window.", keyword: "keyword", model: "model",
     themes: "Themes & trends", trend: "trend", autoSummary: "automated summary",
-    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution",
+    chartCategories: "Feedback by topic", chartSeverity: "Severity distribution", chartSentiment: "Sentiment distribution",
     tileEntries: "Items", tileFlagged: "To review", tileTrend: "Trend",
     flaggedTheme: "to review", flaggedHint: "possible manipulation — still counted", flaggedItem: "review",
     snapShown: "The server was unreachable — showing the last saved snapshot.",
@@ -269,10 +274,15 @@ function render(report, live) {
       directionLabel: report.overall?.directionLabel,
       declaredSeverities: schema?.severities,
       sevLabel: k => severityMeta(k).label,
+      sentimentCounts: report.sentimentCounts,
+      declaredSentiments: schema?.sentiments,
+      sentLabel,
       strings: { entriesTile: L.tileEntries, flaggedTile: L.tileFlagged, trendTile: L.tileTrend,
-                 chartCategories: L.chartCategories, chartSeverity: L.chartSeverity },
+                 chartCategories: L.chartCategories, chartSeverity: L.chartSeverity, chartSentiment: L.chartSentiment },
     });
 
+  // Whole-window sentiment mix is already shown by the sentiment-distribution
+  // chart above (ADR-0030); per-theme mixes appear on each card below.
   root.appendChild(node("h2", null, [`${L.themes} (${report.themes.length})`]));
   for (const theme of report.themes) {
     const card = node("div", "card", [
@@ -281,6 +291,9 @@ function render(report, live) {
         (theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
       node("p", null, [theme.narrative]),
     ]);
+    // Per-theme sentiment mix (ADR-0030).
+    const themeMix = sentPills(theme.sentimentCounts);
+    if (themeMix.length) card.appendChild(node("div", "muted", themeMix));
     // A2: a possibly-manipulated (needs_review) item is NOT excluded from the
     // count/trend (that would be exploitable), so warn it's in the mix here.
     if (theme.flaggedCount > 0)
@@ -301,6 +314,22 @@ function severityMeta(sev) {
   return { label, cls };
 }
 
+// Sentiment (ADR-0030): label + CSS class for one item's polarity, mirroring
+// severityMeta so the badge palette stays consistent with the rest of the page.
+const sentLabel = key => (schema && schema.sentimentLabels && schema.sentimentLabels[key]) || key;
+function sentimentMeta(key) {
+  return key ? { label: sentLabel(key), cls: "snt-" + key } : null;
+}
+// Colored pills for a {sentimentKey: count} mix, in the domain's declared order.
+function sentPills(counts) {
+  if (!counts) return [];
+  const order = (schema && schema.sentiments) || Object.keys(counts);
+  const out = [];
+  for (const key of order)
+    if (counts[key] > 0) out.push(node("span", "snt snt-" + key, [`${sentLabel(key)} ${counts[key]}`]));
+  return out;
+}
+
 // One click on a theme opens ALL its source messages. The messages are embedded
 // in the report, so this works live AND from a snapshot (no per-item fetch).
 function openMessages(theme) {
@@ -315,6 +344,9 @@ function openMessages(theme) {
       node("span", ("sevdot " + sm.cls).trim(), []),
       node("span", null, [`${s.source} · ${short(s.timestamp)} · ${sm.label}`]),
     ];
+    // Sentiment (polarity) badge per message (ADR-0030).
+    const stm = sentimentMeta(s.sentiment);
+    if (stm) metaKids.push(node("span", "snt " + stm.cls, [stm.label]));
     if (s.needsReview) metaKids.push(node("span", "flagtag", [`⚠ ${L.flaggedItem}`]));
     // Deterministic alert-lexicon recognition per message (ADR-0027).
     if (s.alertCategories && s.alertCategories.length)

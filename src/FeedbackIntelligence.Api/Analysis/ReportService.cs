@@ -174,6 +174,9 @@ public sealed partial class ReportService(
         var lang = activeDomain.Descriptor.Language;
         var themes = new List<ReportTheme>();
         var structured = items.Where(i => i.Structure is not null).ToList();
+        // Whole-window sentiment mix (ADR-0030), reused for the report-level
+        // indicator and the live-summary Overall card.
+        var reportSentiment = SentimentCounts(structured);
         // Make the severity-rank fallback non-silent: a domain whose severity values
         // fall outside the built-in rank map ranks every item as "medium", which
         // disables worsening-trend detection. Surface it once per report rather than
@@ -230,11 +233,18 @@ public sealed partial class ReportService(
                 return -1;
             }
             foreach (var group in structured
-                         .GroupBy(i => catchAll is not null
-                             && i.Structure!.Category == catchAll
-                             && !string.IsNullOrWhiteSpace(i.Structure!.Theme)
-                                 ? (Category: catchAll, TopicKey: i.Structure!.Theme.Trim().ToLowerInvariant())
-                                 : (Category: i.Structure!.Category, TopicKey: (string?)null))
+                         .GroupBy(i =>
+                         {
+                             // Emergent topic only when this is the catch-all AND the
+                             // theme normalizes to a non-empty key (ADR-0028); anything
+                             // else groups by its own category.
+                             var key = catchAll is not null && i.Structure!.Category == catchAll
+                                 ? ThemeGroupKey(i.Structure!.Theme)
+                                 : "";
+                             return key.Length > 0
+                                 ? (Category: catchAll!, TopicKey: (string?)key)
+                                 : (Category: i.Structure!.Category, TopicKey: (string?)null);
+                         })
                          // Demoted categories (retail's "rasismi", "asiaton") sort
                          // LAST no matter their count — hostile content must not
                          // lead — in their declared order among themselves.
@@ -245,9 +255,10 @@ public sealed partial class ReportService(
             {
                 var groupItems = group.ToList();
                 var isTopic = group.Key.TopicKey is not null;
-                // Emergent topic display keeps the first item's original theme casing.
+                // Emergent topic display keeps the first item's theme casing, with
+                // separators normalized to match how the group key was formed.
                 var title = isTopic
-                    ? groupItems[0].Structure!.Theme.Trim()
+                    ? CleanTheme(groupItems[0].Structure!.Theme)
                     : FallbackTitle(group.Key.Category, groupItems);
                 var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
                 var directionLabel = ReportText.DirectionLabel(direction, lang);
@@ -275,11 +286,11 @@ public sealed partial class ReportService(
             overall = synthesized is { } ok
                 ? new ReportTheme("overall", ok.Title, ok.Narrative, structured.Count, overallDirection,
                     overallDirectionLabel, structured.Select(i => i.Id).ToList(), true, [],
-                    structured.Count(i => i.NeedsReview))
+                    structured.Count(i => i.NeedsReview), IsEmergentTopic: false, SentimentCounts: reportSentiment)
                 : new ReportTheme("overall", FallbackTitle(scope, structured),
                     FallbackNarrative(structured, overallDirectionLabel, lang), structured.Count, overallDirection,
                     overallDirectionLabel, structured.Select(i => i.Id).ToList(), false, [],
-                    structured.Count(i => i.NeedsReview));
+                    structured.Count(i => i.NeedsReview), IsEmergentTopic: false, SentimentCounts: reportSentiment);
         }
 
         var report = new ManagementReport(
@@ -294,7 +305,8 @@ public sealed partial class ReportService(
             state.LlmFallbacks,
             lang,
             state.ActionDropped,
-            overall);
+            overall,
+            reportSentiment);
 
         // Snapshot persistence moved to GenerateAsync (opt-in; applies on cache hit too).
         return report;
@@ -413,12 +425,12 @@ public sealed partial class ReportService(
     /// ADR-0021 A2 flagged count: flagged items stay IN the group and trend,
     /// excluding them would be exploitable, but the count surfaces so the view
     /// can warn) can never drift between the two.</summary>
-    private static ReportTheme BuildTheme(
+    private ReportTheme BuildTheme(
         string category, string title, string narrative, List<StoredFeedback> groupItems,
         string direction, string directionLabel, bool fromLlm, bool isEmergentTopic = false) =>
         new(category, title, narrative, groupItems.Count, direction, directionLabel,
             groupItems.Select(i => i.Id).ToList(), fromLlm, BuildSources(groupItems),
-            groupItems.Count(i => i.NeedsReview), isEmergentTopic);
+            groupItems.Count(i => i.NeedsReview), isEmergentTopic, SentimentCounts(groupItems));
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
         string category, IReadOnlyList<StoredFeedback> groupItems, string directionLabel, GenState state, CancellationToken ct)
@@ -683,7 +695,7 @@ public sealed partial class ReportService(
     /// evidence in one click (live OR from a snapshot, no per-item fetch). Ordered
     /// most-severe-then-most-recent first so the serious voices lead; Text is the
     /// full stored message (length-capped at ingest).</summary>
-    private static List<ReportSourceItem> BuildSources(IReadOnlyList<StoredFeedback> items) =>
+    private List<ReportSourceItem> BuildSources(IReadOnlyList<StoredFeedback> items) =>
         items
             .OrderByDescending(i => SeverityRank(i.Structure?.Severity))
             .ThenByDescending(i => i.Timestamp, StringComparer.Ordinal)
@@ -691,8 +703,27 @@ public sealed partial class ReportService(
                 i.Id, i.Source, i.Timestamp, i.Text, i.Structure?.Severity ?? "unknown", i.NeedsReview,
                 i.Alerts.Count > 0
                     ? Core.Alerts.AlertMatcher.DistinctCategories(i.Alerts)
-                    : null))
+                    : null,
+                SentimentOf(i)))
             .ToList();
+
+    /// <summary>An item's sentiment KEY: the model-authored value when present
+    /// (ADR-0031, validated at ingest), else the deterministic type→sentiment map
+    /// (ADR-0030). The single seam every caller asks through.</summary>
+    private string? SentimentOf(StoredFeedback item) =>
+        item.Structure is { } s ? (s.Sentiment ?? activeDomain.Descriptor.SentimentOf(s.Type)) : null;
+
+    /// <summary>Sentiment mix over a set of items: sentiment key → count, with
+    /// zero-count keys omitted. Empty when the domain declares no sentiment or no
+    /// item carries a polarity-bearing type (ADR-0030).</summary>
+    private IReadOnlyDictionary<string, int> SentimentCounts(IReadOnlyList<StoredFeedback> items)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var item in items)
+            if (SentimentOf(item) is { } key)
+                counts[key] = counts.GetValueOrDefault(key) + 1;
+        return counts;
+    }
 
     private static int SeverityRank(string? severity) => RankOf(severity);
 
@@ -704,6 +735,26 @@ public sealed partial class ReportService(
             .First().Key;
         return $"{category}: {topTheme}";
     }
+
+    /// <summary>Normalize a free-text theme for emergent-topic DISPLAY (ADR-0028):
+    /// treat underscores as word separators and collapse whitespace runs, so
+    /// "tuotteiden_laatu" and "tuotteiden  laatu" render identically. Casing is
+    /// preserved. Returns empty when the theme was only separators.</summary>
+    private static string CleanTheme(string? theme) =>
+        string.IsNullOrEmpty(theme)
+            ? ""
+            : DoubledSpaces().Replace(theme.Replace('_', ' ').Trim(), " ").Trim();
+
+    /// <summary>The GROUPING key for emergent topics: <see cref="CleanTheme"/>
+    /// lowercased. Collapses the exact spelling variants the structuring prompt
+    /// asks the model to avoid — underscores-as-separators, stray casing, doubled
+    /// spaces — into one topic for when the model drifts anyway. Finnish
+    /// morphology (laatu/laatua) is deliberately NOT merged: that needs a
+    /// lemmatizer, and an occasional near-duplicate topic is acceptable while
+    /// over-merging two genuinely distinct topics is not. Empty (theme was only
+    /// separators) routes the item to its category bucket, not a nameless
+    /// topic.</summary>
+    private static string ThemeGroupKey(string? theme) => CleanTheme(theme).ToLowerInvariant();
 
     private string FallbackNarrative(IReadOnlyList<StoredFeedback> groupItems, string directionLabel, string language)
     {
@@ -733,7 +784,7 @@ public sealed partial class ReportService(
             // Accepted — a snapshot is a best-effort offline fallback, self-heals on the
             // next report, and both readers tolerate a one-generation-old file.
             await WriteAtomicAsync(Path.Combine(dir, "report-latest.json"), JsonSerializer.Serialize(report, Json), ct);
-            await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report, activeDomain.Descriptor.Language), ct);
+            await WriteAtomicAsync(Path.Combine(dir, "report-latest.html"), SnapshotHtml.Render(report, activeDomain.Descriptor.Language, activeDomain.Descriptor.SentimentLabels), ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
