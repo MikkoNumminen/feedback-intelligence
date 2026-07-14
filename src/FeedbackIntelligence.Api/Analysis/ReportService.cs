@@ -107,8 +107,17 @@ public sealed partial class ReportService(
         };
 
         // --- Layer 1: deterministic alerts, always present ---
+        // Operational alerts only (ADR-0033): a Hälytys is for retail urgency
+        // (safety/injury, payment, legal-threat). An alert whose hits are ALL in
+        // demoted categories (pure conduct, e.g. rasismi) is NOT surfaced here — that
+        // content stays recognized via its category, its ⚑ per-item tag, and its
+        // count, and is shown in the moderation view, never as an operational alert
+        // (amends ADR-0027). A MIXED hit (also injury_safety/payment/legal_threat)
+        // keeps its operational signal. LLM safety nominations (below) are always
+        // operational by construction.
+        var demotedCats = activeDomain.Descriptor.DemotedCategories;
         var alerts = items
-            .Where(i => i.Alerts.Count > 0)
+            .Where(i => i.Alerts.Count > 0 && i.Alerts.Any(h => !demotedCats.Contains(h.Category)))
             .OrderByDescending(i => i.Timestamp, StringComparer.Ordinal)
             .Select(i => new ReportAlert(i.Id, i.Source, i.Timestamp, Excerpt(i.Text), i.Text, i.Alerts, null))
             .ToList();

@@ -59,6 +59,10 @@
   .snt-negative { background:#fdecea; color:#b3261e; }
   .snt-neutral { background:#eef1f4; color:#66707d; }
   .seg-items .snt { margin-left:.35rem; margin-right:0; }
+  /* Moderation view: collapsed non-substantive content (ADR-0033) */
+  .seg-moderation { margin-top:1.1rem; border-top:1px solid var(--line); padding-top:.3rem; }
+  .seg-moderation > summary { cursor:pointer; font-weight:600; color:var(--mut); font-size:.9rem; padding:.45rem 0; }
+  .seg-moderation[open] > summary { color:var(--ink); }
 </style>
 </head>
 <body>
@@ -147,6 +151,7 @@ const STR = {
     summaryFailed: "Yhteenveto ei päivittynyt — kirjaukset näkyvät alla.",
     chartCategories: "Palautteet aiheittain", chartSeverity: "Vakavuusjakauma", chartSentiment: "Tunnelmajakauma",
     tileEntries: "Kirjauksia", tileFlagged: "Tarkistettavana", tileTrend: "Suunta",
+    moderationHeading: "Moderoitava sisältö",
   },
   en: {
     htmlLang: "en", locale: "en-GB", pageTitle: "Feedback — desk entry",
@@ -180,6 +185,7 @@ const STR = {
     summaryFailed: "The summary did not refresh — entries are shown below.",
     chartCategories: "Feedback by topic", chartSeverity: "Severity distribution", chartSentiment: "Sentiment distribution",
     tileEntries: "Entries", tileFlagged: "To review", tileTrend: "Trend",
+    moderationHeading: "Content to moderate",
   },
 };
 
@@ -501,6 +507,18 @@ function renderSection(body, section) {
   body.appendChild(box);
 }
 
+// The non-substantive (unrated) sections collapse into one bottom disclosure
+// (ADR-0033): the count is always visible; the content stays behind a click, so
+// hostile/off-topic material never leads the page.
+function renderModeration(body, moderated) {
+  if (!moderated.length) return;
+  const total = moderated.reduce((n, s) => n + s.count, 0);
+  const box = node("details", "seg-moderation");
+  box.appendChild(node("summary", null, `${L.moderationHeading} (${total})`));
+  for (const section of moderated) renderSection(box, section);
+  body.appendChild(box);
+}
+
 function renderTotals(body, total, unstructured) {
   let totalLine = `${total} ${L.segmentTotal}`;
   if (unstructured > 0)
@@ -552,23 +570,23 @@ function renderSegment(report) {
     sentimentCounts: theme.sentimentCounts,
     unrated: theme.unrated,
   }));
+  const ratedSections = sections.filter(s => !s.unrated);
+  const moderatedSections = sections.filter(s => s.unrated);
   const sevCounts = {};
-  for (const section of sections) {
-    if (section.unrated) continue; // no severity for demoted/non-substantive categories (ADR-0032)
+  for (const section of ratedSections)
     for (const item of section.items)
       sevCounts[item.severity] = (sevCounts[item.severity] || 0) + 1;
-  }
-  // Charts cover STRUCTURED items only: the entries tile and the category bar
-  // count all of them (the unstructured remainder is on the totals line above,
-  // never absorbed into a mismatching KPI). The SEVERITY bar and the "severe"
-  // tile intentionally exclude unrated (demoted) items — those carry no severity
-  // (ADR-0032) — so that distribution is over rated feedback only.
-  renderChartLayer(body, sections, sevCounts,
-    report.totalItems - (report.structureFailedCount || 0),
+  // Full separation (ADR-0033): the category chart, the entries tile, and the
+  // inline sections show RATED feedback only; the non-substantive content lives in
+  // the collapsed moderation disclosure at the bottom. (Severity + sentiment
+  // already exclude unrated per ADR-0032.)
+  const ratedCount = ratedSections.reduce((n, s) => n + s.count, 0);
+  renderChartLayer(body, ratedSections, sevCounts, ratedCount,
     report.overall?.directionLabel, report.sentimentCounts);
 
-  for (const section of sections)
+  for (const section of ratedSections)
     renderSection(body, section);
+  renderModeration(body, moderatedSections);
 }
 
 // ONE adapter for both render phases: identical strings and label chain so
@@ -638,9 +656,15 @@ function renderQuick(items) {
     (demoted.indexOf(a.category) - demoted.indexOf(b.category))
     || (b.count - a.count)
     || (a.category < b.category ? -1 : a.category > b.category ? 1 : 0));
-  renderChartLayer(body, sections, sevCounts, structured.length, null, sentCounts);
-  for (const section of sections)
+  // Full separation (ADR-0033): rated feedback in the chart + inline; the
+  // non-substantive groups collapse into the bottom moderation disclosure.
+  const ratedSections = sections.filter(s => !s.unrated);
+  const moderatedSections = sections.filter(s => s.unrated);
+  const ratedCount = ratedSections.reduce((n, s) => n + s.count, 0);
+  renderChartLayer(body, ratedSections, sevCounts, ratedCount, null, sentCounts);
+  for (const section of ratedSections)
     renderSection(body, section);
+  renderModeration(body, moderatedSections);
 }
 
 async function loadSegment() {

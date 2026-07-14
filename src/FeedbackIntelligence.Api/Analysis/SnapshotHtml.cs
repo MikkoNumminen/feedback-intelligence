@@ -51,37 +51,59 @@ public static class SnapshotHtml
                 $"<div class=\"muted\">{E(alert.Source)} · {E(alert.Timestamp)} · {origin}</div></div>");
         }
 
-        sb.AppendLine($"<h2>{E(t.ThemesHeading)} ({report.Themes.Count})</h2>");
-        foreach (var theme in report.Themes)
+        // Rated themes inline; the non-substantive (unrated) ones go into a
+        // collapsed moderation section at the bottom (ADR-0033), so the shared link
+        // is not led by hostile content — recognized via the count, not front-loaded.
+        var ratedThemes = report.Themes.Where(x => !x.Unrated).ToList();
+        var moderatedThemes = report.Themes.Where(x => x.Unrated).ToList();
+
+        sb.AppendLine($"<h2>{E(t.ThemesHeading)} ({ratedThemes.Count})</h2>");
+        foreach (var theme in ratedThemes)
+            AppendThemeCard(sb, theme, t, labels);
+
+        if (moderatedThemes.Count > 0)
         {
-            sb.Append($"<div class=\"card\"><strong>{E(theme.Title)}</strong>");
-            sb.Append($"<div class=\"muted\">{E(theme.Category)} · {theme.Count} {E(t.ItemsWord)} · {E(t.TrendWord)}: {E(theme.DirectionLabel)}</div>");
-            var themePills = SentPills(theme.SentimentCounts, labels);
-            if (themePills.Length > 0)
-                sb.Append($"<div>{themePills}</div>");
-            // A2: a flagged (possibly manipulated) item stays counted but its presence
-            // is surfaced here too, so the shared-link snapshot is not silent.
-            if (theme.FlaggedCount > 0)
-                sb.Append($"<div class=\"flag\">⚠ {theme.FlaggedCount} {E(t.Flagged)}</div>");
-            sb.Append($"<p>{E(theme.Narrative)}</p>");
-            if (theme.Sources.Count > 0)
-            {
-                sb.Append($"<details><summary>{theme.Sources.Count} {E(t.ItemsWord)}</summary>");
-                foreach (var s in theme.Sources)
-                {
-                    // Unrated (demoted) themes show no severity or sentiment — the
-                    // category is the signal (ADR-0032). Sentiment is already null.
-                    var sev = theme.Unrated ? "" : $" · {E(s.Severity)}";
-                    sb.Append($"<div class=\"src\">{E(s.Text)}<div class=\"muted\">{E(s.Source)} · {E(s.Timestamp)}{sev}{SentBadge(s.Sentiment, labels)}" +
-                        (s.NeedsReview ? $" · <span class=\"flag\">⚠ {E(t.FlaggedItem)}</span>" : "") + "</div></div>");
-                }
-                sb.Append("</details>");
-            }
-            sb.AppendLine("</div>");
+            var moderatedCount = moderatedThemes.Sum(x => x.Count);
+            sb.AppendLine($"<details><summary><strong>{E(t.ModerationHeading)} ({moderatedCount})</strong></summary>");
+            foreach (var theme in moderatedThemes)
+                AppendThemeCard(sb, theme, t, labels);
+            sb.AppendLine("</details>");
         }
 
         sb.AppendLine("</body></html>");
         return sb.ToString();
+    }
+
+    /// <summary>One theme card — title, meta, sentiment mix, flag warning,
+    /// narrative, and the collapsible source list. Shared by the rated section and
+    /// the collapsed moderation section (ADR-0033).</summary>
+    private static void AppendThemeCard(
+        StringBuilder sb, ReportTheme theme, ReportText.SnapshotLabels t, IReadOnlyDictionary<string, string> labels)
+    {
+        sb.Append($"<div class=\"card\"><strong>{E(theme.Title)}</strong>");
+        sb.Append($"<div class=\"muted\">{E(theme.Category)} · {theme.Count} {E(t.ItemsWord)} · {E(t.TrendWord)}: {E(theme.DirectionLabel)}</div>");
+        var themePills = SentPills(theme.SentimentCounts, labels);
+        if (themePills.Length > 0)
+            sb.Append($"<div>{themePills}</div>");
+        // A2: a flagged (possibly manipulated) item stays counted but its presence
+        // is surfaced here too, so the shared-link snapshot is not silent.
+        if (theme.FlaggedCount > 0)
+            sb.Append($"<div class=\"flag\">⚠ {theme.FlaggedCount} {E(t.Flagged)}</div>");
+        sb.Append($"<p>{E(theme.Narrative)}</p>");
+        if (theme.Sources.Count > 0)
+        {
+            sb.Append($"<details><summary>{theme.Sources.Count} {E(t.ItemsWord)}</summary>");
+            foreach (var s in theme.Sources)
+            {
+                // Unrated (demoted) themes show no severity or sentiment — the
+                // category is the signal (ADR-0032). Sentiment is already null.
+                var sev = theme.Unrated ? "" : $" · {E(s.Severity)}";
+                sb.Append($"<div class=\"src\">{E(s.Text)}<div class=\"muted\">{E(s.Source)} · {E(s.Timestamp)}{sev}{SentBadge(s.Sentiment, labels)}" +
+                    (s.NeedsReview ? $" · <span class=\"flag\">⚠ {E(t.FlaggedItem)}</span>" : "") + "</div></div>");
+            }
+            sb.Append("</details>");
+        }
+        sb.AppendLine("</div>");
     }
 
     /// <summary>Sentiment (polarity) mix as colored pills (ADR-0030), in the

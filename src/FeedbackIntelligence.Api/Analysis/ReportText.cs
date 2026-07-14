@@ -69,19 +69,23 @@ internal static class ReportText
         string ThemesHeading, string ItemsWord, string TrendWord,
         // A2 report-surface visibility on the snapshot (shared-link fallback):
         // Flagged = per-theme warning, FlaggedItem = per-message tag.
-        string Flagged, string FlaggedItem);
+        string Flagged, string FlaggedItem,
+        // ADR-0033: heading for the collapsed non-substantive (rasismi/asiaton) section.
+        string ModerationHeading);
 
     private static readonly SnapshotLabels SnapFi = new(
         "fi", "Palautetilanne — tallennettu tilannekuva", "Tallennettu tilannekuva", "Palautetilanne",
         "Aikaväli", "palautetta", "koostettu",
         "Hälytykset", "Ei hälytyksiä aikavälillä.", "sanahaku", "kielimalli",
         "Teemat ja trendit", "palautetta", "suunta",
-        "tarkistettavana (mahdollinen manipulointi — mukana laskennassa)", "tarkistettava");
+        "tarkistettavana (mahdollinen manipulointi — mukana laskennassa)", "tarkistettava",
+        "Moderoitava sisältö");
 
     private static readonly SnapshotLabels SnapEn = new(
         "en", "Feedback situation — saved snapshot", "Saved snapshot", "Feedback situation",
         "Window", "items", "generated",
         "Alerts", "No alerts in the window.", "keyword", "model",
         "Themes & trends", "items", "trend",
-        "to review (possible manipulation — still counted)", "review");
+        "to review (possible manipulation — still counted)", "review",
+        "Content to moderate");
 }
