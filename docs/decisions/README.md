@@ -44,3 +44,4 @@ these ADRs relocate that reasoning into durable records.
 | [0031](0031-model-authored-sentiment-field-optional.md) | Model-authored sentiment as an optional 6th structuring field (Poro ignores it today; forward-compat seam) | Accepted |
 | [0032](0032-unrated-nonsubstantive-categories.md) | Demoted categories are unrated (no severity/sentiment); an `ei_palautetta` junk bucket was tried and rejected (Poro won't route to it) | Accepted |
 | [0033](0033-operational-alerts-moderation-view.md) | Alerts are retail-operational (racism recognized but not alerted); non-substantive content in a collapsed bottom moderation view | Accepted |
+| [0035](0035-categorization-discipline-muu-single-category-hints.md) | Categorization discipline: the catch-all is one category (retires 0026 emergent topics), tighter disambiguating hints, the desk correction loop as backstop | Accepted |

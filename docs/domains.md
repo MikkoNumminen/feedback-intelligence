@@ -69,10 +69,15 @@ it is templated with the active domain's taxonomy at load time via the
   short label is not self-explanatory (retail's `asiaton`). Keys must exist in
   `categories` — the loader rejects a typo'd hint.
 - `catchAllCategory` is **optional**: the key of the domain's catch-all
-  (retail's `muu`). Where set, the desk's live summary splits that category
-  into emergent topics named by the structuring model's free-text theme
-  ([ADR-0026](decisions/0026-categories-emergent-topics-live-summary.md));
-  it also bounds `POST /live/restructure`. Must be a key in `categories`.
+  (retail's `muu`). It bounds `POST /live/restructure` and marks the bucket
+  operator maintenance re-structures as the vocabulary grows. The desk's live
+  summary once split this category into emergent topics named by the
+  structuring model's free-text theme
+  ([ADR-0026](decisions/0026-categories-emergent-topics-live-summary.md)); that
+  split is retired and the catch-all now renders as a single category like any
+  other
+  ([ADR-0035](decisions/0035-categorization-discipline-muu-single-category-hints.md)).
+  Must be a key in `categories`.
 - `demotedCategories` is **optional**: category keys views sort LAST regardless
   of count (retail demotes `rasismi` and `asiaton` — hostile content must not
   lead the page). **The list order is load-bearing**: demoted sections render

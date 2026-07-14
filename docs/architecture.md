@@ -62,8 +62,9 @@ Other endpoints: `POST /interpret` (desk preview, stores nothing),
 (the live channel’s list), `GET /schema` (enum sets
 for UIs, single source is the schema), `GET /report` (`?snapshot=true` persists
 the render), `GET /live/report` (the desk segment’s summary view over the live
-channel — one whole-window narrative + per-category groups with the catch-all
-split into emergent theme topics, ADR-0026; never persists a snapshot),
+channel — one whole-window narrative + per-category groups, the catch-all
+rendered as one plain category like any other since ADR-0035 retired its
+ADR-0026 emergent-topic split; never persists a snapshot),
 `POST /live/restructure` (operator: re-run structuring with the current
 vocabulary), `GET /live/version` (the live channel’s change tick — pages poll
 it to refresh the desk segment on every ingest), `GET /report/snapshot(.html)`,

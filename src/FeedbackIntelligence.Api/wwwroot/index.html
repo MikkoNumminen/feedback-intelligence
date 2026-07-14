@@ -267,7 +267,7 @@ function render(report, live) {
   const ratedThemes = report.themes.filter(t => !t.unrated);
   const moderatedThemes = report.themes.filter(t => t.unrated);
   const chartSections = ratedThemes.map(t => ({
-    label: t.isEmergentTopic ? t.title : catLabel(t.category),
+    label: catLabel(t.category),
     count: t.count,
     flagged: t.flaggedCount,
   }));

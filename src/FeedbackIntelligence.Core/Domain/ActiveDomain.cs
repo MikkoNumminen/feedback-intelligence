@@ -122,7 +122,7 @@ public sealed class ActiveDomain : IActiveDomain
                 $"{sourcePath}: 'categoryHints' has key(s) not in 'categories': {string.Join(", ", unknownHints)}.");
 
         // Optional catch-all key (retail's "muu") — must be a real category, or
-        // the live summary would silently never split emergent topics.
+        // operator maintenance could not identify the bucket to re-structure.
         var catchAll = root.TryGetProperty("catchAllCategory", out var ca) && ca.ValueKind == JsonValueKind.String
             ? ca.GetString() : null;
         if (catchAll is not null && !categories.ContainsKey(catchAll))

@@ -58,7 +58,12 @@ Hints are added only for the genuinely confusable boundaries — `juomat` vs
 `maito_kylma`, `kodinkoneet` vs `sahko_lvi` — plus `tilat_siisteys`, the one
 non-product "department" for premises/cleanliness/parking feedback; a
 self-explanatory label (`lastentarvikkeet`, `vaatteet_jalkineet`) gets none, to
-keep the rendered prompt lean.
+keep the rendered prompt lean. Live use surfaced two more misses: `hevi` now
+carries a hint explicitly naming avokado/soijapapu, which were landing in
+`muu`, and `kassa_palvelu` carries a hint for staff/service conduct, which was
+landing in product departments; the `muu` hint itself is tightened from
+"feedback that fits no department" to "pick a real department first"
+([ADR-0035](../decisions/0035-categorization-discipline-muu-single-category-hints.md)).
 
 `rasismi` (Rasistinen palaute) names racist content per comment — flagged and
 KEPT, never dropped. Blunt racist vocabulary forces the category
@@ -70,9 +75,15 @@ novel or contextual racism reaches the same category through its
 recall net. `asiaton` (Asiaton palaute) holds other abusive/harassing content
 with no feedback substance. `demotedCategories` (`rasismi`, then `asiaton`)
 sorts both LAST in that declared order, so hostile content never leads the
-page. `muu` is declared the `catchAllCategory`: the desk's live summary splits
-it into emergent topics named by the model's free-text theme
-([ADR-0026](../decisions/0026-categories-emergent-topics-live-summary.md)).
+page. `muu` is declared the `catchAllCategory`, but it no longer splits into
+emergent topics in the live summary: it renders as a single department,
+exactly like every other category. The whole-window synthesis
+([ADR-0026](../decisions/0026-categories-emergent-topics-live-summary.md))
+still carries the qualitative narrative; `catchAllCategory` itself is kept
+because it still marks the bucket operator maintenance re-structures as the
+vocabulary grows
+([ADR-0035](../decisions/0035-categorization-discipline-muu-single-category-hints.md)
+retires the emergent-topic split).
 
 Severities and types are not overridden — retail inherits the core defaults
 (`low/medium/high/critical`, `complaint/praise/suggestion/question/other`).

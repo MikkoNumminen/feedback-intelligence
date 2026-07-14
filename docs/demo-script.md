@@ -35,8 +35,9 @@ Minute 2–4 — the desk moment (the centerpiece):
   severity) to show human-in-the-loop; save.
 - The desk's own segment below refreshes: the categorized entry list appears
   INSTANTLY (no LLM), then the AI's Yhteenveto lands on top — one whole-window
-  narrative over category sections, with "muu" split into AI-named topics
-  (ADR-0024 own database; ADR-0026 summary view + emergent topics).
+  narrative over category sections, "muu" among them as a single section like
+  any other (ADR-0024 own database; ADR-0026 summary view; ADR-0035 retired the
+  emergent-topic split).
   "Tiskillä kuultu palaute ei enää kuole vuoron loppuun."
 
 Minute 4–5 — resilience + the design story:

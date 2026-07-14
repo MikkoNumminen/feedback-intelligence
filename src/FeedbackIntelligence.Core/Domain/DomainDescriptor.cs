@@ -71,10 +71,12 @@ public sealed class DomainDescriptor
         new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>Optional key of the domain's catch-all category (retail's
-    /// "muu"). Where set, the live-summary view splits that category into
-    /// emergent topics keyed on the structuring model's free-text theme — the
-    /// AI names the topic, arithmetic does the grouping. Null = no splitting.
-    /// Validated against <see cref="Categories"/> at load.</summary>
+    /// "muu") — the department that absorbs feedback with no better home.
+    /// Operator maintenance re-runs structuring over items sitting here when the
+    /// vocabulary changes (a new category may now fit). ADR-0035 retired the
+    /// live-summary emergent-topic split, so it renders as one plain category.
+    /// Null = the domain has no catch-all. Validated against
+    /// <see cref="Categories"/> at load.</summary>
     public string? CatchAllCategory { get; init; }
 
     /// <summary>Optional categories views should sort LAST regardless of count

@@ -58,11 +58,6 @@ public sealed record ReportTheme(
     // needs_review, so the view can warn that a possibly-manipulated item is part of
     // the (still-counted) group — the influence is visible, not silent.
     int FlaggedCount = 0,
-    // Live-summary mode (ADR-0026): true when this group is an EMERGENT TOPIC —
-    // catch-all items grouped by the structuring model's free-text theme, with
-    // Title carrying the topic. The view keys its rendering off this flag rather
-    // than re-deriving the grouping rule client-side.
-    bool IsEmergentTopic = false,
     // Sentiment (polarity) mix for the group: sentiment KEY → item count
     // (ADR-0030), so the view shows a positive/negative/neutral breakdown per
     // theme without re-deriving it. Empty when the domain declares no sentiment.

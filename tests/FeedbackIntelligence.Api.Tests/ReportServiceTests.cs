@@ -77,12 +77,11 @@ public class ReportServiceTests : IDisposable
         false, false, [], [], null);
 
     [Fact]
-    public async Task SummaryMode_CatchAllCategory_SplitsIntoEmergentTopicGroups_AndSynthesizesOneOverall()
+    public async Task SummaryMode_CatchAllCategory_IsOneGroup_NotSplitIntoTopics_AndSynthesizesOneOverall()
     {
-        // retail's domain.json declares "muu" as the catch-all (ADR-0026). Items
-        // landing there split into per-theme groups keyed on the structuring
-        // model's own free-text theme (case-folded for grouping, original case for
-        // display via the group's most-recent item); a NAMED category never splits.
+        // retail's domain.json declares "muu" as the catch-all. ADR-0035 retired the
+        // emergent-topic split, so every catch-all item lands in ONE "muu" group —
+        // "muu" reads as a single department, not a spray of theme-named topics.
         await _store.InsertAsync(ItemIn("maito-1", "2026-06-19T10:00:00.0000000+00:00", "maito_kylma", "tuoreus"), CancellationToken.None);
         await _store.InsertAsync(ItemIn("maito-2", "2026-06-20T10:00:00.0000000+00:00", "maito_kylma", "tuoreus"), CancellationToken.None);
         await _store.InsertAsync(ItemIn("palvelu-lower", "2026-06-21T10:00:00.0000000+00:00", "muu", "palvelu"), CancellationToken.None);
@@ -96,63 +95,22 @@ public class ReportServiceTests : IDisposable
         var report = await CreateService(llm)
             .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
 
-        Assert.Equal(3, report.Themes.Count);
+        // Two groups only: the named department and the single catch-all — no per-theme topics.
+        Assert.Equal(2, report.Themes.Count);
 
         var maitoTheme = report.Themes.Single(t => t.Category == "maito_kylma");
         Assert.Equal(2, maitoTheme.Count);
         Assert.False(maitoTheme.NarrativeFromLlm); // per-group narrative stays deterministic in summary mode
-        Assert.False(maitoTheme.IsEmergentTopic);  // a named category never becomes a topic
 
-        var palveluTheme = report.Themes.Single(t => t.Title == "Palvelu");
-        Assert.Equal("muu", palveluTheme.Category);
-        Assert.Equal(3, palveluTheme.Count); // "Palvelu" + "Palvelu" + "palvelu" grouped by case-folded theme
-        Assert.False(palveluTheme.NarrativeFromLlm);
-        Assert.True(palveluTheme.IsEmergentTopic); // the view keys off this flag, never re-derives the rule
-
-        var hintaTheme = report.Themes.Single(t => t.Title == "Hinnoittelu");
-        Assert.Equal("muu", hintaTheme.Category);
-        Assert.Equal(1, hintaTheme.Count);
+        var muuTheme = report.Themes.Single(t => t.Category == "muu");
+        Assert.Equal(4, muuTheme.Count); // all four catch-all items in ONE group, never split by theme
+        Assert.False(muuTheme.NarrativeFromLlm);
 
         Assert.NotNull(report.Overall);
         Assert.True(report.Overall!.NarrativeFromLlm);
         Assert.Equal("Yleiskatsaus", report.Overall.Title);
         Assert.Equal("Asiakkaat raportoivat useista aiheista.", report.Overall.Narrative);
         Assert.Equal(1, llm.Calls); // exactly one synthesis call: the whole-window Overall (nominations disabled)
-    }
-
-    [Fact]
-    public async Task SummaryMode_EmergentTopicKey_MergesUnderscoreAndWhitespaceVariants_WithCleanTitle()
-    {
-        // ADR-0028: the emergent-topic key normalizes separators, so the structuring
-        // model's spelling drift for ONE topic ("tuotteiden_laatu" / "tuotteiden
-        // laatu" / "tuotteiden  laatu") collapses into a single group instead of
-        // fragmenting into three thin ones. The displayed title shows plain spaces,
-        // never an underscore or a doubled space. A genuinely different theme
-        // ("hinnoittelu") stays its own topic — the normalization only fuses
-        // separator/case variants, it never over-merges. (Case-folding into the
-        // title is already covered by the "Palvelu" case above.)
-        await _store.InsertAsync(ItemIn("laatu-us", "2026-06-19T10:00:00.0000000+00:00", "muu", "tuotteiden_laatu"), CancellationToken.None);
-        await _store.InsertAsync(ItemIn("laatu-sp", "2026-06-20T10:00:00.0000000+00:00", "muu", "tuotteiden laatu"), CancellationToken.None);
-        await _store.InsertAsync(ItemIn("laatu-dbl", "2026-06-21T10:00:00.0000000+00:00", "muu", "tuotteiden  laatu"), CancellationToken.None);
-        await _store.InsertAsync(ItemIn("hinta-1", "2026-06-22T10:00:00.0000000+00:00", "muu", "hinnoittelu"), CancellationToken.None);
-
-        var llm = new CountingScriptedChatClient(
-            """{"title": "Yleiskatsaus", "narrative": "Asiakkaat raportoivat useista aiheista.", "citedIds": ["laatu-us"]}""");
-
-        var report = await CreateService(llm)
-            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
-
-        Assert.Equal(2, report.Themes.Count); // three laatu variants merged into one; hinnoittelu separate
-
-        var laatu = report.Themes.Single(t => t.Count == 3);
-        Assert.Equal("muu", laatu.Category);
-        Assert.True(laatu.IsEmergentTopic);
-        Assert.Equal("tuotteiden laatu", laatu.Title); // underscore + doubled space normalized to plain spaces
-        Assert.DoesNotContain("_", laatu.Title);
-        Assert.DoesNotContain("  ", laatu.Title);
-
-        var hinta = report.Themes.Single(t => t.Title == "hinnoittelu");
-        Assert.Equal(1, hinta.Count); // distinct topic never absorbed by the merge
     }
 
     [Fact]

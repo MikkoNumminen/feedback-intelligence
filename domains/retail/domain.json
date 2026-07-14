@@ -37,16 +37,18 @@
   "categoryHints": {
     "kuiva_elintarvike": "jauhot, pasta, riisi, säilykkeet, kahvi — EI makeisia, juomia eikä pakasteita",
     "makeiset": "karkkipussit, irtokarkit, suklaa, purukumi, pastillit",
+    "hevi": "hedelmät, vihannekset, juurekset, marjat, tuoreyrtit — myös avokado, soijapapu ja muut erikoisvihannekset",
     "juomat": "alkoholittomat juomat: virvoitusjuomat, mehut, vesi, energiajuomat — EI oluita/siidereitä (oluet_siiderit) eikä maitoa (maito_kylma)",
     "pakasteet": "pakastetut tuotteet: pakastevihannekset, -pizzat, jäätelö — sulava mutta jäinen; tuoretuotteet kuuluvat maito_kylma-osastoon",
     "einekset": "valmisruoat, salaatit ja deli-tuotteet — EI raakaa lihaa tai kalaa (liha_kala)",
     "oluet_siiderit": "miedot alkoholijuomat: oluet, siiderit, lonkerot (enintään 5,5 %)",
     "koti_taloustavara": "siivous- ja pesuaineet, talouspaperi, keittiötarvikkeet ja astiat",
     "kodinkoneet": "isot ja pienet kodinkoneet: jääkaapit, pesukoneet, televisiot, kahvinkeittimet — EI sähkötarvikkeita eikä asennusta (sahko_lvi)",
+    "kassa_palvelu": "kassan ja henkilökunnan toiminta: palvelu, jonotus, ystävällisyys, neuvonta, myyjän käytös — henkilön toiminta, ei tuoteosasto",
     "tilat_siisteys": "myymälän yleiset tilat: siisteys, WC:t, pysäköinti, ostoskärryt — ei yksittäinen tuoteosasto",
     "rasismi": "VAIN kun teksti kohdistuu etniseen ryhmään, kansallisuuteen, uskontoon tai ihonväriin — pelkkä kiroilu ei riitä",
     "asiaton": "loukkaava, uhkaava tai kiroileva sisältö ilman asiakaspalauteasiaa ja ilman etnistä kohdetta",
-    "muu": "asiallinen palaute, joka ei sovi mihinkään osastoon"
+    "muu": "asiallinen palaute, joka ei sovi MIHINKÄÄN yllä olevaan osastoon; valitse aina ensin oikea osasto jos sellainen on"
   },
   "catchAllCategory": "muu",
   "demotedCategories": ["rasismi", "asiaton"],
