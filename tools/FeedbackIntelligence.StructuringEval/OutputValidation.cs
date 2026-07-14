@@ -23,6 +23,11 @@ public sealed record ValidatedOutput(
     ParseOutcome Outcome,
     bool SchemaAdherent,
     IReadOnlyList<FieldViolation> Violations,
+    // NON-FATAL theme-format advisories (ADR-0028 follow-up): underscores, stray
+    // casing, or >4 words in the free-text theme. Reported separately and NEVER
+    // folded into SchemaAdherent — a theme with an underscore is still schema-valid,
+    // just not the base-form/plain-space shape the prompt now asks for.
+    IReadOnlyList<FieldViolation> ThemeFormatWarnings,
     FeedbackStructure? Structure);
 
 public static class OutputValidation
@@ -31,7 +36,7 @@ public static class OutputValidation
     {
         var (outcome, doc) = Parse(raw);
         if (doc is null)
-            return new ValidatedOutput(ParseOutcome.Unparseable, false, [], null);
+            return new ValidatedOutput(ParseOutcome.Unparseable, false, [], [], null);
 
         using (doc)
         {
@@ -52,6 +57,12 @@ public static class OutputValidation
             CheckNonEmptyString(root, "theme", violations);
             CheckNonEmptyString(root, "language", violations);
 
+            // Advisory (never a schema violation): does the theme follow the
+            // base-form / lowercase / plain-space shape the prompt asks for?
+            var themeFormatWarnings = new List<FieldViolation>();
+            if (root.TryGetProperty("theme", out var themeEl) && themeEl.ValueKind == JsonValueKind.String)
+                CheckThemeFormat(themeEl.GetString()!, themeFormatWarnings);
+
             FeedbackStructure? structure = null;
             if (violations.Count == 0)
                 structure = new FeedbackStructure(
@@ -61,8 +72,24 @@ public static class OutputValidation
                     root.GetProperty("type").GetString()!,
                     root.GetProperty("language").GetString()!);
 
-            return new ValidatedOutput(outcome, violations.Count == 0, violations, structure);
+            return new ValidatedOutput(outcome, violations.Count == 0, violations, themeFormatWarnings, structure);
         }
+    }
+
+    /// <summary>Non-fatal theme-format checks (ADR-0028 follow-up): the prompt asks
+    /// for a lowercase, base-form, plain-space noun phrase. Flags underscores,
+    /// stray casing, and &gt;4 words — advisory only, never a schema violation.</summary>
+    private static void CheckThemeFormat(string theme, List<FieldViolation> warnings)
+    {
+        var t = theme.Trim();
+        if (t.Length == 0)
+            return;
+        if (t.Contains('_', StringComparison.Ordinal))
+            warnings.Add(new FieldViolation("theme", "format_underscore", Formatting.Truncate(t, 40)));
+        if (!string.Equals(t, t.ToLowerInvariant(), StringComparison.Ordinal))
+            warnings.Add(new FieldViolation("theme", "format_uppercase", Formatting.Truncate(t, 40)));
+        if (t.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > 4)
+            warnings.Add(new FieldViolation("theme", "format_wordcount", Formatting.Truncate(t, 40)));
     }
 
     private static void CheckEnum(JsonElement root, string field, IReadOnlySet<string> allowed, List<FieldViolation> violations)
