@@ -48,7 +48,9 @@ public class CategoryOverrideResolverTests
     {
         var structure = new FeedbackStructure("kassa_palvelu", "teema", "low", "complaint", "fi");
 
-        var result = CategoryOverrideResolver.Resolve([], "pelkkää hyvää palvelua", structure, Retail, CategoryKeywords);
+        // ADR-0037: 'palvelu' is now itself a kassa_palvelu term, so this needs text with
+        // no category-keyword term at all (product OR service/premises) to stay null.
+        var result = CategoryOverrideResolver.Resolve([], "ihan tavallinen kokemus", structure, Retail, CategoryKeywords);
 
         Assert.Null(result);
     }

@@ -139,12 +139,16 @@ product department** deterministically before save — the deterministic layer
 like a nectarine mis-categorized as dairy, forcing bare produce/grocery nouns
 to the department they name.
 
-Scope is deliberately the enumerable **product-noun** departments — `hevi`,
-`makeiset`, `maito_kylma`, `liha_kala`, `juomat`, `pakasteet`, `leipa`.
-Experience/process departments (`kassa_palvelu`, `tilat_siisteys`,
-`verkkokauppa_toimitus`, `varasto_nouto`, `muu`) are defined by what happened,
-not a noun, so they are not keyword-forceable and stay with the model + hints
-+ the desk-correction loop (ADR-0035).
+Scope starts with the enumerable **product-noun** departments — `hevi`,
+`makeiset`, `maito_kylma`, `liha_kala`, `juomat`, `pakasteet`, `leipa` — and now
+also covers two experience/process departments, `kassa_palvelu` and
+`tilat_siisteys`, declared LAST so **products always win and service is the
+fallback**: a comment naming any product noun routes to that product
+department, and a service/premises rule only fires when no product noun is
+present. `verkkokauppa_toimitus`, `varasto_nouto`, and `muu` still have no
+reliable distinctive noun, so they stay with the model + hints + the
+desk-correction loop (ADR-0035)
+([ADR-0037](../decisions/0037-category-keywords-service-premises.md)).
 
 The design's core is **cross-category exclusions**: a derivative head word
 (e.g. `mehu`, `jäätelö`, `kakku`, `suklaa`, `puikko`) is an exclusion for the
@@ -158,7 +162,9 @@ not demoted; one resolver (`CategoryOverrideResolver`) is shared by ingest,
 `/interpret`, and restructure so preview never drifts from what is stored. The
 enriched `hevi` categoryHint (avokado/soijapapu plus kivihedelmät, sitrukset)
 remains the LLM **recall net** for names the keyword list misses
-([ADR-0036](../decisions/0036-deterministic-category-keyword-override.md)).
+([ADR-0036](../decisions/0036-deterministic-category-keyword-override.md);
+service/premises extension:
+[ADR-0037](../decisions/0037-category-keywords-service-premises.md)).
 
 ## Generator stories (`domains/retail/stories.json`)
 

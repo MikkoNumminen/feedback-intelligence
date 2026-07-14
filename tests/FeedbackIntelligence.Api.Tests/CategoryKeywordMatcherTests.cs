@@ -67,9 +67,11 @@ public class CategoryKeywordMatcherTests
     }
 
     [Fact]
-    public void NoProductNoun_ReturnsNull()
+    public void NoProductOrServiceNoun_ReturnsNull()
     {
-        Assert.Null(CategoryKeywordMatcher.Match("myyjä oli töykeä", Rules));
+        // ADR-0037: 'myyjä oli töykeä' now forces kassa_palvelu (service fallback), so this
+        // needs a text with neither a product noun nor a service/premises noun to stay null.
+        Assert.Null(CategoryKeywordMatcher.Match("Kokemus oli yleisesti pettymys.", Rules));
     }
 
     [Fact]
@@ -82,5 +84,71 @@ public class CategoryKeywordMatcherTests
     public void Match_IsCaseInsensitive()
     {
         Assert.Equal("hevi", CategoryKeywordMatcher.Match("NEKTARIINI", Rules));
+    }
+
+    // ADR-0037: kassa_palvelu and tilat_siisteys are the service/premises FALLBACK,
+    // declared LAST so a product noun always wins over a service/premises word.
+
+    [Fact]
+    public void PureServiceComment_NoProductNoun_ForcesKassaPalvelu()
+    {
+        Assert.Equal(
+            "kassa_palvelu",
+            CategoryKeywordMatcher.Match(
+                "Tuli hyvä mieli kun myyjä oli energinen ja neuvoi missä wc-tilat sijaitsevat.", Rules));
+    }
+
+    [Fact]
+    public void ServiceWordWithProductNoun_ProductWins()
+    {
+        Assert.Equal("maito_kylma", CategoryKeywordMatcher.Match("Myyjä sanoi että maito oli vanhaa.", Rules));
+    }
+
+    [Fact]
+    public void CashierQueue_ForcesKassaPalvelu()
+    {
+        Assert.Equal("kassa_palvelu", CategoryKeywordMatcher.Match("Jono kassalla oli aivan liian pitkä.", Rules));
+    }
+
+    [Fact]
+    public void CustomerService_ForcesKassaPalvelu()
+    {
+        Assert.Equal("kassa_palvelu", CategoryKeywordMatcher.Match("Asiakaspalvelu ei toiminut ollenkaan.", Rules));
+    }
+
+    [Fact]
+    public void DirtyRestrooms_ForcesTilatSiisteys()
+    {
+        Assert.Equal("tilat_siisteys", CategoryKeywordMatcher.Match("Vessat olivat todella likaiset.", Rules));
+    }
+
+    [Fact]
+    public void ParkingLotCleanliness_ForcesTilatSiisteys()
+    {
+        Assert.Equal(
+            "tilat_siisteys",
+            CategoryKeywordMatcher.Match("Parkkipaikan siivous on ollut puutteellista.", Rules));
+    }
+
+    [Fact]
+    public void ShoppingCarts_ForceTilatSiisteys()
+    {
+        Assert.Equal("tilat_siisteys", CategoryKeywordMatcher.Match("Ostoskärryt olivat rikki.", Rules));
+    }
+
+    [Fact]
+    public void ServiceWordWithProductLocationMention_ProductStillWins()
+    {
+        // Documented residual (ADR-0037): a product-LOCATION compound (maitohyllyllä, the
+        // dairy AISLE) still names the base product term 'maito', so it forces maito_kylma
+        // even though the sentence is really about the employee's manner, not the milk
+        // itself. Accepted trade-off, pinned here so it's intentional, not a regression.
+        Assert.Equal("maito_kylma", CategoryKeywordMatcher.Match("Myyjä maitohyllyllä oli töykeä.", Rules));
+    }
+
+    [Fact]
+    public void ProductNounStillWorks_Sanity()
+    {
+        Assert.Equal("hevi", CategoryKeywordMatcher.Match("Ostamani banaani oli mustunut.", Rules));
     }
 }
