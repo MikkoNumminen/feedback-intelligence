@@ -2,7 +2,7 @@
 
 This is a working reference for how Poro-2-8B behaves in two of my projects, and
 the deterministic machinery added to make it usable. The promise in the title is
-that every number here comes from a run you can repeat, not from a vibe. Where a
+that every number here comes from a run you can repeat. Where a
 claim rests on a small sample or a judgment call, I say so in the same sentence.
 
 Two projects measured Poro independently and reached opposite deployment decisions
@@ -18,9 +18,8 @@ from the same evidence.
   there.
 
 The same 26/30 naturalness result led one project to adopt Poro and the other to
-pass on it. That is not a contradiction. It is the point of this document: the
-right call depends on how the output is consumed, which the last section turns
-into a rule.
+pass on it. The two decisions are not in conflict, because the right call depends on
+how the output is consumed. The last section works that out into a rule.
 
 ## How to reproduce these numbers
 
@@ -36,7 +35,8 @@ to `/interpret`; the returned `structure.category` is Poro's raw pick. The
 structuring quality harness is `tools/FeedbackIntelligence.StructuringEval`. The
 naturalness ranking and the Voikko rates below come from the mikkonumminen.dev eval
 set (`chat-backend/evals/`), not from this repo, and were measured on the same
-hardware.
+hardware. The model is cheap to serve: about 5.9 GB of VRAM loaded, an 8192-token
+context window, and the largest prompt-plus-output we measured was 5205 tokens.
 
 ## What Poro is good at: Finnish
 
@@ -49,9 +49,9 @@ One caveat the number does not carry on its own. The ranking was made by a singl
 native speaker, blinded to which model produced which answer, who is also the
 author of the project that went on to adopt Poro. The Friedman test says the
 ranking was internally consistent across questions. It does not say the judge was
-disinterested. So read 1.37 as "one blinded native speaker, who has a stake,
-preferred it strongly and consistently." The second judge, ideally someone with no
-stake, is the next measurement.
+disinterested. So 1.37 means one blinded native speaker, who has a stake, preferred
+it strongly and consistently. A second judge with no stake would be the obvious next
+check.
 
 Poro's edge is morphological. It inflects technical terms the way a Finnish speaker
 does ("Astro 6:sta", "TypeScriptistä") where the general models produce stiff or
@@ -72,8 +72,8 @@ suggestive, not decisive.
 
 On grounded synthesis Poro is level with the best of the three, not ahead:
 substantive grounded Finnish 25 of 27, tied with qwen3, well above llama's 18. The
-naturalness edge does not cost synthesis quality. It costs something else, which is
-the next two sections.
+naturalness edge does not cost synthesis quality. It costs something else, which the
+next two sections describe.
 
 ## What Poro is bad at: structured decisions
 
@@ -83,33 +83,35 @@ My first instinct was to write "Poro has a strong attractor toward the dairy
 category." A controlled probe says that is too strong. I fed ten items that contain
 no "maito" substring and read the raw category with the override off:
 
-| Item (no "maito" in the text) | Poro's raw category |
+Each row is the exact text POSTed to `/interpret`.
+
+| Text fed (no "maito" substring) | Poro's raw category |
 |---|---|
-| banaani oli mustunut | hevi (correct) |
-| porkkanat pehmeitä | hevi (correct) |
-| omenat pehmeitä | hevi (correct) |
-| kurkut limaisia | hevi (correct) |
-| appelsiinit kuivia | hevi (correct) |
-| leipä homeista | leipa (correct) |
-| nakit pilaantuneet | maito_kylma (wrong, is meat) |
-| mehu hapanta | maito_kylma (wrong, is drinks) |
-| jauheliha haisi | kuiva_elintarvike (wrong, is meat) |
-| keksit vanhentuneita | kuiva_elintarvike (defensible) |
+| `Ostamani banaani oli täysin mustunut.` | hevi (correct) |
+| `Porkkanat olivat pehmeitä ja nahistuneita.` | hevi (correct) |
+| `Omenat olivat pehmeitä ja jauhoisia.` | hevi (correct) |
+| `Kurkut olivat limaisia pinnalta.` | hevi (correct) |
+| `Appelsiinit olivat kuivia sisältä.` | hevi (correct) |
+| `Leipä oli aivan homeista.` | leipa (correct) |
+| `Nakit olivat pilaantuneet jo ostopäivänä.` | maito_kylma (wrong, is meat) |
+| `Mehu oli hapanta ja väljähtänyttä.` | maito_kylma (wrong, is drinks) |
+| `Ostamani jauheliha haisi pahalta.` | kuiva_elintarvike (wrong, is meat) |
+| `Keksit olivat vanhentuneita.` | kuiva_elintarvike (defensible) |
 
 Six of ten correct, two to dairy, two to dry goods. The dairy pull is real but weak
 (2 of 10), and it is not the only wrong basin. The sharper finding is inconsistency.
-An earlier measurement had "banaani oli mustunut" landing in dairy; the probe's
-"Ostamani banaani oli täysin mustunut" lands in hevi. Same model, same temperature,
-a different surface form, a different answer. The failure is that small changes in
-phrasing move the category, not that one category swallows everything.
+In an earlier run the shorter `banaani oli mustunut` landed in dairy, while the fuller
+`Ostamani banaani oli täysin mustunut` in the table above lands in hevi. Same model,
+same temperature, a different surface form, a different answer.
 
 Two mechanisms are worth keeping apart, because I bundled them in the first draft.
 The first is substring capture: "maitosuklaa" (milk chocolate) reliably goes to
 dairy because "maito" sits inside the word, and this is deterministic, always wrong,
 and a wordlist fixes it cleanly. The second is a weak, phrasing-sensitive prior:
 bare product words sometimes drift to dairy or dry goods (nakit, mehu, jauheliha
-above), unreliably. The wordlist that forces the right category also makes an
-inconsistent model consistent, which is the more useful thing it buys.
+above), unreliably. A wordlist that forces the right category also makes an
+inconsistent model consistent, and that consistency is worth more here than any
+single correction.
 
 ### A few things it will not do at all
 
@@ -121,9 +123,9 @@ inconsistent model consistent, which is the more useful thing it buys.
   result. Three obvious nonsense items were routed to a dedicated `ei_palautetta`
   bucket zero times, and we dropped the bucket
   ([ADR-0032](https://github.com/MikkoNumminen/feedback-intelligence/blob/master/docs/decisions/0032-unrated-nonsubstantive-categories.md)).
-  Three items is too few to conclude "cannot," and I flag that asymmetry on purpose,
-  because I retracted a four-item containment claim elsewhere in this document for
-  the same reason. Read it as "no signal on three tries," pending more items.
+  Three items is too few to conclude "cannot," the same small-sample problem as the
+  four-item containment claim below. Read it as no signal on three tries, pending
+  more items.
 - Its JSON discipline on messy Finnish is unmeasured and, from the failures we have
   seen, unreliable, which is why the salvage layer is mandatory rather than
   best-effort
@@ -145,8 +147,7 @@ and instruction-following.
 - Code-dense Finnish confuses the routing: identifier-heavy Finnish dilutes the
   a-and-o language heuristic, so such a question can be answered in English.
 - Containment could not be ranked at that sample size. An earlier "Poro is worst at
-  containment" line was retracted after a rate limiter contaminated the run. That
-  retraction is a large part of why the rest of these numbers are worth trusting.
+  containment" line was retracted after a rate limiter contaminated the run.
 
 ## What we built around it
 
@@ -196,13 +197,12 @@ code-heavy Finnish from 85% to 100%, translation output is truncated to the firs
 line to stop appended commentary, and keyword task-gates block off-task generation
 before it reaches the model.
 
-So the naturalness edge is not free, and calling it free would be the one sales
-sentence in a measurement document. It is paid for with the layer above: a salvage
-pass, several wordlists, a validator, a correction loop. The reason the price is
-worth paying is not only that it makes Poro usable. It is that the same layer
-protects whatever model comes next, including a better one, because it constrains
-the decision instead of the model. A wordlist that forces "banaani" to produce does
-not care which model was wrong.
+The naturalness edge is not free. It is paid for with the layer above: a salvage
+pass, several wordlists, a validator, a correction loop. The price buys a second
+thing beyond making Poro usable: the same layer would protect whatever model comes
+next, including a better one, because it constrains the decision rather than the
+model. The same wordlist would correct a different model's category mistakes without
+any change to it.
 
 ## When to adopt Poro, and when not to
 
@@ -222,7 +222,6 @@ with no external gate. The RAG chat fits: the answer goes straight to a user,
 language and scope have to hold inside the generation, and Poro's drift is exactly
 the thing you cannot gate after the fact.
 
-That is one line of principle drawn from two projects, and it is the difference
-between a pile of notes and a reference. Put the strong writer where a human reads
-it and a rule guards it. Keep the obedient model where the generation itself is the
-product.
+Two projects is a small sample. What makes the split between them useful is that it
+came from the same evidence: the deployment decision depended on how the output is
+consumed, not only on which model writes the best Finnish.
