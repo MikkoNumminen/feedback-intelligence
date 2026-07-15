@@ -7,5 +7,5 @@
   "demoteToCategory": "asiaton",
   "demoteRatio": 0.4,
   "demoteMinDistinctStems": 2,
-  "notes": "Thresholds are tuning knobs — measure against real desk examples before trusting them (ADR-0039). demoteRatio is the vulgar-character share of the message; demoteMinDistinctStems counts DISTINCT stems, not occurrences. Defaults chosen so 'Paskapillupersepornolehtipaviaani' (3 distinct, ~0.45 share) demotes while 'Möivät paskaa.' (1 distinct, ~0.31 share) and a furious-but-substantive complaint (low share) stay rated."
+  "notes": "Thresholds are tuning knobs — measure against real desk examples before trusting them (ADR-0039). demoteRatio is the vulgar-character share of the message; demoteMinDistinctStems counts DISTINCT stems, not occurrences. Defaults chosen so 'Paskapillupersepornolehtipaviaani' (3 distinct, ~0.45 share) demotes while 'Möivät paskaa.' (1 distinct; the distinct gate keeps it rated) and a furious-but-substantive complaint (low share) stay rated."
 }

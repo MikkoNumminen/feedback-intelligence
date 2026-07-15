@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace FeedbackIntelligence.Core.Structuring;
 
 /// <summary>The active domain's OPTIONAL graded vulgarity lexicon (ADR-0039): tiered
@@ -37,38 +39,36 @@ public readonly record struct VulgarityAssessment(int Level, bool Demote);
 /// merely swears is never hidden. Runs FIRST and independent of any LLM.</summary>
 public static class VulgarityScorer
 {
-    /// <summary>Assess text against the lexicon. Distinct stems are counted once each
-    /// (repeating one swear does not inflate the score); the ratio is total matched
-    /// characters over the message's non-whitespace length.</summary>
+    private static readonly CompareInfo Invariant = CultureInfo.InvariantCulture.CompareInfo;
+
+    /// <summary>Assess text against the lexicon. A stem is counted DISTINCT once even if it
+    /// appears in both tiers (dedup), so a repeated single swear can never clear the
+    /// distinct gate. The vulgar-character share uses a COVERAGE MASK, so overlapping or
+    /// substring stems can never double-count and the ratio can never exceed 1.</summary>
     public static VulgarityAssessment Assess(string text, VulgarityLexicon lex)
     {
         if (lex.IsEmpty || string.IsNullOrWhiteSpace(text))
             return new VulgarityAssessment(0, false);
 
+        var covered = new bool[text.Length];
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var distinct = 0;
-        var matchedChars = 0;
         var anyStrong = false;
 
-        foreach (var stem in lex.MildStems)
-        {
-            var n = CountOccurrences(text, stem);
-            if (n == 0) continue;
-            distinct++;
-            matchedChars += n * stem.Length;
-        }
-        foreach (var stem in lex.StrongStems)
-        {
-            var n = CountOccurrences(text, stem);
-            if (n == 0) continue;
-            distinct++;
-            matchedChars += n * stem.Length;
-            anyStrong = true;
-        }
+        foreach (var (stem, strong) in DistinctStems(lex, seen))
+            if (MarkOccurrences(text, stem, covered))
+            {
+                distinct++;
+                if (strong) anyStrong = true;
+            }
 
         if (distinct == 0)
             return new VulgarityAssessment(0, false);
 
-        var nonWs = text.Count(c => !char.IsWhiteSpace(c));
+        var matchedChars = 0;
+        foreach (var c in covered)
+            if (c) matchedChars++;
+        var nonWs = text.Count(ch => !char.IsWhiteSpace(ch));
         var ratio = nonWs > 0 ? (double)matchedChars / nonWs : 0.0;
         var demote = ratio >= lex.DemoteRatio && distinct >= lex.DemoteMinDistinctStems;
         var level = demote ? 3 : (anyStrong ? 2 : 1);
@@ -80,19 +80,42 @@ public static class VulgarityScorer
     public static bool Demotes(string text, VulgarityLexicon lex) =>
         !string.IsNullOrEmpty(lex.DemoteToCategory) && Assess(text, lex).Demote;
 
-    /// <summary>Non-overlapping, case-insensitive invariant occurrences of a stem — the
-    /// same substring contract as the alert / category-keyword lexicons.</summary>
-    private static int CountOccurrences(string text, string stem)
+    // Mild first, then strong, each stem yielded ONCE across both tiers (a stem listed in
+    // both is not double-counted — that would defeat the distinct gate a repeated single
+    // swear relies on to stay rated).
+    private static IEnumerable<(string Stem, bool Strong)> DistinctStems(VulgarityLexicon lex, HashSet<string> seen)
     {
-        if (string.IsNullOrEmpty(stem))
-            return 0;
-        var count = 0;
+        foreach (var s in lex.MildStems)
+            if (!string.IsNullOrEmpty(s) && seen.Add(s))
+                yield return (s, false);
+        foreach (var s in lex.StrongStems)
+            if (!string.IsNullOrEmpty(s) && seen.Add(s))
+                yield return (s, true);
+    }
+
+    /// <summary>Mark every case-insensitive invariant occurrence of a stem on the coverage
+    /// mask; returns whether the stem matched at least once. Advances by the ACTUAL matched
+    /// length (not the stem's length) — culture-aware matching can match a span shorter than
+    /// the stem (e.g. an NFD-authored stem against NFC text), so advancing by the stem length
+    /// could overshoot the end of the string and throw. Same substring contract as the alert
+    /// / category-keyword lexicons; can never over- or under-run the buffer.</summary>
+    private static bool MarkOccurrences(string text, string stem, bool[] covered)
+    {
+        var any = false;
+        var stemSpan = stem.AsSpan();
         var idx = 0;
-        while ((idx = text.IndexOf(stem, idx, StringComparison.InvariantCultureIgnoreCase)) >= 0)
+        while (idx < text.Length)
         {
-            count++;
-            idx += stem.Length;
+            var rel = Invariant.IndexOf(text.AsSpan(idx), stemSpan, CompareOptions.IgnoreCase, out var matchLen);
+            if (rel < 0)
+                break;
+            any = true;
+            var found = idx + rel;
+            var end = Math.Min(found + matchLen, text.Length);
+            for (var i = found; i < end; i++)
+                covered[i] = true;
+            idx = found + Math.Max(matchLen, 1);
         }
-        return count;
+        return any;
     }
 }

@@ -63,4 +63,29 @@ public class VulgarityScorerTests
     {
         Assert.False(VulgarityScorer.Demotes("paska perse vittu mulkku", VulgarityLexicon.Empty));
     }
+
+    [Fact]
+    public void NfdAuthoredStem_MatchesNfcText_WithoutOverrunningTheBuffer()
+    {
+        // A stem authored in DECOMPOSED form: 'kyrp' + 'a' + U+0308 combining diaeresis = 6 code
+        // units, canonically equal to the composed 'kyrp' + U+00E4. Matched against an NFC
+        // message ending in the composed form (matched span = 5 units), culture-aware matching
+        // spans FEWER units than the stem, so advancing by the STEM length would index past the
+        // end and throw. Must still match (canonical equivalence) and must not crash. Built from
+        // (char) casts so the normalization form is exact regardless of source-file encoding.
+        var nfdStem = "kyrp" + 'a' + (char)0x0308;   // decomposed
+        var nfcText = "paska kyrp" + (char)0x00e4;   // composed, match at the end of the string
+        var lex = new VulgarityLexicon(["paska"], [nfdStem], "asiaton", 0.4, 2);
+        Assert.True(VulgarityScorer.Demotes(nfcText, lex));
+    }
+
+    [Fact]
+    public void StemListedInBothTiers_IsCountedOnce_RepeatedSwearStaysRated()
+    {
+        // A copy-paste duplicate across tiers must NOT inflate the distinct-count — otherwise a
+        // repeated single swear ("paska paska") would clear the distinct gate and be demoted,
+        // the exact case ADR-0039 says stays rated.
+        var lex = new VulgarityLexicon(["paska"], ["paska"], "asiaton", 0.4, 2);
+        Assert.False(VulgarityScorer.Demotes("paska paska", lex));
+    }
 }

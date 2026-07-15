@@ -47,8 +47,8 @@ public sealed class VulgarityLexiconSet
         if (mild.Count == 0 && strong.Count == 0)
             throw new InvalidOperationException($"'{resolved}' has no vulgarity stems under 'tiers.mild' / 'tiers.strong'.");
 
-        var ratio = ReadDouble(root, "demoteRatio", VulgarityLexicon.Empty.DemoteRatio);
-        var minDistinct = ReadInt(root, "demoteMinDistinctStems", VulgarityLexicon.Empty.DemoteMinDistinctStems);
+        var ratio = ReadDouble(root, "demoteRatio", VulgarityLexicon.Empty.DemoteRatio, resolved);
+        var minDistinct = ReadInt(root, "demoteMinDistinctStems", VulgarityLexicon.Empty.DemoteMinDistinctStems, resolved);
         if (ratio is <= 0 or > 1)
             throw new InvalidOperationException($"'demoteRatio' in '{resolved}' must be in (0, 1].");
         if (minDistinct < 1)
@@ -70,9 +70,24 @@ public sealed class VulgarityLexiconSet
                 .ToList()
             : [];
 
-    private static double ReadDouble(JsonElement root, string prop, double fallback) =>
-        root.TryGetProperty(prop, out var e) && e.ValueKind == JsonValueKind.Number ? e.GetDouble() : fallback;
+    // Absent → the documented default; present but not a number → fail the boot (a quoted
+    // "0.6" or a null was meant to tune the gate and must not be silently ignored, matching
+    // the strict demoteToCategory validation above).
+    private static double ReadDouble(JsonElement root, string prop, double fallback, string resolved)
+    {
+        if (!root.TryGetProperty(prop, out var e))
+            return fallback;
+        if (e.ValueKind != JsonValueKind.Number)
+            throw new InvalidOperationException($"'{prop}' in '{resolved}' must be a number.");
+        return e.GetDouble();
+    }
 
-    private static int ReadInt(JsonElement root, string prop, int fallback) =>
-        root.TryGetProperty(prop, out var e) && e.ValueKind == JsonValueKind.Number ? e.GetInt32() : fallback;
+    private static int ReadInt(JsonElement root, string prop, int fallback, string resolved)
+    {
+        if (!root.TryGetProperty(prop, out var e))
+            return fallback;
+        if (e.ValueKind != JsonValueKind.Number)
+            throw new InvalidOperationException($"'{prop}' in '{resolved}' must be a number.");
+        return e.GetInt32();
+    }
 }

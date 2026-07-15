@@ -59,7 +59,8 @@ category (`asiaton`).**
 
 - `Paskapillupersepornolehtipaviaani` (`paska`+`pillu`+`perse` = 3 distinct, ~0.45 vulgar
   share) → **`asiaton`**: unrated, no severity, count-only in "Moderoitava sisältö".
-  `Möivät paskaa.` (1 distinct, ~0.31 share) → **stays rated** in its real category.
+  `Möivät paskaa.` (1 distinct, ~0.38 share — the *distinct* gate, not the ratio, is what
+  keeps it rated) → **stays rated** in its real category.
 - **Thresholds are empirical and MUST be measured on the owner's real examples**, not
   guessed — the defaults here pass the two known cases and are config-tunable; they will
   mis-fire on cases outside the fixture until tuned. This ADR does not claim the gate is

@@ -55,4 +55,20 @@ public class VulgarityLexiconSetTests
         }
         finally { File.Delete(path); }
     }
+
+    [Fact]
+    public void Threshold_PresentButNotANumber_FailsBoot()
+    {
+        // A quoted "0.6" was meant to tune the gate — silently falling back to the default
+        // would run the gate looser than configured, so it must fail the boot (not fall back).
+        var path = Path.Combine(Path.GetTempPath(), $"vulg-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, """{"tiers":{"mild":["paska"]},"demoteToCategory":"asiaton","demoteRatio":"0.6"}""");
+        try
+        {
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => VulgarityLexiconSet.LoadFrom(path, Declared, Demoted));
+            Assert.Contains("must be a number", ex.Message);
+        }
+        finally { File.Delete(path); }
+    }
 }
