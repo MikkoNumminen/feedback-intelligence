@@ -17,9 +17,11 @@ severity-derived signals still leaked onto the moderation view:
    synthesis data block feeds the model each item's severity (the distribution and
    the per-excerpt `(critical)` tag), so the model could editorialize a rating back
    into the moderation card's title/narrative — `"'<slur>' (korkea)"` — the exact
-   thing ADR-0032 removed from the badges. (The live-summary/desk path already used
-   a deterministic per-group narrative, so it was unaffected; the whole-window
-   Yhteenveto was fixed separately.)
+   thing ADR-0032 removed from the badges. (The live-summary/desk per-group
+   narratives were already deterministic. The whole-window **Yhteenveto** — the
+   live-summary `Overall` — is a *separate* surface, kept rated-only by its
+   companion change, the ADR-0033 §3 amendment; **this** ADR covers the
+   per-category moderation themes and the trend.)
 2. **The trend/direction** (`kasvava`/`paheneva`/…) was computed and displayed for
    demoted themes on the desk, management, and snapshot cards. `paheneva`
    (worsening) is **severity-derived** (it requires a rising average severity), so a
@@ -36,8 +38,10 @@ the signal** — no good/bad/how-severe/which-way read.
   BuildModerationTheme`), in **both** the standard and live-summary paths: direction
   is the neutral `stable` key with an **empty** label, and the narrative is a
   deterministic count line (`ReportText.ModerationNarrative`) — the model is never
-  run over demoted content, so it cannot editorialize a severity into it. This also
-  returns the LLM budget the demoted synthesis used to spend.
+  run over a demoted category's **per-group narrative**, so it cannot editorialize a
+  severity into the moderation card. This also returns the LLM budget the demoted
+  synthesis used to spend. (The whole-window Yhteenveto is kept off demoted content
+  by its companion rated-only `Overall` change, ADR-0033 §3.)
 - **The views suppress the trend for unrated themes**, symmetric with how they
   already suppress severity/sentiment: desk, management (`index.html`), and the
   offline snapshot (`SnapshotHtml`) render only the count on a moderation card.

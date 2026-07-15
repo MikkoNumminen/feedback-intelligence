@@ -311,9 +311,11 @@ function themeCard(theme) {
   const card = node("div", "card", [
     node("strong", null, [theme.title]),
     node("div", "muted", [`${catLabel(theme.category)} · ${theme.count} ${L.items}` +
-      // Unrated (demoted) themes carry no trend either (ADR-0032/0038) — only the count.
+      // Unrated (demoted) themes carry no trend, and no auto-summary tag either
+      // (ADR-0032/0038) — a moderation card is just the count, consistent with the
+      // desk and the snapshot, which never tag it.
       (theme.unrated ? "" : ` · ${L.trend}: ${theme.directionLabel ?? theme.direction}`) +
-      (theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
+      (theme.unrated || theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
     node("p", null, [theme.narrative]),
   ]);
   // Per-theme sentiment mix (ADR-0030).
