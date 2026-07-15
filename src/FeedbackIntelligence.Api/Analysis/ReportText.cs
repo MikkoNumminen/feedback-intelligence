@@ -40,6 +40,15 @@ internal static class ReportText
     public static string WholeWindowScope(string language) =>
         language == "fi" ? "kaikki" : "all";
 
+    /// <summary>The narrative for a demoted / non-substantive (moderation) theme: a
+    /// count line only — no trend, no severity, nothing to editorialize on unrated
+    /// content (ADR-0032/0038). Deterministic, so the model never authors prose over
+    /// hostile content.</summary>
+    public static string ModerationNarrative(int count, string language) =>
+        language == "fi"
+            ? $"{count} moderoitavaa palautetta aikavälillä."
+            : $"{count} item(s) to moderate in the window.";
+
     /// <summary>Generic reason shown for an LLM-screened safety alert when the
     /// nomination pass returns no specific one — the per-item yes/no screen has
     /// already decided it IS an alert, so the alert still shows.</summary>

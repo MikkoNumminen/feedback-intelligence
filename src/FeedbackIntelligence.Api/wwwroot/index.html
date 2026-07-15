@@ -310,7 +310,9 @@ function render(report, live) {
 function themeCard(theme) {
   const card = node("div", "card", [
     node("strong", null, [theme.title]),
-    node("div", "muted", [`${catLabel(theme.category)} · ${theme.count} ${L.items} · ${L.trend}: ${theme.directionLabel ?? theme.direction}` +
+    node("div", "muted", [`${catLabel(theme.category)} · ${theme.count} ${L.items}` +
+      // Unrated (demoted) themes carry no trend either (ADR-0032/0038) — only the count.
+      (theme.unrated ? "" : ` · ${L.trend}: ${theme.directionLabel ?? theme.direction}`) +
       (theme.narrativeFromLlm ? "" : ` · ${L.autoSummary}`)]),
     node("p", null, [theme.narrative]),
   ]);
