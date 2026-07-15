@@ -44,7 +44,13 @@ it should be recognized but never lead the page.
    "Palautteet aiheittain" category chart and the entries tile — the top of the
    page reflects **real feedback only**; the moderation disclosure carries the
    conduct count. (Severity and sentiment already excluded the unrated categories
-   per ADR-0032.)
+   per ADR-0032.) This includes the whole-window **Yhteenveto** (the live-summary
+   `Overall`, ADR-0026): it is synthesized over the **rated** items only, so the
+   lead narrative never names or rates demoted content, its severity digest and
+   excerpts exclude it, and its window total and trend cover real feedback. A
+   window with only demoted content yields no Yhteenveto (the moderation count
+   still shows). Server-side in `ReportService`, so every view and the offline
+   snapshot inherit it.
 
 ## Consequences
 

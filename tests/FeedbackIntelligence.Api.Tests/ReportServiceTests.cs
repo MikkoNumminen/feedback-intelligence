@@ -575,6 +575,39 @@ public class ReportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SummaryMode_Overall_ExcludesDemotedContent_FromDigestCountAndTrend()
+    {
+        // ADR-0032 / ADR-0033 §3: the whole-window Yhteenveto is the LEAD summary and
+        // must reflect RATED feedback only. A demoted (rasismi/asiaton) item must never
+        // reach the synthesis model with its severity, nor be counted in the window
+        // total — otherwise the summary names hostile content and rates it, e.g.
+        // "'<slur>' (korkea)", and the severity distribution it recites includes the
+        // demoted item. Regression for that leak.
+        await _store.InsertAsync(ItemIn("maito-1", "2026-06-19T10:00:00.0000000+00:00", "maito_kylma", "tuoreus", "high"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("maito-2", "2026-06-20T10:00:00.0000000+00:00", "maito_kylma", "tuoreus", "low"), CancellationToken.None);
+        // A demoted item the model rated "critical" — the Yhteenveto must not see it.
+        await _store.InsertAsync(ItemIn("asia-1", "2026-06-21T10:00:00.0000000+00:00", "asiaton", "loukkaus", "critical"), CancellationToken.None);
+
+        var llm = new CapturingScriptedChatClient(
+            """{"title": "Yleiskatsaus", "narrative": "Asiakkaat puhuvat tuoreudesta.", "citedIds": ["maito-1"]}""");
+
+        var report = await CreateService(llm)
+            .GenerateAsync(WindowFrom, WindowTo, CancellationToken.None, liveSummary: true);
+
+        Assert.NotNull(report.Overall);
+        // Window total and grounding cover the two rated items only, never the demoted one.
+        Assert.Equal(2, report.Overall!.Count);
+        Assert.Contains("maito-1", report.Overall.FeedbackIds);
+        Assert.DoesNotContain("asia-1", report.Overall.FeedbackIds);
+
+        // The synthesis digest the model actually saw carried neither the demoted item's
+        // id/excerpt nor its "critical" severity — only the rated items' high/low.
+        Assert.DoesNotContain("asia-1", llm.LastPrompt);
+        Assert.DoesNotContain("critical", llm.LastPrompt);
+        Assert.Contains("maito-1", llm.LastPrompt);
+    }
+
+    [Fact]
     public async Task Snapshot_PersistedOnlyOnOptIn_NotOnEphemeralView()
     {
         // dotnet-audit finding #3: an ephemeral frontend view (persistSnapshot: false,
@@ -681,6 +714,31 @@ public class ReportServiceTests : IDisposable
             IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             Calls++;
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, response)));
+        }
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+            => throw new NotSupportedException();
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    // Same fixed reply on every call, but captures the last prompt the model saw —
+    // used to assert what did (and did NOT) enter the synthesis data block, e.g. that
+    // a demoted item's excerpt/severity never reaches the Yhteenveto digest.
+    private sealed class CapturingScriptedChatClient(string response) : IChatClient
+    {
+        public string LastPrompt { get; private set; } = "";
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            LastPrompt = string.Join("\n", messages.Select(m => m.Text));
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, response)));
         }
 
