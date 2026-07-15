@@ -262,25 +262,41 @@ public sealed partial class ReportService(
         // same locked prompt + citation grounding + action bounding as any
         // theme narrative — the scope line in the data block is the only
         // difference. Falls back deterministically like everything else.
+        //
+        // The Yhteenveto is the TOP of the page, so it summarizes REAL feedback
+        // ONLY (ADR-0033 §3): demoted categories (rasismi/asiaton) are unrated —
+        // excluded from every severity/sentiment aggregate (ADR-0032) and carried
+        // behind the moderation count, never named or rated in the lead summary.
+        // Synthesizing over the RATED items keeps the demoted content out of the
+        // narrative, the severities digest, the excerpts, the window total, and the
+        // trend alike — otherwise the model is fed a slur's "critical" severity and
+        // dutifully writes it into the Yhteenveto ("'<slur>' (korkea)"). The
+        // reportSentiment mix already excludes it. A window that is ONLY demoted
+        // content has no rated feedback to summarize: Overall stays null and the
+        // moderation view carries the count.
         ReportTheme? overall = null;
-        if (liveSummary && structured.Count > 0)
+        if (liveSummary)
         {
-            var scope = ReportText.WholeWindowScope(lang);
-            var overallDirection = ComputeDirection(structured, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
-            var overallDirectionLabel = ReportText.DirectionLabel(overallDirection, lang);
-            var synthesized = await SynthesizeThemeAsync(scope, structured, overallDirectionLabel, state, ct);
-            // Category "overall" is a REPORT-LEVEL key, deliberately outside any
-            // domain vocabulary; views render Overall by its own slot, never via
-            // a category-label lookup. Sources stay empty — the items live in
-            // the category sections.
-            overall = synthesized is { } ok
-                ? new ReportTheme("overall", ok.Title, ok.Narrative, structured.Count, overallDirection,
-                    overallDirectionLabel, structured.Select(i => i.Id).ToList(), true, [],
-                    structured.Count(i => i.NeedsReview), SentimentCounts: reportSentiment)
-                : new ReportTheme("overall", FallbackTitle(scope, structured),
-                    FallbackNarrative(structured, overallDirectionLabel, lang), structured.Count, overallDirection,
-                    overallDirectionLabel, structured.Select(i => i.Id).ToList(), false, [],
-                    structured.Count(i => i.NeedsReview), SentimentCounts: reportSentiment);
+            var rated = structured.Where(i => !demotedCats.Contains(i.Structure!.Category)).ToList();
+            if (rated.Count > 0)
+            {
+                var scope = ReportText.WholeWindowScope(lang);
+                var overallDirection = ComputeDirection(rated, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
+                var overallDirectionLabel = ReportText.DirectionLabel(overallDirection, lang);
+                var synthesized = await SynthesizeThemeAsync(scope, rated, overallDirectionLabel, state, ct);
+                // Category "overall" is a REPORT-LEVEL key, deliberately outside any
+                // domain vocabulary; views render Overall by its own slot, never via
+                // a category-label lookup. Sources stay empty — the items live in
+                // the category sections.
+                overall = synthesized is { } ok
+                    ? new ReportTheme("overall", ok.Title, ok.Narrative, rated.Count, overallDirection,
+                        overallDirectionLabel, rated.Select(i => i.Id).ToList(), true, [],
+                        rated.Count(i => i.NeedsReview), SentimentCounts: reportSentiment)
+                    : new ReportTheme("overall", FallbackTitle(scope, rated),
+                        FallbackNarrative(rated, overallDirectionLabel, lang), rated.Count, overallDirection,
+                        overallDirectionLabel, rated.Select(i => i.Id).ToList(), false, [],
+                        rated.Count(i => i.NeedsReview), SentimentCounts: reportSentiment);
+            }
         }
 
         var report = new ManagementReport(
