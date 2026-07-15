@@ -81,7 +81,10 @@ public static class SnapshotHtml
         StringBuilder sb, ReportTheme theme, ReportText.SnapshotLabels t, IReadOnlyDictionary<string, string> labels)
     {
         sb.Append($"<div class=\"card\"><strong>{E(theme.Title)}</strong>");
-        sb.Append($"<div class=\"muted\">{E(theme.Category)} · {theme.Count} {E(t.ItemsWord)} · {E(t.TrendWord)}: {E(theme.DirectionLabel)}</div>");
+        // Unrated (demoted) themes carry no trend either (ADR-0032/0038) — only the
+        // count, so the moderation card editorializes nothing on hostile content.
+        var trend = theme.Unrated ? "" : $" · {E(t.TrendWord)}: {E(theme.DirectionLabel)}";
+        sb.Append($"<div class=\"muted\">{E(theme.Category)} · {theme.Count} {E(t.ItemsWord)}{trend}</div>");
         var themePills = SentPills(theme.SentimentCounts, labels);
         if (themePills.Length > 0)
             sb.Append($"<div>{themePills}</div>");

@@ -655,6 +655,42 @@ public class ReportServiceTests : IDisposable
         Assert.Contains("mixed-1", alertIds);         // also racist, but has a safety hazard → kept
     }
 
+    [Fact]
+    public async Task StandardMode_DemotedCategory_IsCountOnlyModerationTheme_NoModelNarrative_NoTrend()
+    {
+        // ADR-0032/0038: the standard path used to run a full LLM synthesis over demoted
+        // (rasismi/asiaton) groups, feeding the model their severities and letting it
+        // editorialize a rating into the moderation card, and demoted cards showed a
+        // (severity-derived) trend. Now a demoted group is a deterministic count-only
+        // moderation theme: no model call, no trend, no severity signal.
+        await _store.InsertAsync(ItemIn("maito-1", "2026-06-19T10:00:00.0000000+00:00", "maito_kylma", "tuoreus", "high"), CancellationToken.None);
+        // Two demoted items rated "critical" — a later, more-severe half would compute
+        // "worsening" if a trend were run over them.
+        await _store.InsertAsync(ItemIn("asia-1", "2026-06-20T10:00:00.0000000+00:00", "asiaton", "loukkaus", "critical"), CancellationToken.None);
+        await _store.InsertAsync(ItemIn("asia-2", "2026-06-29T10:00:00.0000000+00:00", "asiaton", "loukkaus", "critical"), CancellationToken.None);
+
+        var llm = new CountingScriptedChatClient(
+            """{"title": "Maito", "narrative": "Tuoreusongelmia.", "citedIds": ["maito-1"]}""");
+        var report = await CreateService(llm).GenerateAsync(WindowFrom, WindowTo, CancellationToken.None);
+
+        var asiaton = report.Themes.Single(t => t.Category == "asiaton");
+        Assert.True(asiaton.Unrated);
+        Assert.False(asiaton.NarrativeFromLlm);      // no model narrative on demoted content
+        Assert.Equal("stable", asiaton.Direction);   // no trend signal ...
+        Assert.Equal("", asiaton.DirectionLabel);    // ... and nothing for a view to render
+        Assert.DoesNotContain("kriittinen", asiaton.Narrative);
+        Assert.DoesNotContain("critical", asiaton.Narrative);
+
+        // Exactly ONE synthesis call — the rated maito group. The demoted group never
+        // reached the model, so its "critical" severity could not be editorialized.
+        Assert.Equal(1, llm.Calls);
+
+        // The rated maito theme still gets its model narrative and a real (rendered) trend.
+        var maito = report.Themes.Single(t => t.Category == "maito_kylma");
+        Assert.True(maito.NarrativeFromLlm);
+        Assert.NotEqual("", maito.DirectionLabel);
+    }
+
     private sealed class ScriptedChatClient(params string[] responses) : IChatClient
     {
         private int _next;

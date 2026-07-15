@@ -498,8 +498,14 @@ public static class Commands
             Console.WriteLine($"    {Term.C("▲ ALERT", "31")} [{a.GetProperty("feedbackId").GetString()}] {reason}");
         }
         foreach (var t in rep.GetProperty("themes").EnumerateArray().Take(6))
+        {
+            // Unrated (demoted) themes carry no trend (ADR-0032/0038) — print the count
+            // only, like the management views, not a "stable" token on moderation content.
+            var unrated = t.TryGetProperty("unrated", out var u) && u.ValueKind == JsonValueKind.True;
+            var trend = unrated ? "" : $", {t.GetProperty("direction").GetString()}";
             Console.WriteLine($"    {Term.C("●", "32")} {t.GetProperty("category").GetString(),-22} " +
-                $"({t.GetProperty("count").GetInt32()}, {t.GetProperty("direction").GetString()})  {t.GetProperty("title").GetString()}");
+                $"({t.GetProperty("count").GetInt32()}{trend})  {t.GetProperty("title").GetString()}");
+        }
         Console.WriteLine();
         return 0;
     }

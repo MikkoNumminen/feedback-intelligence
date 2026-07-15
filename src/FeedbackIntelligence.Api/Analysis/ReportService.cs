@@ -212,6 +212,16 @@ public sealed partial class ReportService(
                          .ThenBy(g => g.Key, StringComparer.Ordinal))
             {
                 var groupItems = group.ToList();
+                // Demoted (unrated) categories carry NO trend, severity, or model
+                // narrative (ADR-0032/0038): running synthesis over them feeds the
+                // model their severities and lets it editorialize a rating into the
+                // moderation card ("'<slur>' (korkea)"). A deterministic count-only
+                // moderation theme instead — and it saves the LLM budget.
+                if (demotedCats.Contains(group.Key))
+                {
+                    themes.Add(BuildModerationTheme(group.Key, groupItems));
+                    continue;
+                }
                 var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
                 var directionLabel = ReportText.DirectionLabel(direction, lang);
                 var narrative = await SynthesizeThemeAsync(group.Key, groupItems, directionLabel, state, ct);
@@ -250,6 +260,15 @@ public sealed partial class ReportService(
                          .ThenBy(g => g.Key, StringComparer.Ordinal))
             {
                 var groupItems = group.ToList();
+                // Demoted (unrated) categories carry no trend or severity signal
+                // (ADR-0032/0038) — a deterministic count-only moderation theme, so no
+                // view renders a 'paheneva' (worsening, severity-derived) trend on
+                // hostile content.
+                if (demoted.Contains(group.Key))
+                {
+                    themes.Add(BuildModerationTheme(group.Key, groupItems));
+                    continue;
+                }
                 var direction = ComputeDirection(groupItems, fromIso, toIso, opts.MinItemsForTrend, opts.TrendSignificanceZ);
                 var directionLabel = ReportText.DirectionLabel(direction, lang);
                 themes.Add(BuildTheme(group.Key, FallbackTitle(group.Key, groupItems),
@@ -438,6 +457,21 @@ public sealed partial class ReportService(
             groupItems.Select(i => i.Id).ToList(), fromLlm, BuildSources(groupItems),
             groupItems.Count(i => i.NeedsReview), SentimentCounts(groupItems),
             Unrated: activeDomain.Descriptor.DemotedCategories.Contains(category));
+
+    /// <summary>A demoted / non-substantive category (retail's rasismi, asiaton) as a
+    /// theme: count + content only. Unrated content carries NO severity, sentiment, OR
+    /// trend, and gets NO model narrative (ADR-0032/0038) — feeding synthesis its
+    /// severities would let the model editorialize a rating onto hostile content. The
+    /// direction is the neutral "stable" key with an EMPTY label, so no view renders a
+    /// trend on it; the narrative is a deterministic count line. Sources are still
+    /// embedded so the collapsed moderation view shows the evidence behind a click.</summary>
+    private ReportTheme BuildModerationTheme(string category, List<StoredFeedback> groupItems) =>
+        new(category, FallbackTitle(category, groupItems),
+            ReportText.ModerationNarrative(groupItems.Count, activeDomain.Descriptor.Language),
+            groupItems.Count, "stable", "",
+            groupItems.Select(i => i.Id).ToList(), false, BuildSources(groupItems),
+            groupItems.Count(i => i.NeedsReview), SentimentCounts(groupItems),
+            Unrated: true);
 
     private async Task<(string Title, string Narrative)?> SynthesizeThemeAsync(
         string category, IReadOnlyList<StoredFeedback> groupItems, string directionLabel, GenState state, CancellationToken ct)

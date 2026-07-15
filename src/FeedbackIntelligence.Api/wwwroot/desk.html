@@ -561,7 +561,8 @@ function renderSegment(report) {
     label: catLabel(theme.category),
     count: theme.count,
     flagged: theme.flaggedCount,
-    meta: theme.directionLabel,
+    // Unrated (demoted) themes carry no trend either (ADR-0032/0038) — only the count.
+    meta: theme.unrated ? "" : theme.directionLabel,
     items: theme.sources ?? [],
     sentimentCounts: theme.sentimentCounts,
     unrated: theme.unrated,
