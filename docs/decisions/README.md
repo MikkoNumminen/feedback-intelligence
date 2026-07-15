@@ -49,3 +49,4 @@ these ADRs relocate that reasoning into durable records.
 | [0036](0036-deterministic-category-keyword-override.md) | Deterministic category-keyword override: a grocery-core lexicon forces product departments (produce → hevi) with cross-category exclusions, sibling to the alert lexicon but raising no alert | Accepted |
 | [0037](0037-category-keywords-service-premises.md) | Extend the category-keyword override to service/premises (kassa_palvelu, tilat_siisteys) declared last, so products always win and service is the fallback | Accepted |
 | [0038](0038-unrated-no-trend-no-model-narrative.md) | Unrated content carries no trend either, and demoted categories get a deterministic count-only moderation theme (no model narrative) | Accepted |
+| [0039](0039-graded-vulgarity-density-asiaton.md) | Graded vulgarity: a density-gated deterministic scorer forces dense, non-substantive profanity to `asiaton` (a lone swear in real feedback stays rated) | Accepted |

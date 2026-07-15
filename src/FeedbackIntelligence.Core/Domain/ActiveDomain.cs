@@ -16,6 +16,12 @@ public interface IActiveDomain
     /// (category-keywords.json, ADR-0036) — term lists that force a category. The file
     /// need not exist; a domain without it forces nothing.</summary>
     string CategoryKeywordsPath { get; }
+
+    /// <summary>Absolute path of the domain's OPTIONAL graded vulgarity lexicon
+    /// (vulgarity-lexicon.json, ADR-0039) — tiered profanity stems + density thresholds
+    /// that force the demoted conduct category. The file need not exist; a domain without
+    /// it demotes nothing.</summary>
+    string VulgarityLexiconPath { get; }
     string StoriesPath { get; }
 
     /// <summary>Domain-owned prompt files by role (e.g. "synthesis",
@@ -34,6 +40,7 @@ public sealed class ActiveDomain : IActiveDomain
     public string Name => Descriptor.Name;
     public string AlertKeywordsPath { get; }
     public string CategoryKeywordsPath { get; }
+    public string VulgarityLexiconPath { get; }
     public string StoriesPath { get; }
     public IReadOnlyDictionary<string, string> PromptPaths { get; }
 
@@ -53,6 +60,7 @@ public sealed class ActiveDomain : IActiveDomain
         Descriptor = BuildDescriptor(root, o.Active, domainJson);
         AlertKeywordsPath = Path.Combine(dir, "alert-keywords.json");
         CategoryKeywordsPath = Path.Combine(dir, "category-keywords.json");
+        VulgarityLexiconPath = Path.Combine(dir, "vulgarity-lexicon.json");
         StoriesPath = Path.Combine(dir, "stories.json");
         PromptPaths = BuildPromptPaths(root, dir);
     }

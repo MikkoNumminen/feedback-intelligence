@@ -21,6 +21,7 @@ public sealed class IngestService(
     LlmGate llmGate,
     AlertKeywordSet keywords,
     CategoryKeywordSet categoryKeywords,
+    VulgarityLexiconSet vulgarityLexicon,
     Core.Domain.IActiveDomain activeDomain,
     Analysis.ReportCache reportCache,
     ILogger<IngestService> logger)
@@ -62,7 +63,7 @@ public sealed class IngestService(
         // structure: /interpret already previews the forced category, so a mismatch here
         // means it was edited away — the rule re-asserts it.
         var overrideCategory = CategoryOverrideResolver.Resolve(
-            alerts, request.Text, structure, activeDomain.Descriptor, categoryKeywords.Rules);
+            alerts, request.Text, structure, activeDomain.Descriptor, categoryKeywords.Rules, vulgarityLexicon.Lexicon);
         var corrections = request.Corrections;
         var forcedStructure = AlertMatcher.ApplyCategoryOverride(structure, overrideCategory);
         if (!ReferenceEquals(forcedStructure, structure))
@@ -173,7 +174,7 @@ public sealed class IngestService(
                     // store update clears corrections like any restructure, since they
                     // audited a categorization that no longer stands.
                     var forced = AlertMatcher.ApplyCategoryOverride(item.Structure,
-                        CategoryOverrideResolver.Resolve(currentAlerts, item.Text, item.Structure, domain, categoryKeywords.Rules));
+                        CategoryOverrideResolver.Resolve(currentAlerts, item.Text, item.Structure, domain, categoryKeywords.Rules, vulgarityLexicon.Lexicon));
                     if (!ReferenceEquals(forced, item.Structure))
                     {
                         var forcedRows = await store.UpdateStructureAsync(
@@ -190,7 +191,7 @@ public sealed class IngestService(
 
                 var (structure, itemFailed, notes) = await StructureViaGateAsync(item.Text, $"restructure of {item.Id}", ct);
                 structure = AlertMatcher.ApplyCategoryOverride(structure,
-                    CategoryOverrideResolver.Resolve(currentAlerts, item.Text, structure, domain, categoryKeywords.Rules));
+                    CategoryOverrideResolver.Resolve(currentAlerts, item.Text, structure, domain, categoryKeywords.Rules, vulgarityLexicon.Lexicon));
                 var reviewFlags = BuildReviewFlags(item.Text, structure);
                 var updatedRows = await store.UpdateStructureAsync(
                     item.Id, structure, itemFailed, notes, reviewFlags.Count > 0, reviewFlags, ct);

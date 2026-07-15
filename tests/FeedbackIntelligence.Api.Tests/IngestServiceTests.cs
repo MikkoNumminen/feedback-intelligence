@@ -41,6 +41,7 @@ public class IngestServiceTests : IDisposable
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
         Structuring.CategoryKeywordSet.Empty,
+        Structuring.VulgarityLexiconSet.Empty,
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
@@ -54,6 +55,7 @@ public class IngestServiceTests : IDisposable
         new LlmGate(_options),
         TestDomains.RetailKeywords(),
         TestDomains.RetailCategoryKeywords(),
+        TestDomains.RetailVulgarity(),
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);
@@ -333,6 +335,7 @@ public class IngestServiceTests : IDisposable
                 Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
             },
             Structuring.CategoryKeywordSet.Empty,
+            Structuring.VulgarityLexiconSet.Empty,
             TestDomains.RetailActive(),
             cache, NullLogger<IngestService>.Instance);
 
@@ -455,6 +458,7 @@ public class IngestServiceTests : IDisposable
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
         Structuring.CategoryKeywordSet.Empty,
+        Structuring.VulgarityLexiconSet.Empty,
         TestDomains.RetailActive(),
         new Analysis.ReportCache(),
         NullLogger<IngestService>.Instance);

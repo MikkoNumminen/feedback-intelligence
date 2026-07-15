@@ -1,0 +1,11 @@
+{
+  "matching": "case-insensitive invariant substring over the RAW feedback text; patterns are Finnish profanity STEMS (so inflected forms match). DENSITY-gated (ADR-0039): a message is demoted to 'asiaton' ONLY when the vulgar-character share is >= demoteRatio AND there are >= demoteMinDistinctStems DISTINCT stems — a lone swear in real feedback stays rated, a nonsense pile-up is demoted. Ethnic slurs are NOT here: they live in alert-keywords.json ('rasismi'), which forces the category on a SINGLE hit (ADR-0027). Owner-authored — register is cultural; edit freely.",
+  "tiers": {
+    "mild": ["paska", "perse", "hitto", "helvetti", "jumalauta"],
+    "strong": ["vittu", "kyrpä", "mulkku", "pillu", "runkkari"]
+  },
+  "demoteToCategory": "asiaton",
+  "demoteRatio": 0.4,
+  "demoteMinDistinctStems": 2,
+  "notes": "Thresholds are tuning knobs — measure against real desk examples before trusting them (ADR-0039). demoteRatio is the vulgar-character share of the message; demoteMinDistinctStems counts DISTINCT stems, not occurrences. Defaults chosen so 'Paskapillupersepornolehtipaviaani' (3 distinct, ~0.45 share) demotes while 'Möivät paskaa.' (1 distinct; the distinct gate keeps it rated) and a furious-but-substantive complaint (low share) stay rated."
+}
