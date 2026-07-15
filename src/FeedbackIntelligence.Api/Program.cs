@@ -38,6 +38,15 @@ builder.Services.AddSingleton(sp =>
     var domain = sp.GetRequiredService<IActiveDomain>();
     return CategoryKeywordSet.LoadFrom(domain.CategoryKeywordsPath, domain.Descriptor.Categories);
 });
+// The graded vulgarity lexicon (ADR-0039) is domain data too — optional, and validated
+// against the active domain's declared + demoted categories so a typo'd or non-conduct
+// demoteToCategory fails the boot rather than re-rating real feedback at the first request.
+builder.Services.AddSingleton(sp =>
+{
+    var domain = sp.GetRequiredService<IActiveDomain>();
+    return VulgarityLexiconSet.LoadFrom(
+        domain.VulgarityLexiconPath, domain.Descriptor.Categories, domain.Descriptor.DemotedCategories);
+});
 builder.Services.AddSingleton<FeedbackStore>();
 builder.Services.AddSingleton<LlmGate>();
 builder.Services.AddSingleton<IngestService>();
@@ -64,6 +73,7 @@ builder.Services.AddKeyedSingleton(Channels.Live, (sp, _) => new IngestService(
     sp.GetRequiredService<LlmGate>(),
     sp.GetRequiredService<AlertKeywordSet>(),
     sp.GetRequiredService<CategoryKeywordSet>(),
+    sp.GetRequiredService<VulgarityLexiconSet>(),
     sp.GetRequiredService<IActiveDomain>(),
     sp.GetRequiredKeyedService<ReportCache>(Channels.Live),
     sp.GetRequiredService<ILogger<IngestService>>()));
@@ -117,6 +127,7 @@ _ = app.Services.GetRequiredService<IOptions<IngestOptions>>().Value;
 var reportOptions = app.Services.GetRequiredService<IOptions<ReportOptions>>().Value;
 _ = app.Services.GetRequiredService<AlertKeywordSet>();
 _ = app.Services.GetRequiredService<CategoryKeywordSet>(); // ADR-0036: a typo'd category-keywords.json fails the boot, not the first request
+_ = app.Services.GetRequiredService<VulgarityLexiconSet>(); // ADR-0039: a bad vulgarity-lexicon.json fails the boot too
 
 // The report resolves its prompts from the active domain at generation time.
 // Validate those roles (and their files) HERE so a domain that omits/misspells a
@@ -217,6 +228,7 @@ app.MapPost("/interpret", async (
     IOptions<IngestOptions> options,
     AlertKeywordSet keywords,
     CategoryKeywordSet categoryKeywords,
+    VulgarityLexiconSet vulgarityLexicon,
     IActiveDomain domain,
     ILoggerFactory loggerFactory,
     CancellationToken ct) =>
@@ -233,7 +245,7 @@ app.MapPost("/interpret", async (
         var alerts = AlertMatcher.Match(request.Text, keywords.Categories);
         var structure = AlertMatcher.ApplyCategoryOverride(
             result.Structure,
-            CategoryOverrideResolver.Resolve(alerts, request.Text, result.Structure, domain.Descriptor, categoryKeywords.Rules));
+            CategoryOverrideResolver.Resolve(alerts, request.Text, result.Structure, domain.Descriptor, categoryKeywords.Rules, vulgarityLexicon.Lexicon));
         return Results.Ok(new
         {
             structure,

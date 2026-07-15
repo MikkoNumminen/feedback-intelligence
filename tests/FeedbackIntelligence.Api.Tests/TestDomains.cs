@@ -31,6 +31,13 @@ internal static class TestDomains
             Path.Combine(RepoRoot(), "domains", "retail", "category-keywords.json"),
             Retail().Categories);
 
+    /// <summary>The COMMITTED retail vulgarity lexicon (ADR-0039) — the one place tests
+    /// resolve its path, so a module move breaks exactly one helper.</summary>
+    public static Api.Structuring.VulgarityLexiconSet RetailVulgarity() =>
+        Api.Structuring.VulgarityLexiconSet.LoadFrom(
+            Path.Combine(RepoRoot(), "domains", "retail", "vulgarity-lexicon.json"),
+            Retail().Categories, Retail().DemotedCategories);
+
     internal static string RepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -47,6 +54,7 @@ internal static class TestDomains
             var dir = Path.Combine(RepoRoot(), "domains", "retail");
             AlertKeywordsPath = Path.Combine(dir, "alert-keywords.json");
             CategoryKeywordsPath = Path.Combine(dir, "category-keywords.json");
+            VulgarityLexiconPath = Path.Combine(dir, "vulgarity-lexicon.json");
             StoriesPath = Path.Combine(dir, "stories.json");
             PromptPaths = new Dictionary<string, string>(StringComparer.Ordinal)
             {
@@ -60,6 +68,7 @@ internal static class TestDomains
         public string Name => Descriptor.Name;
         public string AlertKeywordsPath { get; }
         public string CategoryKeywordsPath { get; }
+        public string VulgarityLexiconPath { get; }
         public string StoriesPath { get; }
         public IReadOnlyDictionary<string, string> PromptPaths { get; }
         public string PromptPath(string role) => PromptPaths.TryGetValue(role, out var p)

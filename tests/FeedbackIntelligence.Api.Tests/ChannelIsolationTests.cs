@@ -51,6 +51,7 @@ public class ChannelIsolationTests : IDisposable
             Categories = new Dictionary<string, IReadOnlyList<string>> { ["injury_safety"] = ["loukkaantu"] },
         },
         Api.Structuring.CategoryKeywordSet.Empty,
+        Api.Structuring.VulgarityLexiconSet.Empty,
         TestDomains.RetailActive(),
         cache,
         NullLogger<IngestService>.Instance);
