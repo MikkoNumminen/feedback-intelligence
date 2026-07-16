@@ -89,7 +89,7 @@ Ported rather than reinvented; each was measured there.
   |---|---|
   | Input length cap | 800 chars |
   | Request-body cap | 16 KB |
-  | LLM concurrency | 2, with 0.5 s acquire-then-**shed** (never queue behind a busy GPU) |
+  | LLM concurrency | 2, with 0.5 s acquire-then-**shed** (never queue behind a busy GPU). Ollama is configured to match — `OLLAMA_NUM_PARALLEL=2`, shallow `OLLAMA_MAX_QUEUE=8` — so no hidden deep queue sits under the gate, and `/health` probes take a slot only if one is free ([ADR-0040](decisions/0040-gpu-contention-hardening.md)) |
   | Per-IP rate limit | 30 requests / 60 s |
   | Output-token cap | `num_predict` / `MaxOutputTokens` |
 

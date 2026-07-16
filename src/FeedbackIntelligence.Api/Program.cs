@@ -414,15 +414,26 @@ app.MapGet("/report/snapshot.html", async (ReportService reports, CancellationTo
         : Results.NotFound());
 
 // Health = a 1-token REAL completion (RAG-measured pattern): "server up" does
-// not mean "model loaded and generating".
-app.MapGet("/health", async (IServiceProvider services, IOptions<IngestOptions> options, CancellationToken ct) =>
+// not mean "model loaded and generating". GATED (ADR-0040): the probe takes a
+// slot ONLY if one is immediately free, so it can never add GPU load beyond the
+// 2-slot LlmGate nor steal a slot from a live request under load. A saturated
+// gate already proves the model is loaded and generating, so TryRunAsync
+// returning false ("busy") is itself a healthy answer — no probe needed.
+app.MapGet("/health", async (
+    IServiceProvider services, LlmGate gate, IOptions<IngestOptions> options, CancellationToken ct) =>
 {
     var client = services.GetRequiredKeyedService<IChatClient>(LlmServiceCollectionExtensions.StructuringKey);
     try
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(TimeSpan.FromSeconds(options.Value.HealthTimeoutSeconds));
-        _ = await client.GetResponseAsync("ping", new ChatOptions { MaxOutputTokens = 1 }, timeout.Token);
+        // false = gate full = model busy = up (no completion run). true = ran
+        // the 1-token probe successfully. A throw = the model is unreachable or
+        // too slow to answer within HealthTimeoutSeconds → caught below.
+        await gate.TryRunAsync(async slotCt =>
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(slotCt);
+            timeout.CancelAfter(TimeSpan.FromSeconds(options.Value.HealthTimeoutSeconds));
+            _ = await client.GetResponseAsync("ping", new ChatOptions { MaxOutputTokens = 1 }, timeout.Token);
+        }, ct);
         return Results.Ok(new { status = "ok" });
     }
     catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
