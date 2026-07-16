@@ -50,3 +50,4 @@ these ADRs relocate that reasoning into durable records.
 | [0037](0037-category-keywords-service-premises.md) | Extend the category-keyword override to service/premises (kassa_palvelu, tilat_siisteys) declared last, so products always win and service is the fallback | Accepted |
 | [0038](0038-unrated-no-trend-no-model-narrative.md) | Unrated content carries no trend either, and demoted categories get a deterministic count-only moderation theme (no model narrative) | Accepted |
 | [0039](0039-graded-vulgarity-density-asiaton.md) | Graded vulgarity: a density-gated deterministic scorer forces dense, non-substantive profanity to `asiaton` (a lone swear in real feedback stays rated) | Accepted |
+| [0040](0040-gpu-contention-hardening.md) | GPU contention: shed-not-queue is kept; gate the `/health` probe, make Ollama's parallelism/queue agree with the 2-slot gate, jittered client retry on 503 | Accepted |

@@ -20,6 +20,17 @@ services:
       # set anywhere). 4096 fits Phase 0 structuring prompts; revisit for the
       # Phase 4 synthesis window. Larger costs VRAM per loaded model.
       OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-4096}
+      # Concurrency MUST agree with the app-side LlmGate (Ingest:LlmMaxConcurrency
+      # = 2, shed-not-queue), or the two layers fight: the gate fast-sheds at 2
+      # while Ollama silently deep-queues under it (default OLLAMA_MAX_QUEUE=512),
+      # so a call the gate admits can still stall for minutes in a hidden backlog
+      # bounded only by Ingest:LlmCallTimeoutMs. NUM_PARALLEL=2 lets both admitted
+      # slots actually run in parallel instead of being serialized; a SHALLOW
+      # queue makes Ollama shed too rather than hide a deep one (ADR-0040). Safe
+      # on VRAM because this container runs only while the shared RAG is down, so
+      # the whole GPU is ours. Tunable via env if a future GPU is tighter.
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-2}
+      OLLAMA_MAX_QUEUE: ${OLLAMA_MAX_QUEUE:-8}
     ports:
       - "11434:11434"
     healthcheck:

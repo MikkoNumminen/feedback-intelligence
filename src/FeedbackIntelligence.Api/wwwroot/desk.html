@@ -126,7 +126,7 @@ const STR = {
     interpretHeading: "Tulkinta — tarkista ja korjaa tarvittaessa",
     theme: "Aihe", severity: "Vakavuus", type: "Tyyppi", cancel: "Peruuta", save: "Tallenna",
     writeFirst: "Kirjoita palaute ensin.", interpreting: "Tulkitaan…",
-    busy: "Ruuhkaa — yritä hetken päästä uudelleen.", interpretFailed: "Tulkinta epäonnistui.",
+    busy: "Ruuhkaa — yritä hetken päästä uudelleen.", rateLimited: "Liikaa pyyntöjä juuri nyt — hetki ja yritä uudelleen.", interpretFailed: "Tulkinta epäonnistui.",
     modelFailed: "Automaattinen tulkinta ei onnistunut — täytä kentät itse.",
     interpretDone: "Tulkinta valmis — tarkista alta.", connError: "Yhteysvirhe — palvelin ei vastaa.",
     serverDown: "Palvelin ei vastaa — yritetään uudelleen…",
@@ -160,7 +160,7 @@ const STR = {
     interpretHeading: "Interpretation — review and correct if needed",
     theme: "Theme", severity: "Severity", type: "Type", cancel: "Cancel", save: "Save",
     writeFirst: "Write the feedback first.", interpreting: "Interpreting…",
-    busy: "Busy — try again in a moment.", interpretFailed: "Interpretation failed.",
+    busy: "Busy — try again in a moment.", rateLimited: "Too many requests right now — wait a moment and retry.", interpretFailed: "Interpretation failed.",
     modelFailed: "Automatic interpretation failed — fill the fields yourself.",
     interpretDone: "Interpretation ready — review below.", connError: "Connection error — the server is not responding.",
     serverDown: "Server not responding — retrying…",
@@ -270,12 +270,23 @@ el("interpret").addEventListener("click", async () => {
   el("interpret").disabled = true;
   setStatus("status1", "", L.interpreting);
   try {
-    const res = await fetch(`${API}/interpret`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
+    // A 503 is the GPU gate shedding (2 slots busy, ADR-0040) — usually
+    // transient. Retry a FEW times with JITTERED backoff so a roomful of clerks
+    // clicking at once don't re-collide in lockstep; give up to the manual busy
+    // message after that. A 429 is the shared rate bucket (ADR-0025), NOT the
+    // GPU — never hammer it, just tell the user to wait.
+    let res;
+    for (let attempt = 0; ; attempt++) {
+      res = await fetch(`${API}/interpret`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (res.status !== 503 || attempt >= 2) break;
+      await new Promise(r => setTimeout(r, 300 + attempt * 400 + Math.random() * 500));
+    }
     if (res.status === 503) { setStatus("status1", "warn", L.busy); return; }
+    if (res.status === 429) { setStatus("status1", "warn", L.rateLimited); return; }
     if (!res.ok) { setStatus("status1", "err", L.interpretFailed); return; }
     const data = await res.json();
     startEntry(text);
