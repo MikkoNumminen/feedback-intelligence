@@ -24,3 +24,7 @@ dist/
 .feedctl/
 node_modules/
 .testbld/
+
+# Local doc-export artifact: the canonical Poro findings live in
+# docs/poro-findings.md; the root PDF is a personal export, not a tracked file.
+/poro-findings.pdf

@@ -13,3 +13,4 @@ session task list; this file is the durable copy.
 | ~~6~~ | ~~5-minute demo rehearsal on a fresh seed (`docs/demo-script.md`)~~ **DONE 2026-07-07** | — | — |
 | ~~7~~ | ~~Announce a GPU window for the full LIVE run-through~~ **DONE 2026-07-04** — live loop verified end to end (see CLAUDE.md run-through status); the keyword-free alert-nomination case still waits for the real corpus | — | — |
 | 8 | Maintenance watch: bump `SQLitePCLRaw.bundle_e_sqlite3` when upstream ships SQLite ≥ 3.50.2 (GHSA-2m69-gcr7-jv3q has no patched version as of 2026-07-03; exposure assessed low — see docs/audits/dotnet-2026-07-03.md) | upstream release | clean vulnerability scan |
+| ~~9~~ | ~~Rebuild + restart the local API/desk instance to pick up the merged demoted-content fixes (PRs #58/#59)~~ **DONE 2026-07-15** — `feedctl down` → rebuild API → `feedctl up`; verified live on `/live/report` (Yhteenveto rated-only, moderation buckets count-only with no trend) | — | — |
