@@ -83,7 +83,7 @@ internal static class ReportText
         string ModerationHeading);
 
     private static readonly SnapshotLabels SnapFi = new(
-        "fi", "Palautetilanne — tallennettu tilannekuva", "Tallennettu tilannekuva", "Palautetilanne",
+        "fi", "Tallennettu tilannekuva — Feedback Intelligence", "Tallennettu tilannekuva", "Palautetilanne",
         "Aikaväli", "palautetta", "koostettu",
         "Hälytykset", "Ei hälytyksiä aikavälillä.", "sanahaku", "kielimalli",
         "Teemat ja trendit", "palautetta", "suunta",
@@ -91,7 +91,7 @@ internal static class ReportText
         "Moderoitava sisältö");
 
     private static readonly SnapshotLabels SnapEn = new(
-        "en", "Feedback situation — saved snapshot", "Saved snapshot", "Feedback situation",
+        "en", "Saved snapshot — Feedback Intelligence", "Saved snapshot", "Feedback situation",
         "Window", "items", "generated",
         "Alerts", "No alerts in the window.", "keyword", "model",
         "Themes & trends", "items", "trend",
