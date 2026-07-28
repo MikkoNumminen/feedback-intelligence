@@ -21,6 +21,16 @@ public static class SnapshotHtml
         sb.AppendLine($"<!DOCTYPE html><html lang=\"{t.HtmlLang}\"><head><meta charset=\"utf-8\">");
         sb.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
         sb.AppendLine($"<title>{E(t.PageTitle)}</title>");
+        // A saved snapshot is the artefact most likely to be pasted into a chat
+        // or an email, so it needs the same link preview the live pages have.
+        // No og:image: there is no asset to point at, and a broken one previews
+        // worse than none.
+        sb.AppendLine($"<meta name=\"description\" content=\"{E(t.Heading)}\">");
+        sb.AppendLine("<meta property=\"og:type\" content=\"article\">");
+        sb.AppendLine("<meta property=\"og:site_name\" content=\"Feedback Intelligence\">");
+        sb.AppendLine($"<meta property=\"og:title\" content=\"{E(t.PageTitle)}\">");
+        sb.AppendLine($"<meta property=\"og:description\" content=\"{E(t.Heading)}\">");
+        sb.AppendLine("<meta name=\"twitter:card\" content=\"summary\">");
         sb.AppendLine("<style>body{font:16px/1.5 system-ui,sans-serif;max-width:52rem;margin:0 auto;padding:1rem;color:#1c2430}" +
             "h1{font-size:1.3rem}.badge{display:inline-block;background:#b3541e;color:#fff;border-radius:.4rem;padding:.15rem .5rem;font-size:.8rem}" +
             ".card{border:1px solid #d9dde3;border-radius:.6rem;padding:.9rem;margin:.7rem 0}" +
