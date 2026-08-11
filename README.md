@@ -21,7 +21,7 @@ proves a new domain is a new folder with zero core edits — switch with
 
 Built as a demonstrable work sample: .NET 8 backend, local LLM serving (Ollama),
 100% synthetic data, live-runnable in an interview with a snapshot fallback so
-[the shared link](https://red-ground-0bacf9c03.7.azurestaticapps.net/) never
+[the shared link](https://mikkonumminen.dev/feedback) never
 shows a dead page.
 
 ## Why AI is only in two places
@@ -131,11 +131,11 @@ eval harness: `tools/FeedbackIntelligence.StructuringEval`.
 
 ## Live demo
 
-- [Management view](https://red-ground-0bacf9c03.7.azurestaticapps.net/) —
+- [Management view](https://mikkonumminen.dev/feedback) —
   renders the committed seed-42 snapshot instantly (badge: *Tallennettu
   tilannekuva*), then upgrades in place to the live report whenever the
   operator backend is reachable.
-- [Desk entry](https://red-ground-0bacf9c03.7.azurestaticapps.net/desk.html) —
+- [Desk entry](https://mikkonumminen.dev/feedback/desk) —
   live-only: interpretation needs the backend up; there is no snapshot
   stand-in for it.
 
